@@ -66,15 +66,20 @@ export default function Shell() {
   )
 }
 
-export function Logo({ size = 28 }) {
+export function Logo({ size = 28, glow = false }) {
   return (
     <span
       className="grid place-items-center font-serif"
       style={{
-        width: size, height: size, borderRadius: size * 0.32,
-        background: 'linear-gradient(135deg,#CBE2FC,#8FB8F6)',
-        color: '#14203b', boxShadow: '0 6px 14px -6px rgba(20,32,59,.5)',
-        fontSize: size * 0.6,
+        width: size, height: size, borderRadius: size * 0.34,
+        background: glow
+          ? 'radial-gradient(circle at 30% 25%, #ffffff, #cfe4ff 70%)'
+          : 'linear-gradient(135deg,#CBE2FC,#5b9bf5)',
+        color: glow ? '#1668e3' : '#14203b',
+        boxShadow: glow
+          ? '0 0 18px rgba(255,255,255,.9), 0 6px 16px -6px rgba(20,60,140,.6)'
+          : '0 6px 14px -6px rgba(20,32,59,.5)',
+        fontSize: size * 0.62,
       }}
     >
       C
