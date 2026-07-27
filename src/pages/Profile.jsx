@@ -51,7 +51,7 @@ export default function Profile() {
       <h2 className="font-serif text-2xl mb-3">Holdings</h2>
       {positions.length === 0 ? (
         <div className="card p-8 text-center text-[var(--color-ink-soft)] mb-8">
-          You don’t hold any charms yet. <Link className="underline" to="/app">Find one you believe in →</Link>
+          You don’t hold any charms yet. <Link className="underline" to="/">Find one you believe in →</Link>
         </div>
       ) : (
         <div className="card divide-y divide-[rgba(20,32,59,.07)] mb-8 overflow-hidden">

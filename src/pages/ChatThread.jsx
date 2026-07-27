@@ -32,7 +32,7 @@ export default function ChatThread() {
     <div className="max-w-2xl mx-auto flex flex-col" style={{ minHeight: 'calc(100vh - 8rem)' }}>
       {/* header */}
       <div className="card p-4 flex items-center gap-3 mb-4">
-        <Link to="/app/chats" className="text-[var(--color-ink-soft)]">←</Link>
+        <Link to="/chats" className="text-[var(--color-ink-soft)]">←</Link>
         <CharmAvatar charm={charm} size={44} />
         <div className="flex-1">
           <div className="font-serif text-lg leading-none">{charm.name}</div>

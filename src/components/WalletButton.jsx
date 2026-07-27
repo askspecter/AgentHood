@@ -1,17 +1,17 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { usd } from '../lib/format'
 
-export default function WalletButton() {
+export default function LoginButton() {
   const { wallet, connect, disconnect, cash } = useStore()
   const [open, setOpen] = useState(false)
+  const nav = useNavigate()
 
   if (!wallet) {
     return (
       <div className="relative">
-        <button className="btn btn-primary text-sm" onClick={() => setOpen((o) => !o)}>
-          Connect
-        </button>
+        <button className="btn btn-white text-sm !py-2 !px-5" onClick={() => setOpen((o) => !o)}>Log in</button>
         {open && (
           <div className="absolute right-0 mt-2 w-60 card p-2 z-50">
             <p className="px-3 pt-2 pb-1 text-xs font-semibold text-[var(--color-ink-soft)]">Sign in to Charms</p>
@@ -39,9 +39,9 @@ export default function WalletButton() {
 
   return (
     <div className="relative">
-      <button className="btn btn-ghost text-sm !py-1.5" onClick={() => setOpen((o) => !o)}>
+      <button className="flex items-center gap-1.5 bg-white rounded-full pl-2.5 pr-3 py-1.5 shadow-sm text-sm" onClick={() => setOpen((o) => !o)}>
         <span className="w-2 h-2 rounded-full bg-[var(--color-up)]" />
-        <span className="font-mono">{usd(cash)}</span>
+        <span className="font-mono font-semibold">{usd(cash)}</span>
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-64 card p-3 z-50">
@@ -51,9 +51,8 @@ export default function WalletButton() {
             <span className="text-[var(--color-ink-soft)]">Balance</span>
             <span className="font-mono font-semibold">{usd(cash)} USDC</span>
           </div>
-          <button className="btn btn-ghost w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>
-            Disconnect
-          </button>
+          <button className="btn btn-ghost w-full text-sm mb-2" onClick={() => { setOpen(false); nav('/you') }}>View profile</button>
+          <button className="btn btn-ghost w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Log out</button>
         </div>
       )}
     </div>

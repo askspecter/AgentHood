@@ -20,7 +20,7 @@ export default function Chats() {
       {threads.length > 0 && (
         <div className="card divide-y divide-[rgba(20,32,59,.07)] mb-8 overflow-hidden">
           {threads.map(({ charm, last }) => (
-            <Link key={charm.id} to={`/app/chat/${charm.id}`} className="flex items-center gap-3 p-4 hover:bg-white/60">
+            <Link key={charm.id} to={`/chat/${charm.id}`} className="flex items-center gap-3 p-4 hover:bg-white/60">
               <CharmAvatar charm={charm} size={48} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
@@ -39,7 +39,7 @@ export default function Chats() {
       <h2 className="font-serif text-2xl mb-3">{threads.length ? 'Say hi to someone new' : 'Start a conversation'}</h2>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {suggestions.map((c) => (
-          <Link key={c.id} to={`/app/chat/${c.id}`} className="card p-4 flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
+          <Link key={c.id} to={`/chat/${c.id}`} className="card p-4 flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
             <CharmAvatar charm={c} size={44} />
             <div className="min-w-0">
               <div className="font-semibold text-sm">{c.name}</div>

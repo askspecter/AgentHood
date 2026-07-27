@@ -10,7 +10,7 @@ export default function CharmDetail() {
   const { getCharm, prices, watch, toggleWatch } = useStore()
   const charm = getCharm(id)
 
-  if (!charm) return <div className="text-center py-20 text-[var(--color-ink-soft)]">Charm not found. <Link className="underline" to="/app">Back to explore</Link></div>
+  if (!charm) return <div className="text-center py-20 text-[var(--color-ink-soft)]">Charm not found. <Link className="underline" to="/">Back to explore</Link></div>
 
   const price = prices[charm.id] ?? charm.price
   const up = charm.change24 >= 0
@@ -18,7 +18,7 @@ export default function CharmDetail() {
 
   return (
     <div>
-      <Link to="/app" className="text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">← Explore</Link>
+      <Link to="/" className="text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">← Explore</Link>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 mt-4">
         <div className="space-y-6">
@@ -39,7 +39,7 @@ export default function CharmDetail() {
               </div>
             </div>
             <div className="flex items-center gap-2 mt-4">
-              <Link to={`/app/chat/${charm.id}`} className="btn btn-primary text-sm flex-1 sm:flex-none">💬 Chat with {charm.name}</Link>
+              <Link to={`/chat/${charm.id}`} className="btn btn-primary text-sm flex-1 sm:flex-none">💬 Chat with {charm.name}</Link>
               <button onClick={() => toggleWatch(charm.id)} className="btn btn-ghost text-sm">
                 {watched ? '★ Watching' : '☆ Watch'}
               </button>
