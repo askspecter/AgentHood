@@ -1,0 +1,28 @@
+export function usd(n, opts = {}) {
+  const { max = 2 } = opts
+  if (n == null || isNaN(n)) return '$0.00'
+  if (Math.abs(n) >= 1_000_000_000) return '$' + (n / 1e9).toFixed(2) + 'B'
+  if (Math.abs(n) >= 1_000_000) return '$' + (n / 1e6).toFixed(2) + 'M'
+  if (Math.abs(n) >= 1_000) return '$' + (n / 1e3).toFixed(1) + 'K'
+  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: n < 1 ? 4 : max })
+}
+
+export function num(n) {
+  if (n == null) return '0'
+  if (Math.abs(n) >= 1_000_000) return (n / 1e6).toFixed(1) + 'M'
+  if (Math.abs(n) >= 1_000) return (n / 1e3).toFixed(1) + 'K'
+  return String(Math.round(n))
+}
+
+export function pct(n) {
+  const s = n >= 0 ? '+' : ''
+  return s + n.toFixed(1) + '%'
+}
+
+export function timeAgo(ts) {
+  const d = Math.floor((Date.now() - ts) / 1000)
+  if (d < 60) return d + 's'
+  if (d < 3600) return Math.floor(d / 60) + 'm'
+  if (d < 86400) return Math.floor(d / 3600) + 'h'
+  return Math.floor(d / 86400) + 'd'
+}
