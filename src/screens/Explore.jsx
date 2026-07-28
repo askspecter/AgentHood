@@ -4,8 +4,8 @@ import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import Ticker from '../components/Ticker'
 import CharmCarousel from '../components/CharmCarousel'
-import { usd, pct } from '../lib/format'
-import { Verified, ArrowStat } from '../components/icons'
+import { usd, num, pct } from '../lib/format'
+import { Verified, ArrowStat, Mentions } from '../components/icons'
 
 /**
  * Discover — the charms.ai front page, powered by real pons coins.
@@ -107,9 +107,11 @@ function GridCard({ charm, price }) {
 
       <div className="flex items-center justify-center gap-2.5 mt-1.5 font-mono num text-xs">
         <span className="text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</span>
-        <span className={`inline-flex items-center gap-1 ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>
-          <ArrowStat up={up} size={14} />{pct(charm.change24 ?? 0)}
-        </span>
+        {charm.holders != null && (
+          <span className="inline-flex items-center gap-1 text-[var(--color-ink-faint)]">
+            <Mentions size={12} />{num(charm.holders)}
+          </span>
+        )}
       </div>
 
       <button onClick={(e) => { e.stopPropagation(); open() }}

@@ -62,7 +62,7 @@ export function tokenToAgent(t, ethUsd = null) {
     mcap: mcapUsd ?? 0,
     marketCapWeth: t.marketCapWeth ?? null,
     change24: 0,
-    holders: null,
+    holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
     creator: t.deployer ? short(t.deployer) : 'pons',
     followers: (hash(t.token) % 90000) + 200, // stable flavour number
