@@ -13,7 +13,7 @@ export default function Chats() {
   const suggestions = charms.filter((c) => c.online && !chats[c.id]).slice(0, 6)
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       <div className="eyebrow mb-1">Conversations</div>
       <h1 className="font-serif text-4xl mb-1">Chats</h1>
       <p className="text-[var(--color-ink-soft)] mb-6">They remember you. Pick up where you left off.</p>

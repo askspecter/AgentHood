@@ -18,7 +18,7 @@ export default function CharmDetail() {
   const watched = watch.includes(charm.id)
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto">
       <Link to="/" className="text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">Back</Link>
 
       <div className="grid lg:grid-cols-[1fr_340px] gap-6 mt-4">

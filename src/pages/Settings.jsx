@@ -9,7 +9,7 @@ export default function Settings() {
   const [appearance, setAppearance] = useState('dark')
 
   return (
-    <div className="pb-4">
+    <div className="pb-4 max-w-2xl mx-auto">
       {/* header */}
       <div className="relative flex items-center justify-center h-14 mb-6">
         <button onClick={() => nav(-1)} className="absolute left-0 w-11 h-11 grid place-items-center rounded-full bg-white/5 border border-white/15">

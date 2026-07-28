@@ -169,3 +169,30 @@ input::placeholder, textarea::placeholder { color: rgba(139, 146, 167, 0.7); }
 
 @keyframes drift { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
 .drift { animation: drift 8s ease-in-out infinite; }
+
+@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+.marquee { display: flex; gap: 3rem; width: max-content; animation: marquee 44s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+.fade-up { animation: fadeUp .55s cubic-bezier(.2,.7,.2,1) both; }
+.fade-up-1 { animation-delay: .06s } .fade-up-2 { animation-delay: .14s } .fade-up-3 { animation-delay: .22s }
+
+/* huge outlined cinematic title */
+.ghost-title {
+  font-family: var(--font-serif);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255,255,255,.10);
+  letter-spacing: .02em;
+  user-select: none;
+  line-height: .85;
+  white-space: nowrap;
+}
+
+/* slow rotating halo ring */
+@keyframes spin { to { transform: rotate(360deg) } }
+.halo { animation: spin 30s linear infinite; }
+
+/* index table rows */
+.trow { transition: background .2s ease, box-shadow .25s ease; }
+.trow:hover { background: rgba(255,255,255,.045); box-shadow: inset 3px 0 0 var(--color-accent); }

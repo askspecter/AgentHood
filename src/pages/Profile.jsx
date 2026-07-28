@@ -45,7 +45,7 @@ export default function Profile() {
   const TABS = ['coins', 'creations', 'activity', 'gallery']
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       {/* page header */}
       <div className="flex items-start justify-between pt-2 mb-8">
         <div className="flex items-center gap-3">
