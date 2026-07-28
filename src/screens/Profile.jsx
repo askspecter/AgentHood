@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Gear, XGlyph, Coin, Verified } from '../components/icons'
+import WalletActions from '../components/WalletActions'
 
 /**
  * Portfolio — real, on-chain.
@@ -131,10 +132,10 @@ export default function Profile() {
           <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
-        <div className="flex gap-2 mt-5">
-          <Link to="/launch" className="btn btn-holo static flex-1 justify-center">Launch a coin</Link>
-          <Link to="/trade" className="btn btn-secondary flex-1 justify-center">Trade on-chain</Link>
+        <div className="mt-5">
+          <WalletActions />
         </div>
+        <Link to="/launch" className="btn btn-holo static w-full justify-center mt-2">Launch a coin</Link>
       </div>
 
       {/* holdings — real coins in the wallet */}
