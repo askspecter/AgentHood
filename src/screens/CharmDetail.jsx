@@ -36,7 +36,7 @@ export default function CharmDetail() {
       {/* header */}
       <div className="card p-6">
         <div className="flex items-start gap-4">
-          <CharmAvatar charm={charm} size={68} ring square={!!charm.logo} />
+          <CharmAvatar charm={charm} size={68} ring />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-3xl">{charm.name}</h1>

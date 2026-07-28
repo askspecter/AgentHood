@@ -93,7 +93,7 @@ function GridCard({ charm, price }) {
   return (
     <div onClick={open} className="card card-hover p-4 flex flex-col items-center text-center cursor-pointer">
       <div className="relative mb-3 mt-1 grid place-items-center">
-        <div className="relative"><CharmAvatar charm={charm} size={76} ring square={!!charm.logo} /></div>
+        <div className="relative"><CharmAvatar charm={charm} size={76} ring /></div>
         {charm.graduated === true && (
           <span className="absolute -top-1 -right-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">Grad</span>
         )}
