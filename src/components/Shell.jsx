@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Info, Crown, Search } from './icons'
 import LoginButton from './WalletButton'
+import IntroModal from './IntroModal'
 
 const TABS = [
   { to: '/', label: 'Home', end: true, icon: HomeIcon },
@@ -13,6 +15,7 @@ export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
   const { wallet } = useStore()
+  const [intro, setIntro] = useState(false)
   const ownHeader = loc.pathname.startsWith('/you') || loc.pathname.startsWith('/settings')
 
   return (
@@ -35,7 +38,7 @@ export default function Shell() {
             <div className="mx-auto max-w-2xl px-4 h-16 flex items-center justify-between">
               <Link to="/" className="font-serif text-3xl text-[var(--color-ink)]">Charms</Link>
               <div className="flex items-center gap-2.5">
-                <button className="grid place-items-center" title="About"><Info size={24} /></button>
+                <button onClick={() => setIntro(true)} className="grid place-items-center" title="About"><Info size={24} /></button>
                 <button className="w-9 h-9 grid place-items-center rounded-full bg-white shadow-sm" title="Premium"><Crown size={18} /></button>
                 <LoginButton />
               </div>
@@ -77,6 +80,8 @@ export default function Shell() {
           +
         </button>
       </nav>
+
+      <IntroModal open={intro} onClose={() => setIntro(false)} />
     </div>
   )
 }
