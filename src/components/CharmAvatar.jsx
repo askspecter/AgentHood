@@ -21,6 +21,21 @@ export default function CharmAvatar({ charm, size = 48, ring = false, square = f
   const s = size
   const [c1, c2] = toneFor(charm)
   const letter = (charm.name?.[0] ?? 'E').toUpperCase()
+
+  // A real pons logo wins over the procedural sphere when the token has one.
+  if (charm.logo) {
+    return (
+      <div className="relative shrink-0" style={{ width: s, height: s }}>
+        <img src={charm.logo} alt=""
+          style={{ width: s, height: s, borderRadius: square ? Math.round(s * 0.28) : '50%', objectFit: 'cover', boxShadow: ring ? '0 0 0 1px rgba(255,255,255,.14)' : undefined }}
+          onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        {charm.online && (
+          <span className="absolute rounded-full" style={{ width: s * 0.16, height: s * 0.16, right: s * 0.04, bottom: s * 0.04, background: 'var(--color-up)', boxShadow: '0 0 0 2px #0a0912, 0 0 8px var(--color-up)' }} />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div
       className="relative shrink-0 grid place-items-center select-none"

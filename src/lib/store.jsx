@@ -1,20 +1,41 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { tokenToAgent, replyFor } from './agents'
 
 /**
- * The whole client store is now just the real X session.
+ * The store now blends two real sources with one local one:
+ *   • the X session (real, from /api/auth/me + /api/wallet),
+ *   • the pons launch feed as "agents" (real, from /api/launches),
+ *   • chat transcripts (local, per token, in localStorage).
  *
- * Identity lives in an httpOnly cookie set by /api/auth/x/callback, so on mount
- * we ask the server who is signed in rather than trusting anything the browser
- * could edit. A wallet is derived from the X account server-side; /api/wallet
- * returns its address when WALLET_DERIVATION_SECRET is configured.
+ * There is no demo economy any more — balances and holdings are on-chain
+ * (the Portfolio reads them). Chat is local flavour on top of real coins.
  */
 
+const NETWORK = 'robinhood'
+const CHAT_KEY = 'eska.chats.v1'
 const StoreCtx = createContext(null)
 
-export function StoreProvider({ children }) {
-  const [wallet, setWallet] = useState(null) // { id, handle, name, avatar, address, kind }
-  const [ready, setReady] = useState(false)
+function loadChats() {
+  try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {} } catch { return {} }
+}
 
+export function StoreProvider({ children }) {
+  const [wallet, setWallet] = useState(null)
+
+  const [agents, setAgents] = useState([])
+  const [ethUsd, setEthUsd] = useState(null)
+  const [explorer, setExplorer] = useState(null)
+  const [agentsLoading, setAgentsLoading] = useState(true)
+  const [agentsError, setAgentsError] = useState(null)
+
+  const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
+
+  // Persist chat transcripts only — everything else is real/server state.
+  useEffect(() => {
+    try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
+  }, [chats])
+
+  // Real X session.
   useEffect(() => {
     let cancelled = false
     fetch('/api/auth/me')
@@ -28,36 +49,64 @@ export function StoreProvider({ children }) {
           const w = await fetch('/api/wallet').then((r) => (r.ok ? r.json() : null))
           if (w?.address) address = w.address
         } catch {}
-        if (!cancelled) {
-          setWallet({
-            id: user.id,
-            handle: '@' + user.username,
-            name: user.name,
-            avatar: user.avatar || null,
-            address,
-            kind: 'x',
-          })
-        }
+        if (!cancelled) setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address, kind: 'x' })
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setReady(true) })
     return () => { cancelled = true }
   }, [])
 
-  function connect() {
-    // Hand off to the real OAuth 2.0 (PKCE) flow.
-    window.location.href = '/api/auth/x/login'
-  }
-  async function disconnect() {
-    try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
-    setWallet(null)
-  }
+  // Real pons feed → agents.
+  const loadAgents = useCallback(() => {
+    setAgentsLoading(true)
+    setAgentsError(null)
+    fetch(`/api/launches?network=${NETWORK}&limit=24`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) { setAgentsError(json.hint ? `${json.error} ${json.hint}` : json.error); return }
+        const rate = json.ethUsd ?? null
+        setEthUsd(rate)
+        setExplorer(json.explorer ?? null)
+        setAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
+      })
+      .catch(() => setAgentsError('Could not reach the launch feed.'))
+      .finally(() => setAgentsLoading(false))
+  }, [])
+  useEffect(() => { loadAgents() }, [loadAgents])
 
-  return (
-    <StoreCtx.Provider value={{ wallet, ready, connect, disconnect }}>
-      {children}
-    </StoreCtx.Provider>
-  )
+  const agentsById = useMemo(() => {
+    const m = {}
+    for (const a of agents) m[a.id] = a
+    return m
+  }, [agents])
+  const prices = useMemo(() => {
+    const m = {}
+    for (const a of agents) m[a.id] = a.priceUsd ?? a.price
+    return m
+  }, [agents])
+
+  const getAgent = useCallback((id) => agentsById[id] || null, [agentsById])
+
+  function connect() { window.location.href = '/api/auth/x/login' }
+  async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null) }
+
+  const sendMessage = useCallback((id, text) => {
+    const agent = agentsById[id]
+    const now = Date.now()
+    setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'user', text, ts: now }] }))
+    if (!agent) return
+    const reply = replyFor(agent, text)
+    setTimeout(() => {
+      setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
+    }, 500 + Math.random() * 600)
+  }, [agentsById])
+
+  const value = {
+    wallet, connect, disconnect,
+    agents, agentsLoading, agentsError, loadAgents, ethUsd, explorer,
+    prices, getAgent,
+    chats, sendMessage,
+  }
+  return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>
 }
 
 export function useStore() {
