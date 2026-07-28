@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import Sparkline from '../components/Sparkline'
-import { usd, num, pct, timeAgo } from '../lib/format'
-import { Gear, XGlyph } from '../components/icons'
+import { usd, bal, num, pct, timeAgo } from '../lib/format'
+import { Gear, XGlyph, Coin } from '../components/icons'
 
 export default function Profile() {
   const nav = useNavigate()
@@ -15,7 +15,7 @@ export default function Profile() {
   if (!wallet) {
     return (
       <div className="max-w-md mx-auto text-center py-24">
-        <div className="mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}><XGlyph size={20} color="#fff" /></div>
+        <div className="orb-spin mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)' }}><XGlyph size={20} color="#0b0a12" /></div>
         <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
         <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see your balance, coins and activity.</p>
         <button onClick={connect} className="btn btn-primary mx-auto"><XGlyph size={13} color="#fff" /> Sign in with X</button>
@@ -40,8 +40,8 @@ export default function Profile() {
       {/* header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <span className="w-12 h-12 rounded-full grid place-items-center font-serif text-xl text-white"
-            style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)', color: '#fff' }}>Y</span>
+          <span className="orb-spin w-12 h-12 rounded-full grid place-items-center font-bold text-xl"
+            style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
           <div>
             <div className="font-semibold text-lg">{wallet.handle}</div>
             <span className="inline-flex items-center gap-1.5 chip"><XGlyph size={10} color="var(--color-ink-soft)" /> Verified</span>
@@ -55,11 +55,11 @@ export default function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
             <div className="eyebrow mb-1">Net worth</div>
-            <div className="font-mono num text-3xl font-semibold">{usd(total)}</div>
+            <div className="font-mono num text-3xl font-semibold">{bal(total)}</div>
             {flash && <div className="text-[var(--color-up)] text-xs font-medium mt-1 flash">+$1,000 added</div>}
           </div>
-          <Mini label="Cash" value={usd(cash)} />
-          <Mini label="In coins" value={usd(portfolioValue)} />
+          <Mini label="Cash" value={bal(cash)} />
+          <Mini label="In coins" value={bal(portfolioValue)} />
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={doAddCash} className="btn btn-primary">Add cash</button>
@@ -117,7 +117,7 @@ export default function Profile() {
             const color = a.type === 'buy' ? 'text-[var(--color-up)]' : a.type === 'sell' ? 'text-[var(--color-down)]' : ''
             return (
               <div key={i} className={`flex items-center gap-3 p-3.5 text-sm ${i ? 'border-t hairline' : ''}`}>
-                {charm ? <CharmAvatar charm={charm} size={30} /> : <span className="w-8 h-8 grid place-items-center rounded-full panel-soft text-[var(--color-ink)] font-mono">$</span>}
+                {charm ? <CharmAvatar charm={charm} size={30} /> : <span className="w-8 h-8 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)]"><Coin size={16} /></span>}
                 <div className="flex-1"><span className={`font-medium ${color}`}>{verb}</span> {charm ? charm.name : 'to balance'}{a.units != null && <span className="font-mono num text-[var(--color-ink-faint)]"> · {num(a.units)} {charm?.ticker}</span>}</div>
                 {a.usd != null && <span className="font-mono num">{usd(a.usd)}</span>}
                 <span className="text-xs text-[var(--color-ink-faint)] w-8 text-right">{timeAgo(a.ts)}</span>

@@ -6,7 +6,7 @@ import { Back, RowIcon, Chevron } from '../components/icons'
 export default function Settings() {
   const nav = useNavigate()
   const { disconnect } = useStore()
-  const [appearance, setAppearance] = useState('light')
+  const [appearance, setAppearance] = useState('dark')
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -57,10 +57,10 @@ function Section({ title, children }) {
 
 function Row({ icon, label, right, last }) {
   return (
-    <button className={`w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left ${last ? '' : 'border-b hairline'}`}>
+    <div className={`w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left transition ${last ? '' : 'border-b hairline'}`}>
       <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)]"><RowIcon name={icon} size={18} /></span>
       <span className="font-medium flex-1">{label}</span>
       {right ?? <Chevron />}
-    </button>
+    </div>
   )
 }
