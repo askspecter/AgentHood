@@ -62,6 +62,12 @@ export default function CharmDetail() {
       {/* trade — pons-style, right under the header */}
       <TradePanel token={addr} symbol={charm.ticker} name={charm.name} logo={charm.logo} />
 
+      {/* about */}
+      <div className="card p-6">
+        <div className="eyebrow mb-2">About</div>
+        <p className="text-[var(--color-ink)] leading-relaxed">{charm.lore}</p>
+      </div>
+
       {/* price + chart */}
       <div className="card p-6">
         <div className="flex items-end justify-between mb-5">
@@ -83,12 +89,6 @@ export default function CharmDetail() {
           <a href={`${explorer}/token/${addr}`} target="_blank" rel="noopener noreferrer"
             className="inline-block mt-4 text-xs text-[var(--color-accent)] hover:underline">View on explorer ↗</a>
         )}
-      </div>
-
-      {/* about */}
-      <div className="card p-6">
-        <div className="eyebrow mb-2">About</div>
-        <p className="text-[var(--color-ink)] leading-relaxed">{charm.lore}</p>
       </div>
     </div>
   )
