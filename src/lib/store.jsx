@@ -1,16 +1,15 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { tokenToAgent, replyFor } from './agents'
-import { CHARMS as DEMO } from '../data/charms'
 
 /**
- * The store blends real and local sources:
+ * The store blends real sources with one local one:
  *   • the X session (real, from /api/auth/me + /api/wallet),
- *   • the pons launch feed as agents (real, from /api/launches) WHEN reachable,
- *   • a built-in cast of demo agents so Discover is never empty,
- *   • chat transcripts (local, per token/id, in localStorage).
+ *   • the pons launch feed as agents (real, from /api/launches),
+ *   • chat transcripts (local, per token, in localStorage).
  *
- * If the pons feed is empty or unreachable, the demo cast fills the feed — the
- * front page always looks alive, and no RPC error is shown to the visitor.
+ * The feed is real pons tokens only — no demo cast. While it loads, the UI
+ * shows its own skeleton; if it is genuinely empty, the empty state invites a
+ * launch.
  */
 
 const NETWORK = 'robinhood'
@@ -24,17 +23,12 @@ function loadChats() {
 export function StoreProvider({ children }) {
   const [wallet, setWallet] = useState(null)
 
-  const [realAgents, setRealAgents] = useState([])
+  const [agents, setAgents] = useState([])
   const [ethUsd, setEthUsd] = useState(null)
   const [explorer, setExplorer] = useState(null)
   const [agentsLoading, setAgentsLoading] = useState(true)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
-
-  // Live-ish demo prices so the fallback cast feels alive, like the old feed.
-  const [demoPrices, setDemoPrices] = useState(() => {
-    const m = {}; DEMO.forEach((c) => (m[c.id] = c.price)); return m
-  })
 
   useEffect(() => {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
@@ -60,8 +54,7 @@ export function StoreProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  // Real pons feed → agents. On any failure or empty result, the demo cast is
-  // used instead (see `agents` below). We never surface an RPC error.
+  // Real pons feed → agents. No demo fallback and no surfaced RPC error.
   const loadAgents = useCallback(() => {
     setAgentsLoading(true)
     fetch(`/api/launches?network=${NETWORK}&limit=24`)
@@ -71,38 +64,16 @@ export function StoreProvider({ children }) {
         const rate = json.ethUsd ?? null
         setEthUsd(rate)
         setExplorer(json.explorer ?? null)
-        setRealAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
+        setAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
       })
       .catch(() => {})
       .finally(() => setAgentsLoading(false))
   }, [])
   useEffect(() => { loadAgents() }, [loadAgents])
 
-  // Drift the demo prices only while the demo cast is what's on screen.
-  useEffect(() => {
-    if (realAgents.length) return
-    const t = setInterval(() => {
-      setDemoPrices((prev) => {
-        const next = { ...prev }
-        DEMO.forEach((c) => {
-          const base = next[c.id] ?? c.price
-          next[c.id] = Math.max(0.0001, base + (Math.random() - 0.48) * base * 0.02)
-        })
-        return next
-      })
-    }, 2000)
-    return () => clearInterval(t)
-  }, [realAgents.length])
-
-  // The feed is real pons agents when we have them, else the demo cast.
-  const agents = useMemo(() => (realAgents.length ? realAgents : DEMO), [realAgents])
   const prices = useMemo(() => {
-    if (realAgents.length) {
-      const m = {}; realAgents.forEach((a) => (m[a.id] = a.priceUsd ?? a.price)); return m
-    }
-    return demoPrices
-  }, [realAgents, demoPrices])
-
+    const m = {}; agents.forEach((a) => (m[a.id] = a.priceUsd ?? a.price)); return m
+  }, [agents])
   const agentsById = useMemo(() => {
     const m = {}; for (const a of agents) m[a.id] = a; return m
   }, [agents])

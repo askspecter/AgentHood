@@ -35,7 +35,11 @@ export async function GET(request) {
     const [feed, rate] = await Promise.all([
       listLaunches(provider, chain, {
         limit,
-        maxBlocks: Number(process.env.LAUNCH_SCAN_BLOCKS || 60_000),
+        // A dedicated RPC (e.g. Alchemy) serves wide eth_getLogs ranges the
+        // public endpoint would time out on, so scan a generous window in large
+        // chunks to actually reach real launches. Tunable via env.
+        maxBlocks: Number(process.env.LAUNCH_SCAN_BLOCKS || 500_000),
+        chunkSize: Number(process.env.LAUNCH_CHUNK || 10_000),
       }),
       getEthUsd(),
     ]);
