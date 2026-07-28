@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../lib/store'
 import { XGlyph, Back } from '../components/icons'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 /**
  * Real on-chain trade.
@@ -20,11 +20,12 @@ const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 export default function Trade() {
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, ''), id: wallet.id } : null
+  const [params] = useSearchParams()
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
 
-  const [token, setToken] = useState('')
+  const [token, setToken] = useState(params.get('token') || '')
   const [side, setSide] = useState('buy')
   const [amount, setAmount] = useState('')
   const [slippage, setSlippage] = useState(5)
