@@ -14,6 +14,15 @@ import { Gear, XGlyph, Coin, Verified } from '../components/icons'
 
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+
+/** Never show a raw RPC/SSL stack trace — translate it to something a human reads. */
+function friendly(msg) {
+  const s = String(msg || '')
+  if (/SSL|EPROTO|handshake|allowlist|403|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(s)) {
+    return "Couldn't reach Robinhood Chain right now — the RPC is unavailable. Tap Refresh in a moment."
+  }
+  return s
+}
 const fmtUsd = (n) =>
   n == null ? '—' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })
 const fmtEth = (n) =>
@@ -52,8 +61,10 @@ export default function Profile() {
         setFolio(json.data)
         setEthUsd(json.ethUsd ?? null)
         if (json.data.address) setAddress(json.data.address)
+      } else if (json.error) {
+        setError(friendly(json.error))
       } else if (json.lines?.length) {
-        setError(json.lines.map((l) => l.text).join(' '))
+        setError(friendly(json.lines.map((l) => l.text).join(' ')))
       }
     } catch {
       setError('Could not read your wallet.')
@@ -91,23 +102,21 @@ export default function Profile() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* header — real X identity */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          {wallet.avatar ? (
-            <img src={wallet.avatar} alt="" className="w-12 h-12 rounded-full object-cover border hairline" />
-          ) : (
-            <span className="orb-spin w-12 h-12 rounded-full grid place-items-center font-bold text-xl"
-              style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
-          )}
-          <div>
-            <div className="font-semibold text-lg leading-tight">{wallet.name || wallet.handle}</div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-[var(--color-ink-soft)]">{wallet.handle}</span>
-              <span className="inline-flex items-center gap-1 chip"><Verified size={11} /> Verified</span>
-            </div>
+      <div className="flex items-center gap-3 mb-6">
+        {wallet.avatar ? (
+          <img src={wallet.avatar} alt="" className="w-12 h-12 rounded-full object-cover border hairline shrink-0" />
+        ) : (
+          <span className="orb-spin w-12 h-12 rounded-full grid place-items-center font-bold text-xl shrink-0"
+            style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="font-semibold text-lg leading-tight truncate">{wallet.name || wallet.handle}</div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-sm text-[var(--color-ink-soft)] truncate">{wallet.handle}</span>
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-soft)] shrink-0"><Verified size={13} /> Verified</span>
           </div>
         </div>
-        <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Gear size={18} /></button>
+        <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)] shrink-0"><Gear size={18} /></button>
       </div>
 
       {/* real wallet balance card */}

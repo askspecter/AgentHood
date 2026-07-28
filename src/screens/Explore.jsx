@@ -11,6 +11,10 @@ import { useNavigate } from 'react-router-dom'
 
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+const friendly = (m) =>
+  /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
+    ? "Couldn't reach Robinhood Chain right now — the launch feed is unavailable. Tap ↻ to retry."
+    : String(m || '')
 
 /** Compact USD like ponsfamily: $47.36M, $865.9k, $1,208. */
 function compactUsd(n) {
@@ -88,7 +92,7 @@ export default function Explore() {
         <button onClick={load} disabled={loading} className="shrink-0 ml-auto">{loading ? '…' : '↻'}</button>
       </div>
 
-      {error && <div className="chip chip-down w-full mb-4">{error}</div>}
+      {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
       {loading && !feed ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
