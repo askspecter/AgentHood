@@ -131,14 +131,7 @@ export default function Profile() {
           <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
-        {address && (
-          <button onClick={copyAddr} title="Copy address"
-            className="mt-4 w-full text-left font-mono text-xs text-[var(--color-ink-soft)] p-3 rounded-lg border hairline hover:bg-[var(--color-paper-2)] break-all">
-            {address} <span className="text-[var(--color-accent)]">{copied ? 'copied ✓' : 'copy'}</span>
-          </button>
-        )}
-
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-5">
           <Link to="/launch" className="btn btn-holo static flex-1 justify-center">Launch a coin</Link>
           <Link to="/trade" className="btn btn-secondary flex-1 justify-center">Trade on-chain</Link>
         </div>
@@ -149,8 +142,6 @@ export default function Profile() {
         <div className="eyebrow">Holdings</div>
         <button onClick={load} disabled={loading} className="text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">{loading ? 'Reading…' : '↻ Refresh'}</button>
       </div>
-
-      {error && <div className="chip chip-down w-full mb-3">{error}</div>}
 
       {holdings.length === 0 ? (
         <Empty

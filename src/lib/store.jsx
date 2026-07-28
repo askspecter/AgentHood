@@ -1,14 +1,16 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { tokenToAgent, replyFor } from './agents'
+import { CHARMS as DEMO } from '../data/charms'
 
 /**
- * The store now blends two real sources with one local one:
+ * The store blends real and local sources:
  *   • the X session (real, from /api/auth/me + /api/wallet),
- *   • the pons launch feed as "agents" (real, from /api/launches),
- *   • chat transcripts (local, per token, in localStorage).
+ *   • the pons launch feed as agents (real, from /api/launches) WHEN reachable,
+ *   • a built-in cast of demo agents so Discover is never empty,
+ *   • chat transcripts (local, per token/id, in localStorage).
  *
- * There is no demo economy any more — balances and holdings are on-chain
- * (the Portfolio reads them). Chat is local flavour on top of real coins.
+ * If the pons feed is empty or unreachable, the demo cast fills the feed — the
+ * front page always looks alive, and no RPC error is shown to the visitor.
  */
 
 const NETWORK = 'robinhood'
@@ -22,15 +24,18 @@ function loadChats() {
 export function StoreProvider({ children }) {
   const [wallet, setWallet] = useState(null)
 
-  const [agents, setAgents] = useState([])
+  const [realAgents, setRealAgents] = useState([])
   const [ethUsd, setEthUsd] = useState(null)
   const [explorer, setExplorer] = useState(null)
   const [agentsLoading, setAgentsLoading] = useState(true)
-  const [agentsError, setAgentsError] = useState(null)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
 
-  // Persist chat transcripts only — everything else is real/server state.
+  // Live-ish demo prices so the fallback cast feels alive, like the old feed.
+  const [demoPrices, setDemoPrices] = useState(() => {
+    const m = {}; DEMO.forEach((c) => (m[c.id] = c.price)); return m
+  })
+
   useEffect(() => {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
   }, [chats])
@@ -55,35 +60,52 @@ export function StoreProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  // Real pons feed → agents.
+  // Real pons feed → agents. On any failure or empty result, the demo cast is
+  // used instead (see `agents` below). We never surface an RPC error.
   const loadAgents = useCallback(() => {
     setAgentsLoading(true)
-    setAgentsError(null)
     fetch(`/api/launches?network=${NETWORK}&limit=24`)
       .then((r) => r.json())
       .then((json) => {
-        if (json.error) { setAgentsError(json.hint ? `${json.error} ${json.hint}` : json.error); return }
+        if (json.error) return
         const rate = json.ethUsd ?? null
         setEthUsd(rate)
         setExplorer(json.explorer ?? null)
-        setAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
+        setRealAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
       })
-      .catch(() => setAgentsError('Could not reach the launch feed.'))
+      .catch(() => {})
       .finally(() => setAgentsLoading(false))
   }, [])
   useEffect(() => { loadAgents() }, [loadAgents])
 
-  const agentsById = useMemo(() => {
-    const m = {}
-    for (const a of agents) m[a.id] = a
-    return m
-  }, [agents])
-  const prices = useMemo(() => {
-    const m = {}
-    for (const a of agents) m[a.id] = a.priceUsd ?? a.price
-    return m
-  }, [agents])
+  // Drift the demo prices only while the demo cast is what's on screen.
+  useEffect(() => {
+    if (realAgents.length) return
+    const t = setInterval(() => {
+      setDemoPrices((prev) => {
+        const next = { ...prev }
+        DEMO.forEach((c) => {
+          const base = next[c.id] ?? c.price
+          next[c.id] = Math.max(0.0001, base + (Math.random() - 0.48) * base * 0.02)
+        })
+        return next
+      })
+    }, 2000)
+    return () => clearInterval(t)
+  }, [realAgents.length])
 
+  // The feed is real pons agents when we have them, else the demo cast.
+  const agents = useMemo(() => (realAgents.length ? realAgents : DEMO), [realAgents])
+  const prices = useMemo(() => {
+    if (realAgents.length) {
+      const m = {}; realAgents.forEach((a) => (m[a.id] = a.priceUsd ?? a.price)); return m
+    }
+    return demoPrices
+  }, [realAgents, demoPrices])
+
+  const agentsById = useMemo(() => {
+    const m = {}; for (const a of agents) m[a.id] = a; return m
+  }, [agents])
   const getAgent = useCallback((id) => agentsById[id] || null, [agentsById])
 
   function connect() { window.location.href = '/api/auth/x/login' }
@@ -102,7 +124,7 @@ export function StoreProvider({ children }) {
 
   const value = {
     wallet, connect, disconnect,
-    agents, agentsLoading, agentsError, loadAgents, ethUsd, explorer,
+    agents, agentsLoading, loadAgents, ethUsd, explorer,
     prices, getAgent,
     chats, sendMessage,
   }
