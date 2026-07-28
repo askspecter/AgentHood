@@ -56,12 +56,48 @@ export function StoreProvider({ children }) {
     return () => clearInterval(t)
   }, [charms])
 
+  // Real X (Twitter) sign-in. The identity lives in an httpOnly session cookie
+  // set by /api/auth/x/callback, so on mount we ask the server who is signed in
+  // rather than trusting anything the browser could edit. A wallet is derived
+  // from the X account server-side; /api/wallet returns its address when the
+  // deployment has WALLET_DERIVATION_SECRET configured.
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then(async (data) => {
+        if (cancelled) return
+        const user = data?.user
+        if (!user) { setWallet(null); return }
+        let address = ''
+        try {
+          const w = await fetch('/api/wallet').then((r) => (r.ok ? r.json() : null))
+          if (w?.address) address = w.address
+        } catch {}
+        if (!cancelled) {
+          setWallet({
+            id: user.id,
+            handle: '@' + user.username,
+            name: user.name,
+            avatar: user.avatar || null,
+            address,
+            kind: 'x',
+          })
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   function connect() {
-    // demo sign-in with X only — no real OAuth happens
-    const address = '0x' + Math.random().toString(16).slice(2, 10) + '…' + Math.random().toString(16).slice(2, 6)
-    setWallet({ address, handle: '@you', kind: 'x' })
+    // Hand off to the real OAuth 2.0 (PKCE) flow. X redirects back to the app,
+    // the callback sets the session cookie, and the effect above picks it up.
+    window.location.href = '/api/auth/x/login'
   }
-  function disconnect() { setWallet(null) }
+  async function disconnect() {
+    try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
+    setWallet(null)
+  }
 
   function addCash(amount = 1000) {
     setCash((c) => +(c + amount).toFixed(2))
