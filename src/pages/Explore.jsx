@@ -5,6 +5,7 @@ import CharmAvatar from '../components/CharmAvatar'
 import Sparkline from '../components/Sparkline'
 import Hero from '../components/Hero'
 import Ticker from '../components/Ticker'
+import CharmCarousel from '../components/CharmCarousel'
 import { usd, num, pct } from '../lib/format'
 import { useReveal } from '../lib/hooks'
 import { Verified, XLogo } from '../components/icons'
@@ -27,7 +28,7 @@ export default function Explore() {
     holders: charms.reduce((s, c) => s + c.holders, 0),
   }), [charms])
 
-  const spotlight = useMemo(() => [...charms].sort((a, b) => b.change24 - a.change24).slice(0, 3), [charms])
+  const spotlight = useMemo(() => [...charms].sort((a, b) => b.change24 - a.change24).slice(0, 6), [charms])
 
   const list = useMemo(() => {
     let l = charms.filter(
@@ -42,15 +43,13 @@ export default function Explore() {
       <Hero charms={charms} stats={stats} prices={prices} />
       <Ticker charms={charms} prices={prices} />
 
-      {/* spotlight trio */}
+      {/* spotlight — swipeable rail */}
       <Section>
         <div className="flex items-baseline justify-between mb-5">
           <h2 className="display text-3xl">Moving now</h2>
-          <span className="eyebrow">Top 3 · 24h</span>
+          <span className="eyebrow hidden sm:block">Swipe · 24h</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--color-line)] panel overflow-hidden">
-          {spotlight.map((c, i) => <SpotlightCard key={c.id} charm={c} price={prices[c.id]} rank={i} />)}
-        </div>
+        <CharmCarousel charms={spotlight} prices={prices} />
       </Section>
 
       {/* index */}
@@ -75,33 +74,6 @@ export default function Explore() {
 function Section({ children, id }) {
   const ref = useReveal()
   return <section id={id} ref={ref} className="reveal mb-12 scroll-mt-24">{children}</section>
-}
-
-function SpotlightCard({ charm, price, rank }) {
-  const nav = useNavigate()
-  const up = charm.change24 >= 0
-  return (
-    <button onClick={() => nav(`/c/${charm.id}`)} className="text-left p-5 hover:bg-[var(--color-paper-2)] transition">
-      <div className="flex items-center justify-between mb-4">
-        <span className="font-mono num text-2xl text-[var(--color-ink-faint)]">0{rank + 1}</span>
-        <span className={`chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <CharmAvatar charm={charm} size={44} />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5"><span className="font-medium truncate">{charm.name}</span><Verified size={13} /></div>
-          <div className="text-xs text-[var(--color-ink-faint)]">by {charm.creator}</div>
-        </div>
-      </div>
-      <div className="flex items-end justify-between mt-4">
-        <div>
-          <div className="font-mono num text-lg">{usd(price ?? charm.price)}</div>
-          <div className="eyebrow mt-1">{usd(charm.mcap)} mcap</div>
-        </div>
-        <Sparkline data={charm.history} up={up} width={84} height={32} />
-      </div>
-    </button>
-  )
 }
 
 function IndexTable({ list, prices }) {
