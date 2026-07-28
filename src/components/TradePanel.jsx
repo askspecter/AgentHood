@@ -26,7 +26,7 @@ function EthMark({ size = 22 }) {
   )
 }
 
-export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false }) {
+export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false, bare = false }) {
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, '') } : null
 
@@ -126,7 +126,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
     : (tokBalance ? `${Number(tokBalance.formatted).toLocaleString('en-US', { maximumFractionDigits: 4 })} available` : `${sym} — available`)
 
   return (
-    <div className="card p-4">
+    <div className={bare ? '' : 'card p-4'}>
       {editableToken && (
         <label className="block mb-3">
           <span className="text-xs text-[var(--color-ink-soft)]">Token address</span>
@@ -135,12 +135,12 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
         </label>
       )}
       {/* Sell box */}
-      <div className="rounded-2xl p-4 bg-[var(--color-paper-2)]">
-        <div className="text-sm text-[var(--color-ink-soft)] mb-1">Sell</div>
+      <div className="rounded-2xl p-3.5 bg-[var(--color-paper-2)]">
+        <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Sell</div>
         <input
           value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
           placeholder="0" inputMode="decimal"
-          className="w-full bg-transparent outline-none text-4xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
+          className="w-full bg-transparent outline-none text-3xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
         <div className="text-sm text-[var(--color-ink-faint)] mt-1">{quote && sellIsEth === (side === 'buy') ? quote.amountInLabel?.replace(/^[\d.,]+\s*/, '') && `≈ ${quote.amountInLabel}` : '$0.00'}</div>
         <div className="flex items-center justify-between mt-3">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{sellChip}</span>
@@ -161,9 +161,9 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       </div>
 
       {/* Buy box */}
-      <div className="rounded-2xl p-4 bg-[var(--color-paper-2)] mt-2">
-        <div className="text-sm text-[var(--color-ink-soft)] mb-1">Buy</div>
-        <div className="text-4xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
+      <div className="rounded-2xl p-3.5 bg-[var(--color-paper-2)] mt-1.5">
+        <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Buy</div>
+        <div className="text-3xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
         <div className="text-sm text-[var(--color-ink-faint)] mt-1">$0.00</div>
         <div className="flex items-center justify-between mt-3">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{buyChip}</span>
@@ -171,14 +171,14 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       </div>
 
       {/* percentages */}
-      <div className="grid grid-cols-4 gap-2 mt-4">
+      <div className="grid grid-cols-4 gap-2 mt-3">
         {[0.25, 0.5, 0.75, 1].map((p) => (
-          <button key={p} onClick={() => setPctOf(p)} className="py-2.5 rounded-full border hairline text-sm hover:bg-[var(--color-paper-2)]">{p * 100}%</button>
+          <button key={p} onClick={() => setPctOf(p)} className="py-2 rounded-full border hairline text-sm hover:bg-[var(--color-paper-2)]">{p * 100}%</button>
         ))}
       </div>
 
       {/* slippage */}
-      <div className="flex items-center justify-between mt-4">
+      <div className="flex items-center justify-between mt-3">
         <span className="text-[var(--color-ink-soft)]">Slippage</span>
         <button onClick={() => setSlippage((s) => SLIPPAGE_OPTIONS[(SLIPPAGE_OPTIONS.indexOf(s) + 1) % SLIPPAGE_OPTIONS.length])}
           className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border hairline text-sm">
@@ -188,7 +188,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
 
       {/* action */}
       <button onClick={doTrade} disabled={busy || quoting || (user && (!quote || !tradeable))}
-        className="btn btn-holo static w-full !py-3.5 mt-4">
+        className="btn btn-holo static w-full !py-3 mt-3">
         {busy ? 'Working…' : !user ? <>Sign in with <XGlyph size={13} color="#0b0a12" /></> : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
       </button>
 
