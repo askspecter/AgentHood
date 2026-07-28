@@ -22,8 +22,8 @@ export default function Shell() {
       <header className="relative z-30">
         <div className="mx-auto max-w-2xl px-4 h-16 flex items-center justify-between">
           <Link to="/" className="font-serif text-3xl text-[var(--color-ink)]">Charms</Link>
-          <div className="flex items-center gap-2">
-            <button className="grid place-items-center" title="About"><Info size={34} /></button>
+          <div className="flex items-center gap-2.5">
+            <button className="grid place-items-center" title="About"><Info size={24} /></button>
             <button className="w-9 h-9 grid place-items-center rounded-full bg-white shadow-sm" title="Premium">
               <Crown size={18} />
             </button>
@@ -37,7 +37,7 @@ export default function Shell() {
       </main>
 
       {/* floating bottom nav */}
-      <nav className="fixed bottom-4 inset-x-0 z-40 flex justify-center px-4">
+      <nav className="fixed bottom-4 inset-x-0 z-40 flex justify-center items-center gap-3 px-4">
         <div className="flex items-center gap-1 bg-white/85 backdrop-blur-xl rounded-full p-1.5 shadow-[0_12px_40px_-12px_rgba(20,40,90,.4)] border border-white/70">
           {TABS.map((t) => {
             const Icon = t.icon
@@ -56,14 +56,14 @@ export default function Shell() {
               </NavLink>
             )
           })}
-          <button
-            onClick={() => nav('/create')}
-            className="w-12 h-12 ml-1 grid place-items-center rounded-full bg-[var(--color-sky-deep)] text-white text-2xl shadow-[0_10px_24px_-8px_rgba(47,125,255,.9)]"
-            title="Create a charm"
-          >
-            +
-          </button>
         </div>
+        <button
+          onClick={() => nav('/create')}
+          className="w-14 h-14 grid place-items-center rounded-full bg-[var(--color-sky-deep)] text-white text-3xl shadow-[0_12px_28px_-8px_rgba(47,125,255,.9)] border-4 border-white/80"
+          title="Create a charm"
+        >
+          +
+        </button>
       </nav>
     </div>
   )
