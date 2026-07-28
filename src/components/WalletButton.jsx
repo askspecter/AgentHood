@@ -21,11 +21,11 @@ export default function LoginButton() {
   return (
     <div className="relative">
       <button
-        className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[#f4f4f5] transition"
+        className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition"
         onClick={() => setOpen((o) => !o)}
       >
         <span className="w-6 h-6 rounded-full grid place-items-center font-serif text-xs text-white"
-          style={{ background: 'linear-gradient(145deg,#818cf8,#4f46e5)' }}>Y</span>
+          style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}>Y</span>
         <span className="font-mono text-xs num font-medium">{usd(cash)}</span>
       </button>
       {open && (

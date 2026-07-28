@@ -39,29 +39,24 @@ export default function Explore() {
 
   return (
     <div>
-      <Hero charms={charms} stats={stats} />
+      <Hero charms={charms} stats={stats} prices={prices} />
       <Ticker charms={charms} prices={prices} />
 
       {/* spotlight trio */}
       <Section>
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <div className="eyebrow mb-1">Moving now</div>
-            <h2 className="font-serif text-3xl">Today's spotlight</h2>
-          </div>
+        <div className="flex items-baseline justify-between mb-5">
+          <h2 className="display text-3xl">Moving now</h2>
+          <span className="eyebrow">Top 3 · 24h</span>
         </div>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--color-line)] panel overflow-hidden">
           {spotlight.map((c, i) => <SpotlightCard key={c.id} charm={c} price={prices[c.id]} rank={i} />)}
         </div>
       </Section>
 
       {/* index */}
       <Section id="index">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <div className="eyebrow mb-1">The index</div>
-            <h2 className="font-serif text-3xl">Every character, live</h2>
-          </div>
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
+          <h2 className="display text-3xl">The index</h2>
           <div className="flex flex-wrap items-center gap-3">
             <div className="seg">
               {TABS.map((t) => <button key={t.key} onClick={() => setTab(t.key)} className={tab === t.key ? 'on' : ''}>{t.label}</button>)}
@@ -86,30 +81,26 @@ function SpotlightCard({ charm, price, rank }) {
   const nav = useNavigate()
   const up = charm.change24 >= 0
   return (
-    <div onClick={() => nav(`/c/${charm.id}`)} className="card card-hover p-5 cursor-pointer relative overflow-hidden">
-      <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-40"
-        style={{ background: `hsl(${charm.hue} 60% 75%)` }} />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-4">
-          <span className="chip">#{rank + 1} today</span>
-          <span className={`chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <CharmAvatar charm={charm} size={52} ring />
-          <div>
-            <div className="flex items-center gap-1.5"><span className="font-serif text-xl">{charm.name}</span><Verified size={14} /></div>
-            <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-soft)] mt-0.5"><XLogo size={9} />{charm.creator}</div>
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-4">
-          <div>
-            <div className="font-mono num text-lg font-semibold">{usd(price ?? charm.price)}</div>
-            <div className="eyebrow mt-0.5">{usd(charm.mcap)} mcap</div>
-          </div>
-          <Sparkline data={charm.history} up={up} width={90} height={36} />
+    <button onClick={() => nav(`/c/${charm.id}`)} className="text-left p-5 hover:bg-[var(--color-paper-2)] transition">
+      <div className="flex items-center justify-between mb-4">
+        <span className="font-mono num text-2xl text-[var(--color-ink-faint)]">0{rank + 1}</span>
+        <span className={`chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>
+      </div>
+      <div className="flex items-center gap-3">
+        <CharmAvatar charm={charm} size={44} />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5"><span className="font-medium truncate">{charm.name}</span><Verified size={13} /></div>
+          <div className="text-xs text-[var(--color-ink-faint)]">by {charm.creator}</div>
         </div>
       </div>
-    </div>
+      <div className="flex items-end justify-between mt-4">
+        <div>
+          <div className="font-mono num text-lg">{usd(price ?? charm.price)}</div>
+          <div className="eyebrow mt-1">{usd(charm.mcap)} mcap</div>
+        </div>
+        <Sparkline data={charm.history} up={up} width={84} height={32} />
+      </div>
+    </button>
   )
 }
 

@@ -21,7 +21,7 @@ export default function Chats() {
         <div className="card overflow-hidden mb-10">
           {threads.map(({ charm, last }, i) => (
             <Link key={charm.id} to={`/chat/${charm.id}`}
-              className={`flex items-center gap-3 p-4 hover:bg-[#fafafa] ${i ? 'border-t hairline' : ''}`}>
+              className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
               <CharmAvatar charm={charm} size={44} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">

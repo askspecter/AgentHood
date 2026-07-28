@@ -28,7 +28,7 @@ export default function ChatThread() {
   return (
     <div className="max-w-2xl mx-auto flex flex-col" style={{ minHeight: 'calc(100vh - 10rem)' }}>
       <div className="card p-3 flex items-center gap-3 mb-4">
-        <Link to="/chats" className="grid place-items-center w-9 h-9 rounded-lg hover:bg-[#f4f4f5]"><Back size={17} /></Link>
+        <Link to="/chats" className="grid place-items-center w-9 h-9 rounded-lg hover:bg-[var(--color-paper-2)]"><Back size={17} /></Link>
         <CharmAvatar charm={charm} size={40} />
         <div className="flex-1">
           <div className="font-medium leading-tight">{charm.name}</div>
@@ -46,7 +46,7 @@ export default function ChatThread() {
             <p className="mt-4 font-serif text-2xl">{charm.name}</p>
             <p className="text-sm text-[var(--color-ink-soft)] mt-1 max-w-sm mx-auto">{charm.lore}</p>
             <div className="flex flex-wrap gap-2 justify-center mt-5">
-              {starters.map((s) => <button key={s} onClick={() => sendMessage(id, s)} className="chip hover:bg-[#e4e4e7]">{s}</button>)}
+              {starters.map((s) => <button key={s} onClick={() => sendMessage(id, s)} className="chip hover:bg-[var(--color-line)]">{s}</button>)}
             </div>
           </div>
         )}

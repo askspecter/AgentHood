@@ -11,7 +11,7 @@ export default function Settings() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
-        <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[#f4f4f5]"><Back size={18} /></button>
+        <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
         <h1 className="font-serif text-3xl">Settings</h1>
       </div>
 
@@ -35,7 +35,7 @@ export default function Settings() {
       </Section>
 
       <div className="card overflow-hidden mb-4">
-        <button onClick={() => { disconnect(); nav('/') }} className="w-full flex items-center gap-3 p-4 hover:bg-[#fafafa]">
+        <button onClick={() => { disconnect(); nav('/') }} className="w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)]">
           <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-down-soft)]"><RowIcon name="logout" stroke="var(--color-down)" /></span>
           <span className="font-medium text-[var(--color-down)]">Sign out</span>
         </button>
@@ -57,8 +57,8 @@ function Section({ title, children }) {
 
 function Row({ icon, label, right, last }) {
   return (
-    <button className={`w-full flex items-center gap-3 p-4 hover:bg-[#fafafa] text-left ${last ? '' : 'border-b hairline'}`}>
-      <span className="w-9 h-9 grid place-items-center rounded-lg bg-[#f4f4f5]"><RowIcon name={icon} size={18} /></span>
+    <button className={`w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left ${last ? '' : 'border-b hairline'}`}>
+      <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)]"><RowIcon name={icon} size={18} /></span>
       <span className="font-medium flex-1">{label}</span>
       {right ?? <Chevron />}
     </button>

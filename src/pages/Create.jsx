@@ -1,16 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import CharmAvatar from '../components/CharmAvatar'
+import CharmAvatar, { TONES } from '../components/CharmAvatar'
 import { XGlyph, Verified } from '../components/icons'
 
-const AURAS = [8, 30, 48, 90, 150, 190, 215, 258, 290, 330]
 const VIBES = ['cozy', 'chaotic', 'dreamy', 'hype', 'spooky', 'poetic', 'retro', 'dry', 'loyal', 'playful']
 
 export default function Create() {
   const nav = useNavigate()
   const { wallet, connect, launchCharm } = useStore()
-  const [d, setD] = useState({ name: '', ticker: '', hue: 215, tagline: '', lore: '', voice: '', vibe: [] })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], tagline: '', lore: '', voice: '', vibe: [] })
 
   const preview = { ...d, online: true, ticker: d.ticker || 'TICK', name: d.name || 'Untitled' }
   const canLaunch = d.name.trim() && d.ticker.trim() && d.tagline.trim()
@@ -36,15 +35,15 @@ export default function Create() {
             <input value={d.name} onChange={(e) => set('name', e.target.value)} maxLength={24} placeholder="Vanta" className="input mb-4" />
             <label className="eyebrow block mb-1.5">Ticker</label>
             <input value={d.ticker} onChange={(e) => set('ticker', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="VNTA" className="input font-mono mb-4" />
-            <label className="eyebrow block mb-2">Aura</label>
+            <label className="eyebrow block mb-2">Tone</label>
             <div className="flex flex-wrap gap-2.5">
-              {AURAS.map((h) => (
-                <button key={h} onClick={() => set('hue', h)} className="w-9 h-9 rounded-full transition-transform"
+              {TONES.map((t) => (
+                <button key={t} onClick={() => set('tone', t)} className="w-9 h-9 rounded-full transition-transform"
                   style={{
-                    background: `linear-gradient(145deg, hsl(${h} 42% 62%), hsl(${(h + 35) % 360} 40% 48%))`,
-                    boxShadow: d.hue === h ? '0 0 0 2px #fff, 0 0 0 4px var(--color-ink)' : 'inset 0 0 0 1px rgba(0,0,0,.08)',
-                    transform: d.hue === h ? 'scale(1.08)' : 'none',
-                  }} aria-label={`Aura ${h}`} />
+                    background: t,
+                    boxShadow: d.tone === t ? '0 0 0 2px var(--color-paper), 0 0 0 4px var(--color-ink)' : 'inset 0 0 0 1px rgba(255,255,255,.1)',
+                    transform: d.tone === t ? 'scale(1.08)' : 'none',
+                  }} aria-label="Tone" />
               ))}
             </div>
           </section>
@@ -59,7 +58,7 @@ export default function Create() {
             <input value={d.voice} onChange={(e) => set('voice', e.target.value)} maxLength={60} placeholder="warm, chaotic, deadpan…" className="input mb-4" />
             <label className="eyebrow block mb-2">Vibe · up to four</label>
             <div className="flex flex-wrap gap-2">
-              {VIBES.map((v) => <button key={v} onClick={() => toggleVibe(v)} className={`chip ${d.vibe.includes(v) ? 'chip-brand' : 'hover:bg-[#e4e4e7]'}`}>{v}</button>)}
+              {VIBES.map((v) => <button key={v} onClick={() => toggleVibe(v)} className={`chip ${d.vibe.includes(v) ? 'chip-brand' : 'hover:bg-[var(--color-line)]'}`}>{v}</button>)}
             </div>
           </section>
 

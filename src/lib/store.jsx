@@ -122,7 +122,7 @@ export function StoreProvider({ children }) {
       id,
       name: draft.name,
       ticker: draft.ticker.toUpperCase(),
-      hue: draft.hue ?? Math.floor(Math.random() * 360),
+      tone: draft.tone,
       tagline: draft.tagline,
       lore: draft.lore,
       creator: wallet?.handle ?? 'you',

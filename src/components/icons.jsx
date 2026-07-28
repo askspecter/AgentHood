@@ -1,5 +1,5 @@
 export function Verified({ size = 16, gold = true }) {
-  const fill = 'var(--color-brand)'
+  const fill = 'var(--color-ink)'
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle">
       <path

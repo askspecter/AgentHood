@@ -26,7 +26,7 @@ export default function IntroModal({ open, onClose }) {
       <div className="absolute inset-0 bg-[rgba(24,24,27,.4)] backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md card overflow-hidden">
         <div className="h-56 grid place-items-center border-b hairline"
-          style={{ background: 'radial-gradient(120% 100% at 50% 0%, #eef2ff, #fff)' }}>
+          style={{ background: 'var(--color-paper-2)' }}>
           {s.key === 'trade' && <TradeMock />}
           {s.key === 'mint' && <MintMock />}
           {s.key === 'chat' && <ChatMock />}
@@ -38,7 +38,7 @@ export default function IntroModal({ open, onClose }) {
           <div className="flex justify-center gap-1.5 my-5">
             {SLIDES.map((_, k) => (
               <button key={k} onClick={() => setI(k)} className="h-1.5 rounded-full transition-all"
-                style={{ width: k === i ? 22 : 6, background: k === i ? 'var(--color-ink)' : 'var(--color-line-strong)' }} />
+                style={{ width: k === i ? 22 : 6, background: k === i ? 'var(--color-ink)' : 'var(--color-line-2)' }} />
             ))}
           </div>
           <div className="flex gap-2">

@@ -41,13 +41,13 @@ export default function Profile() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="w-12 h-12 rounded-full grid place-items-center font-serif text-xl text-white"
-            style={{ background: 'linear-gradient(145deg,#818cf8,#4f46e5)' }}>Y</span>
+            style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}>Y</span>
           <div>
             <div className="font-semibold text-lg">{wallet.handle}</div>
             <span className="inline-flex items-center gap-1.5 chip"><XGlyph size={10} color="var(--color-ink-soft)" /> Verified</span>
           </div>
         </div>
-        <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[#f4f4f5]"><Gear size={18} /></button>
+        <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Gear size={18} /></button>
       </div>
 
       {/* balance card */}
@@ -77,7 +77,7 @@ export default function Profile() {
       ) : (
         <div className="card overflow-hidden">
           {positions.map(({ charm, h, value, pnl, pnlPct }, i) => (
-            <Link key={charm.id} to={`/c/${charm.id}`} className={`flex items-center gap-3 p-4 hover:bg-[#fafafa] ${i ? 'border-t hairline' : ''}`}>
+            <Link key={charm.id} to={`/c/${charm.id}`} className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
               <CharmAvatar charm={charm} size={40} />
               <div className="flex-1 min-w-0">
                 <div className="font-medium">{charm.name}</div>
@@ -117,7 +117,7 @@ export default function Profile() {
             const color = a.type === 'buy' ? 'text-[var(--color-up)]' : a.type === 'sell' ? 'text-[var(--color-down)]' : ''
             return (
               <div key={i} className={`flex items-center gap-3 p-3.5 text-sm ${i ? 'border-t hairline' : ''}`}>
-                {charm ? <CharmAvatar charm={charm} size={30} /> : <span className="w-8 h-8 grid place-items-center rounded-full bg-[var(--color-brand-soft)] text-[var(--color-brand)] font-mono font-bold">$</span>}
+                {charm ? <CharmAvatar charm={charm} size={30} /> : <span className="w-8 h-8 grid place-items-center rounded-full panel-soft text-[var(--color-ink)] font-mono">$</span>}
                 <div className="flex-1"><span className={`font-medium ${color}`}>{verb}</span> {charm ? charm.name : 'to balance'}{a.units != null && <span className="font-mono num text-[var(--color-ink-faint)]"> · {num(a.units)} {charm?.ticker}</span>}</div>
                 {a.usd != null && <span className="font-mono num">{usd(a.usd)}</span>}
                 <span className="text-xs text-[var(--color-ink-faint)] w-8 text-right">{timeAgo(a.ts)}</span>
@@ -142,7 +142,7 @@ function Mini({ label, value }) {
 function Empty({ title, subtitle, action }) {
   return (
     <div className="card text-center py-14 px-6">
-      <div className="mx-auto mb-4 w-12 h-12 rounded-full border-2 border-dashed border-[var(--color-line-strong)]" />
+      <div className="mx-auto mb-4 w-12 h-12 rounded-full border-2 border-dashed border-[var(--color-line-2)]" />
       <h3 className="font-serif text-2xl mb-1">{title}</h3>
       <p className="text-[var(--color-ink-soft)] max-w-xs mx-auto mb-5">{subtitle}</p>
       {action}
