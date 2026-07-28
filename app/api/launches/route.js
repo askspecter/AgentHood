@@ -81,6 +81,35 @@ async function discoverViaExplorer(explorer, factories, pages = 2) {
   return addrs;
 }
 
+/**
+ * The explorer's own top-tokens list (sorted by holders / market cap).
+ *
+ * The factory-log scan only reaches the newest launches, which on a spammy chain
+ * are junk. Blockscout already ranks every ERC-20 by popularity, so this is how
+ * the big graduated coins (PONS, YOLO, …) surface at all — we take the top
+ * tokens, then keep only the ones that turn out to be real pons launches.
+ */
+async function discoverTopTokens(explorer, pages = 3) {
+  const addrs = [];
+  const base = `${explorer.replace(/\/+$/, "")}/api/v2/tokens?type=ERC-20`;
+  let params = null;
+  for (let p = 0; p < pages; p++) {
+    let json;
+    try {
+      const url = params ? `${base}&${new URLSearchParams(params)}` : base;
+      json = await fetchJson(url);
+    } catch { break; }
+    if (!json) break;
+    for (const t of json.items || []) {
+      const a = typeof t.address === "string" ? t.address : (t.address?.hash || t.address_hash);
+      if (a) addrs.push(a);
+    }
+    params = json.next_page_params;
+    if (!params) break;
+  }
+  return addrs;
+}
+
 function serialise(value) {
   return JSON.parse(
     JSON.stringify(value, (_key, v) => (typeof v === "bigint" ? v.toString() : v))
@@ -123,7 +152,8 @@ export async function GET(request) {
     const pons = chain.pons || {};
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
-    const [discovered, rate] = await Promise.all([
+    const [topTokens, discovered, rate] = await Promise.all([
+      discoverTopTokens(chain.explorer).catch(() => []),
       discoverViaExplorer(chain.explorer, factories).catch(() => []),
       getEthUsd(),
     ]);
@@ -136,10 +166,12 @@ export async function GET(request) {
 
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
     // market cap so the feed shows the biggest pons coins — not just the newest.
-    const cap = Number(process.env.PONS_ENRICH_CAP || 30);
+    const cap = Number(process.env.PONS_ENRICH_CAP || 40);
     const seen = new Set();
     const candidates = [];
-    for (const a of [...discovered, ...seeds]) {
+    // Seeds and top-tokens first (most likely to be the big coins), then the
+    // newest launches.
+    for (const a of [...seeds, ...topTokens, ...discovered]) {
       try {
         const addr = getAddress(a);
         const k = addr.toLowerCase();
@@ -152,7 +184,9 @@ export async function GET(request) {
     if (picked.length) {
       const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 4));
       launches = enriched
-        .filter((l) => l.symbol || l.name) // drop unreadable/non-token addresses
+        // Real pons launches with an actual priced pool — this drops the spam
+        // launches that have no liquidity (marketCapWeth null) and non-pons ERC-20s.
+        .filter((l) => l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
         .sort((a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0));
     }
 
