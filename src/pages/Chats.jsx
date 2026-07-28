@@ -38,7 +38,7 @@ export default function Chats() {
       )}
 
       <h2 className="font-serif text-2xl mb-4">{threads.length ? 'Someone new' : 'Start a conversation'}</h2>
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {suggestions.map((c) => (
           <Link key={c.id} to={`/chat/${c.id}`} className="card card-hover p-4 flex items-center gap-3">
             <CharmAvatar charm={c} size={44} />

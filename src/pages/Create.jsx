@@ -27,7 +27,7 @@ export default function Create() {
       <h1 className="font-serif text-4xl mb-1">Create a character</h1>
       <p className="text-[var(--color-ink-soft)] mb-8">Give it a name and a soul, then mint its coin.</p>
 
-      <div className="grid md:grid-cols-[1fr_280px] gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6">
         <div className="space-y-5">
           <section className="card p-6">
             <h2 className="font-medium mb-4">Identity</h2>

@@ -26,7 +26,7 @@ export default function Hero({ stats }) {
       ref={sceneRef}
       onMouseMove={onMove}
       onMouseLeave={onLeave}
-      className="tilt-scene relative grid lg:grid-cols-[1.06fr_0.94fr] gap-6 items-center min-h-[78vh] lg:min-h-[82vh] pt-2 pb-12"
+      className="tilt-scene relative grid grid-cols-1 lg:grid-cols-[1.06fr_0.94fr] gap-8 lg:gap-6 items-center min-h-[68vh] lg:min-h-[82vh] pt-2 pb-10"
     >
       {/* ── copy ── */}
       <div className="relative z-10">
@@ -76,7 +76,7 @@ export default function Hero({ stats }) {
       </div>
 
       {/* ── stage ── */}
-      <div className="relative min-h-[340px] lg:min-h-[560px] grid place-items-center"
+      <div className="relative min-h-[300px] lg:min-h-[560px] grid place-items-center"
         style={{ transform: 'translate(calc(var(--px,0px) * 0.35), calc(var(--py,0px) * 0.35))' }}>
         <div className="fade-up fade-up-2">
           <HoloSphere size={300} />
