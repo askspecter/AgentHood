@@ -105,7 +105,10 @@ export async function GET(request) {
         process.env.OFFICIAL_TOKEN,
         ...(process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/),
       ].filter(Boolean);
-      const all = [...new Set([...discovered, ...seeds])].slice(0, Math.max(limit, 12));
+      // Enrich a wider candidate set than we return, so "top by market cap"
+      // ranks across more launches (newest ones included) and not just the
+      // first few. Bounded so the request still completes.
+      const all = [...new Set([...discovered, ...seeds])].slice(0, Math.max(limit * 2, 40));
       if (all.length) {
         try {
           const enriched = await enrichLaunchesByAddress(provider, chain, all);
