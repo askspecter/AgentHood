@@ -54,8 +54,9 @@ export default function ChatThread() {
           <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'charm' && <CharmAvatar charm={charm} size={28} />}
             <div className={`max-w-[76%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${
-              m.role === 'user' ? 'bg-[var(--color-ink)] text-white rounded-br-md' : 'card rounded-bl-md'
-            }`}>{m.text}</div>
+              m.role === 'user' ? 'text-white rounded-br-md' : 'card rounded-bl-md'
+            }`}
+              style={m.role === 'user' ? { background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' } : undefined}>{m.text}</div>
           </div>
         ))}
         <div ref={endRef} />

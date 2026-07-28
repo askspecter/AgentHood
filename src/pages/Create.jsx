@@ -37,14 +37,17 @@ export default function Create() {
             <input value={d.ticker} onChange={(e) => set('ticker', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="VNTA" className="input font-mono mb-4" />
             <label className="eyebrow block mb-2">Tone</label>
             <div className="flex flex-wrap gap-2.5">
-              {TONES.map((t) => (
-                <button key={t} onClick={() => set('tone', t)} className="w-9 h-9 rounded-full transition-transform"
-                  style={{
-                    background: t,
-                    boxShadow: d.tone === t ? '0 0 0 2px var(--color-paper), 0 0 0 4px var(--color-ink)' : 'inset 0 0 0 1px rgba(255,255,255,.1)',
-                    transform: d.tone === t ? 'scale(1.08)' : 'none',
-                  }} aria-label="Tone" />
-              ))}
+              {TONES.map((t) => {
+                const on = d.tone?.[0] === t[0]
+                return (
+                  <button key={t[0]} onClick={() => set('tone', t)} className="w-9 h-9 rounded-full transition-transform"
+                    style={{
+                      background: `radial-gradient(120% 120% at 32% 24%, ${t[0]}, ${t[1]} 60%, #0b0a14 130%)`,
+                      boxShadow: on ? '0 0 0 2px var(--color-paper), 0 0 0 4px var(--color-accent)' : 'inset 0 1px 2px rgba(255,255,255,.3)',
+                      transform: on ? 'scale(1.1)' : 'none',
+                    }} aria-label="Tone" />
+                )
+              })}
             </div>
           </section>
 

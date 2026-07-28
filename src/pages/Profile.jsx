@@ -15,7 +15,7 @@ export default function Profile() {
   if (!wallet) {
     return (
       <div className="max-w-md mx-auto text-center py-24">
-        <div className="mx-auto mb-6 w-14 h-14 rounded-2xl bg-[var(--color-ink)] grid place-items-center"><XGlyph size={20} color="#fff" /></div>
+        <div className="mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}><XGlyph size={20} color="#fff" /></div>
         <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
         <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see your balance, coins and activity.</p>
         <button onClick={connect} className="btn btn-primary mx-auto"><XGlyph size={13} color="#fff" /> Sign in with X</button>
@@ -41,7 +41,7 @@ export default function Profile() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <span className="w-12 h-12 rounded-full grid place-items-center font-serif text-xl text-white"
-            style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}>Y</span>
+            style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)', color: '#fff' }}>Y</span>
           <div>
             <div className="font-semibold text-lg">{wallet.handle}</div>
             <span className="inline-flex items-center gap-1.5 chip"><XGlyph size={10} color="var(--color-ink-soft)" /> Verified</span>

@@ -25,7 +25,7 @@ export default function LoginButton() {
         onClick={() => setOpen((o) => !o)}
       >
         <span className="w-6 h-6 rounded-full grid place-items-center font-serif text-xs text-white"
-          style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}>Y</span>
+          style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)', color: '#fff' }}>Y</span>
         <span className="font-mono text-xs num font-medium">{usd(cash)}</span>
       </button>
       {open && (

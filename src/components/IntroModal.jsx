@@ -82,7 +82,7 @@ function ChatMock() {
         <CharmAvatar charm={C} size={22} /><span className="font-medium text-sm">{C.name}</span>
       </div>
       <div className="flex justify-start mb-2"><div className="chip !rounded-2xl !rounded-bl-sm max-w-[85%]">gm — {C.name} here.</div></div>
-      <div className="flex justify-end"><div className="bg-[var(--color-ink)] text-white text-xs rounded-2xl rounded-br-sm px-3 py-1.5">good boy</div></div>
+      <div className="flex justify-end"><div className="text-white text-xs rounded-2xl rounded-br-sm px-3 py-1.5" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>good boy</div></div>
     </div>
   )
 }

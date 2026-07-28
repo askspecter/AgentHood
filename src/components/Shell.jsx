@@ -15,7 +15,7 @@ const TABS = [
 function Wordmark({ className = '' }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="grid place-items-center w-7 h-7 rounded-lg bg-[var(--color-ink)] text-white font-serif text-lg leading-none">E</span>
+      <span className="grid place-items-center w-7 h-7 rounded-lg text-white font-serif text-lg leading-none" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>E</span>
       <span className="font-semibold text-lg tracking-tight">ESKA</span>
     </span>
   )
@@ -30,7 +30,7 @@ export default function Shell() {
   return (
     <div className="min-h-full flex flex-col">
       {/* ===== desktop top navbar ===== */}
-      <header className="sticky top-0 z-40 border-b hairline bg-[rgba(244,243,239,.82)] backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b hairline bg-[rgba(10,9,18,.72)] backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 lg:px-8 h-16 flex items-center gap-6">
           <Link to="/"><Wordmark /></Link>
 
@@ -54,7 +54,7 @@ export default function Shell() {
             {wallet ? (
               <Link to="/you" className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition">
                 <span className="w-6 h-6 rounded-full grid place-items-center font-serif text-xs text-white"
-                  style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}>Y</span>
+                  style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)', color: '#fff' }}>Y</span>
                 <span className="font-mono text-xs num font-medium">{usd(cash)}</span>
               </Link>
             ) : (
@@ -69,7 +69,7 @@ export default function Shell() {
       </main>
 
       {/* ===== mobile bottom tab bar ===== */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[rgba(244,243,239,.9)] backdrop-blur-xl border-t hairline">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[rgba(10,9,18,.85)] backdrop-blur-xl border-t hairline">
         <div className="grid grid-cols-4 max-w-md mx-auto">
           {TABS.map((t) => {
             const Icon = t.icon
@@ -84,7 +84,7 @@ export default function Shell() {
             )
           })}
           <button onClick={() => nav('/create')} className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-[var(--color-ink-faint)]">
-            <span className="grid place-items-center w-6 h-6 rounded-full bg-[var(--color-ink)] text-white text-base leading-none">+</span>
+            <span className="grid place-items-center w-6 h-6 rounded-full text-white text-base leading-none" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>+</span>
             Create
           </button>
         </div>
