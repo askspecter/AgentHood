@@ -13,7 +13,7 @@ export default function LoginButton() {
     return (
       <button className="btn btn-holo" onClick={connect} title="Sign in with X">
         <XGlyph size={13} color="#0b0a12" />
-        <span className="hidden sm:inline">Sign in</span>
+        <span>Sign in</span>
       </button>
     )
   }
