@@ -354,12 +354,10 @@ export async function POST(request) {
     if (!chosen) {
       return NextResponse.json(
         {
-          error: `Simulation reverted, so nothing was sent: ${
-            lastError?.shortMessage || lastError?.reason || lastError?.message || "execution reverted"
-          }`,
+          error: "This trade would fail on-chain right now, so it was not sent — your funds are safe.",
           hint: isBuy
-            ? "The pool may be too thin for this size right now. Try a smaller amount."
-            : "A reverting sell is the classic honeypot signature — run `audit` on this token.",
+            ? "Most often the price moved past your slippage. Tap Adjust and raise slippage (e.g. 5%), or change the amount, then try again."
+            : "Raise slippage and try again. A sell that always reverts can be a honeypot — check the token first.",
           approvalHash,
           wrapHash,
         },
