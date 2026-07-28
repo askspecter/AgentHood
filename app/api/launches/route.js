@@ -1,6 +1,52 @@
 import { NextResponse } from "next/server";
-import { JsonRpcProvider, getAddress } from "ethers";
+import { Contract, JsonRpcProvider, getAddress } from "ethers";
 import { getChain, getEthUsd, enrichLaunch } from "@/lib/engine";
+
+const POOL_SLOT0_ABI = [
+  "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
+];
+
+/** Estimate the block number ~24h ago from the recent average block time. */
+async function block24hAgo(provider) {
+  const head = await provider.getBlockNumber();
+  const back = Math.max(1, head - 5000);
+  const [b0, b1] = await Promise.all([provider.getBlock(back), provider.getBlock(head)]);
+  if (!b0 || !b1 || b1.timestamp <= b0.timestamp) return Math.max(1, head - 40000);
+  const secPerBlock = (b1.timestamp - b0.timestamp) / (b1.number - b0.number);
+  const blocksPerDay = Math.round(86400 / Math.max(0.05, secPerBlock));
+  return Math.max(1, head - blocksPerDay);
+}
+
+/**
+ * Real 24h price change, read from the pool's price at a block ~24h ago
+ * (an archive call) versus now. pons keeps no price history on-chain, so this
+ * is the honest way to get a +/- figure. Best-effort per token; if the archive
+ * read is unavailable the coin simply has no 24h change rather than a fake 0%.
+ */
+async function attachChange24(provider, launches, concurrency = 5) {
+  let past;
+  try { past = await block24hAgo(provider); } catch { return; }
+  for (let i = 0; i < launches.length; i += concurrency) {
+    const batch = launches.slice(i, i + concurrency);
+    await Promise.all(
+      batch.map(async (l) => {
+        try {
+          if (!l.pool || l.isToken0 == null || !Number.isFinite(l.priceInWeth) || l.priceInWeth <= 0) return;
+          const pool = new Contract(l.pool, POOL_SLOT0_ABI, provider);
+          const s = await pool.slot0({ blockTag: past });
+          const sqrt = Number(s.sqrtPriceX96 ?? s[0]);
+          if (!sqrt) return;
+          const ratio = (sqrt / 2 ** 96) ** 2;
+          const price24 = l.isToken0 ? ratio : 1 / ratio;
+          if (!Number.isFinite(price24) || price24 <= 0) return;
+          l.change24 = (l.priceInWeth / price24 - 1) * 100;
+        } catch {
+          /* no archive data for this pool — leave change24 unset */
+        }
+      })
+    );
+  }
+}
 
 /**
  * Enrich token addresses with bounded concurrency.
@@ -247,7 +293,11 @@ export async function GET(request) {
         .sort(byMcap);
 
       launches = [...featured, ...extra];
-      await attachHolders(chain.explorer, launches.slice(0, 24));
+      const shown = launches.slice(0, 24);
+      await Promise.all([
+        attachHolders(chain.explorer, shown),
+        attachChange24(provider, shown),
+      ]);
     }
 
     const value = serialise({
