@@ -170,7 +170,7 @@ export default function Profile() {
       )}
 
       <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">
-        Balances are read for coins launched through pons within the scanned window, so a very old position can be missing even though it is still in the wallet.
+        Coins are discovered by scanning on-chain transfers to your wallet, then reading each balance — launches, stock tokens and airdrops alike. A position from before the scanned window can still be missing; tap Refresh to rescan.
       </p>
     </div>
   )
