@@ -101,7 +101,8 @@ export default function Profile() {
   }
 
   const rate = folioEthUsd ?? storeEthUsd
-  const eth = walletEth ?? folio?.eth ?? null
+  // Prefer the balance the store already fetched (instant) over the slower paths.
+  const eth = walletEth ?? wallet?.ethBalance ?? folio?.eth ?? null
   const totalWeth = folio?.totalWeth ?? eth
   const totalUsd = totalWeth != null && rate ? totalWeth * rate : null
   const holdings = folio?.holdings ?? []

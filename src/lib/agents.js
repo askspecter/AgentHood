@@ -31,15 +31,22 @@ function hash(str) {
   return h
 }
 
-/** A gentle, deterministic price history purely for the sparkline/chart visual. */
+/**
+ * A smooth, deterministic price line for the chart visual.
+ *
+ * Momentum with damping instead of raw per-step noise, so the curve trends
+ * gently and reads as tidy rather than a jagged scribble.
+ */
 function history(seed, base = 1) {
   const out = []
   let h = hash(seed)
+  const rnd = () => { h = (h * 1103515245 + 12345) >>> 0; return (h % 100000) / 100000 }
   let v = base || 1
+  let momentum = (rnd() - 0.5) * 0.02
   for (let i = 0; i < 40; i++) {
-    h = (h * 1103515245 + 12345) >>> 0
-    const drift = ((h % 1000) / 1000 - 0.48) * 0.06
-    v = Math.max(base * 0.4, v * (1 + drift))
+    momentum += (rnd() - 0.5) * 0.008 // small nudges
+    momentum *= 0.86 // damping keeps it smooth
+    v = Math.max(base * 0.55, v * (1 + momentum))
     out.push(v)
   }
   return out
