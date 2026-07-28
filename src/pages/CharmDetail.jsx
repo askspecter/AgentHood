@@ -23,7 +23,7 @@ export default function CharmDetail() {
         <Back size={15} /> Discover
       </Link>
 
-      <div className="grid lg:grid-cols-[1fr_360px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         <div className="space-y-4">
           {/* header */}
           <div className="card p-6">

@@ -52,7 +52,7 @@ export default function Profile() {
 
       {/* balance card */}
       <div className="card p-6 mb-4">
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
             <div className="eyebrow mb-1">Net worth</div>
             <div className="font-mono num text-3xl font-semibold">{usd(total)}</div>

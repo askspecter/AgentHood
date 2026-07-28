@@ -48,7 +48,7 @@ export default function Explore() {
           <h2 className="display text-3xl">Moving now</h2>
           <span className="eyebrow">Top 3 · 24h</span>
         </div>
-        <div className="grid md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--color-line)] panel overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[var(--color-line)] panel overflow-hidden">
           {spotlight.map((c, i) => <SpotlightCard key={c.id} charm={c} price={prices[c.id]} rank={i} />)}
         </div>
       </Section>
@@ -74,7 +74,7 @@ export default function Explore() {
 
 function Section({ children, id }) {
   const ref = useReveal()
-  return <section id={id} ref={ref} className="reveal mb-12">{children}</section>
+  return <section id={id} ref={ref} className="reveal mb-12 scroll-mt-24">{children}</section>
 }
 
 function SpotlightCard({ charm, price, rank }) {
