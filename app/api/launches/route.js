@@ -1,6 +1,26 @@
 import { NextResponse } from "next/server";
-import { JsonRpcProvider } from "ethers";
-import { getChain, getEthUsd, enrichLaunchesByAddress } from "@/lib/engine";
+import { JsonRpcProvider, getAddress } from "ethers";
+import { getChain, getEthUsd, enrichLaunch } from "@/lib/engine";
+
+/**
+ * Enrich token addresses with bounded concurrency.
+ *
+ * Reading 48 tokens in one Promise.all fires hundreds of eth_calls at once and
+ * a shared RPC (Alchemy's free tier) rate-limits them all — every read fails and
+ * nothing gets a name or price. Running a few at a time keeps every read under
+ * the limit, so they actually return.
+ */
+async function enrichBounded(provider, chain, addresses, concurrency = 4) {
+  const out = [];
+  for (let i = 0; i < addresses.length; i += concurrency) {
+    const batch = addresses.slice(i, i + concurrency);
+    const results = await Promise.all(
+      batch.map((token) => enrichLaunch(provider, chain, { token }).catch(() => null))
+    );
+    for (const r of results) if (r) out.push(r);
+  }
+  return out;
+}
 
 /** keccak256("TokenLaunched(...)") — the factory's launch event. */
 const TOKEN_LAUNCHED_TOPIC =
@@ -116,12 +136,21 @@ export async function GET(request) {
 
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
     // market cap so the feed shows the biggest pons coins — not just the newest.
-    const cap = Number(process.env.PONS_ENRICH_CAP || 48);
-    const candidates = [...new Set([...discovered, ...seeds])].slice(0, cap);
+    const cap = Number(process.env.PONS_ENRICH_CAP || 30);
+    const seen = new Set();
+    const candidates = [];
+    for (const a of [...discovered, ...seeds]) {
+      try {
+        const addr = getAddress(a);
+        const k = addr.toLowerCase();
+        if (!seen.has(k)) { seen.add(k); candidates.push(addr); }
+      } catch { /* skip a malformed address */ }
+    }
+    const picked = candidates.slice(0, cap);
 
     let launches = [];
-    if (candidates.length) {
-      const enriched = await enrichLaunchesByAddress(provider, chain, candidates);
+    if (picked.length) {
+      const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 4));
       launches = enriched
         .filter((l) => l.symbol || l.name) // drop unreadable/non-token addresses
         .sort((a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0));
