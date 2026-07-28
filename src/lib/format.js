@@ -7,6 +7,12 @@ export function usd(n, opts = {}) {
   return '$' + n.toLocaleString(undefined, { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: n < 1 ? 4 : max })
 }
 
+// account balances — clean dollars, no forced 4-decimal prices
+export function bal(n) {
+  if (n == null || isNaN(n)) return '$0'
+  return '$' + n.toLocaleString(undefined, { maximumFractionDigits: Math.abs(n % 1) > 0 ? 2 : 0 })
+}
+
 export function num(n) {
   if (n == null) return '0'
   if (Math.abs(n) >= 1_000_000) return (n / 1e6).toFixed(1) + 'M'

@@ -1,10 +1,7 @@
-import { useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { Info, XGlyph } from './icons'
 import LoginButton from './WalletButton'
-import IntroModal from './IntroModal'
-import { usd } from '../lib/format'
+import { bal } from '../lib/format'
 
 const TABS = [
   { to: '/', label: 'Discover', end: true, icon: HomeIcon },
@@ -25,8 +22,8 @@ function Wordmark({ className = '' }) {
 export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
-  const { wallet, connect, cash } = useStore()
-  const [intro, setIntro] = useState(false)
+  const { wallet, cash } = useStore()
+  const balance = bal(cash)
 
   return (
     <div className="min-h-full flex flex-col">
@@ -36,7 +33,7 @@ export default function Shell() {
           <Link to="/"><Wordmark /></Link>
 
           <nav className="hidden md:flex items-center gap-1 ml-2">
-            {TABS.map((t) => (
+            {[...TABS, { to: '/create', label: 'Create' }].map((t) => (
               <NavLink key={t.to} to={t.to} end={t.end}
                 className={({ isActive }) =>
                   `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
@@ -47,16 +44,12 @@ export default function Shell() {
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
-            <button onClick={() => setIntro(true)}
-              className="hidden sm:grid place-items-center w-9 h-9 rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-paper-2)] hover:text-[var(--color-ink)]"
-              title="About ESKA"><Info size={18} /></button>
-            <button onClick={() => nav('/create')} className="hidden sm:inline-flex btn btn-secondary">Create</button>
+          <div className="ml-auto flex items-center">
             {wallet ? (
-              <Link to="/you" className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition">
-                <span className="w-6 h-6 rounded-full grid place-items-center font-serif text-xs text-white"
-                  style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)', color: '#fff' }}>Y</span>
-                <span className="font-mono text-xs num font-medium">{usd(cash)}</span>
+              <Link to="/you" className="flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition">
+                <span className="orb-spin w-6 h-6 rounded-full grid place-items-center font-semibold text-xs"
+                  style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+                <span className="font-mono text-xs num font-medium">{balance}</span>
               </Link>
             ) : (
               <LoginButton />
@@ -110,8 +103,6 @@ export default function Shell() {
         </div>
       </div>
       )}
-
-      <IntroModal open={intro} onClose={() => setIntro(false)} />
     </div>
   )
 }

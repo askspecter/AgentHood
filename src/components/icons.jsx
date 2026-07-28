@@ -11,14 +11,12 @@ export function Verified({ size = 16, gold = true }) {
   )
 }
 
-// small "mentions/holders" bubble icon
+// small "holders" chat-bubble icon
 export function Mentions({ size = 15 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle" fill="none">
-      <path
-        d="M4 11.5C4 7.9 7.4 5 12 5s8 2.9 8 6.5S16.6 18 12 18c-.9 0-1.7-.1-2.5-.3L5 19l1-3.1C4.8 14.7 4 13.2 4 11.5z"
-        fill="currentColor" opacity="0.9"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle" fill="none"
+      stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" strokeLinecap="round">
+      <path d="M20 11.5c0 3.6-3.6 6.5-8 6.5-1 0-1.9-.1-2.8-.4L4.5 19l1.2-3.7A6 6 0 0 1 4 11.5C4 7.9 7.6 5 12 5s8 2.9 8 6.5z" />
     </svg>
   )
 }
@@ -89,9 +87,9 @@ export function Search({ size = 20, stroke = 'var(--color-ink)' }) {
 
 export function Gear({ size = 20, stroke = 'var(--color-ink)' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3.2" />
-      <path d="M12 2.5l1.4 2.2 2.6-.4.6 2.6 2.3 1.2-1 2.4 1 2.4-2.3 1.2-.6 2.6-2.6-.4L12 21.5l-1.4-2.2-2.6.4-.6-2.6-2.3-1.2 1-2.4-1-2.4 2.3-1.2.6-2.6 2.6.4z" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
     </svg>
   )
 }
@@ -132,7 +130,7 @@ export function PlusSquare({ size = 20, stroke = 'var(--color-sky-deep)' }) {
 export function Coin({ size = 20, stroke = 'var(--color-ink)' }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinejoin="round">
-      <rect x="4" y="4" width="16" height="16" rx="4" /><path d="M12 8.5c-1.4 0-2.2.7-2.2 1.6 0 2 4.4 1 4.4 3 0 1-.9 1.7-2.2 1.7M12 7.5v9" strokeLinecap="round" />
+      <circle cx="12" cy="12" r="9" /><path d="M14.6 9.2c-.5-.9-1.5-1.4-2.6-1.4-1.5 0-2.6.8-2.6 2 0 2.7 5.4 1.3 5.4 4 0 1.3-1.1 2.1-2.8 2.1-1.2 0-2.2-.5-2.8-1.4M12 6.3v11.4" strokeLinecap="round" />
     </svg>
   )
 }
@@ -141,7 +139,7 @@ export function Coin({ size = 20, stroke = 'var(--color-ink)' }) {
 const P = {
   editProfile: <><circle cx="10" cy="8" r="3.4" /><path d="M4 20c0-3.3 2.7-5 6-5 1 0 1.9.2 2.7.5" /><path d="M20 13l-5 5-2.5.6.6-2.6 5-5z" /></>,
   linkedSocials: <><path d="M9 13a4 4 0 006 0l2-2a4 4 0 10-5.6-5.6L10 7" /><path d="M15 11a4 4 0 00-6 0l-2 2a4 4 0 105.6 5.6L14 17" /></>,
-  appearance: <><circle cx="12" cy="12" r="8.5" /><circle cx="8.5" cy="10" r="1" /><circle cx="12" cy="8" r="1" /><circle cx="15.5" cy="10" r="1" /><path d="M12 20.5c1.5 0 2-1 2-2s-1-1.6-1-2.6.9-1.4 2-1.4h1" /></>,
+  appearance: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" /></>,
   gift: <><rect x="4" y="10" width="16" height="10" rx="1.5" /><path d="M4 13h16M12 10v10" /><path d="M12 10C11.2 7 9 6 8 7.5S9.5 10 12 10zM12 10c.8-3 3-4 4-2.5S14.5 10 12 10z" /></>,
   tos: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" strokeLinecap="round" /></>,
   privacy: <><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" strokeLinecap="round" /></>,
