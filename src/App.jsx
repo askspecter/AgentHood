@@ -8,6 +8,7 @@ import Chats from './pages/Chats'
 import ChatThread from './pages/ChatThread'
 import Create from './pages/Create'
 import Profile from './pages/Profile'
+import Settings from './pages/Settings'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="chat/:id" element={<ChatThread />} />
             <Route path="create" element={<Create />} />
             <Route path="you" element={<Profile />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

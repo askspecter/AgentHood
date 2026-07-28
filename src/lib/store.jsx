@@ -16,7 +16,7 @@ export function StoreProvider({ children }) {
   const saved = load()
 
   const [wallet, setWallet] = useState(saved?.wallet ?? null) // {address, handle}
-  const [cash, setCash] = useState(saved?.cash ?? 1000) // demo USDC balance
+  const [cash, setCash] = useState(saved?.cash ?? 0) // demo USDC balance (start empty, like onboarding)
   const [holdings, setHoldings] = useState(saved?.holdings ?? {}) // {charmId: {units, cost}}
   const [activity, setActivity] = useState(saved?.activity ?? [])
   const [chats, setChats] = useState(saved?.chats ?? {}) // {charmId: [{role, text, ts}]}
@@ -62,6 +62,11 @@ export function StoreProvider({ children }) {
     setWallet({ address, handle, kind })
   }
   function disconnect() { setWallet(null) }
+
+  function addCash(amount = 1000) {
+    setCash((c) => +(c + amount).toFixed(2))
+    logActivity({ type: 'deposit', usd: amount })
+  }
 
   function priceOf(id) { return pricesRef.current[id] ?? getCharm(id)?.price ?? 0 }
   function getCharm(id) { return charms.find((c) => c.id === id) }
@@ -151,7 +156,7 @@ export function StoreProvider({ children }) {
   }, [holdings, prices]) // eslint-disable-line
 
   const value = {
-    wallet, connect, disconnect,
+    wallet, connect, disconnect, addCash,
     cash, holdings, activity, chats, custom, watch,
     charms, prices, priceOf, getCharm,
     buy, sell, sendMessage, launchCharm, toggleWatch,

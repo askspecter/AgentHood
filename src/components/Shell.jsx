@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { Info, Crown } from './icons'
+import { Info, Crown, Search } from './icons'
 import LoginButton from './WalletButton'
 
 const TABS = [
@@ -12,6 +12,8 @@ const TABS = [
 export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
+  const { wallet } = useStore()
+  const ownHeader = loc.pathname.startsWith('/you') || loc.pathname.startsWith('/settings')
 
   return (
     <div className="min-h-full flex flex-col sky-soft">
@@ -19,18 +21,28 @@ export default function Shell() {
       <div className="pointer-events-none fixed inset-x-0 top-0 h-40 -z-10"
         style={{ background: 'radial-gradient(120% 100% at 50% 0%, #cfe6ff 0%, transparent 70%)' }} />
 
-      <header className="relative z-30">
-        <div className="mx-auto max-w-2xl px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="font-serif text-3xl text-[var(--color-ink)]">Charms</Link>
-          <div className="flex items-center gap-2.5">
-            <button className="grid place-items-center" title="About"><Info size={24} /></button>
-            <button className="w-9 h-9 grid place-items-center rounded-full bg-white shadow-sm" title="Premium">
-              <Crown size={18} />
-            </button>
-            <LoginButton />
-          </div>
-        </div>
-      </header>
+      {!ownHeader && (
+        <header className="relative z-30">
+          {wallet ? (
+            <div className="mx-auto max-w-2xl px-4 h-16 flex items-center justify-center relative">
+              <Link to="/" className="font-serif text-3xl text-[var(--color-ink)]">Charms</Link>
+              <div className="absolute right-4 flex items-center gap-2.5">
+                <button onClick={() => nav('/')} className="w-10 h-10 grid place-items-center rounded-full bg-white/80 shadow-sm" title="Search"><Search size={18} /></button>
+                <button className="w-10 h-10 grid place-items-center rounded-full bg-white/80 shadow-sm" title="Premium"><Crown size={18} /></button>
+              </div>
+            </div>
+          ) : (
+            <div className="mx-auto max-w-2xl px-4 h-16 flex items-center justify-between">
+              <Link to="/" className="font-serif text-3xl text-[var(--color-ink)]">Charms</Link>
+              <div className="flex items-center gap-2.5">
+                <button className="grid place-items-center" title="About"><Info size={24} /></button>
+                <button className="w-9 h-9 grid place-items-center rounded-full bg-white shadow-sm" title="Premium"><Crown size={18} /></button>
+                <LoginButton />
+              </div>
+            </div>
+          )}
+        </header>
+      )}
 
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 pt-2 pb-32" key={loc.pathname}>
         <Outlet />
