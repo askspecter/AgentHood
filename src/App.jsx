@@ -2,13 +2,15 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { StoreProvider } from './lib/store'
 import Shell from './components/Shell'
-import Explore from './pages/Explore'
-import CharmDetail from './pages/CharmDetail'
-import Chats from './pages/Chats'
-import ChatThread from './pages/ChatThread'
-import Create from './pages/Create'
-import Profile from './pages/Profile'
-import Settings from './pages/Settings'
+import Explore from './screens/Explore'
+import CharmDetail from './screens/CharmDetail'
+import Chats from './screens/Chats'
+import ChatThread from './screens/ChatThread'
+import Create from './screens/Create'
+import Profile from './screens/Profile'
+import Settings from './screens/Settings'
+import Trade from './screens/Trade'
+import Launch from './screens/Launch'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -29,6 +31,8 @@ export default function App() {
             <Route path="chat/:id" element={<ChatThread />} />
             <Route path="create" element={<Create />} />
             <Route path="you" element={<Profile />} />
+            <Route path="trade" element={<Trade />} />
+            <Route path="launch" element={<Launch />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

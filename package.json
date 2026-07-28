@@ -1,23 +1,22 @@
 {
-  "name": "charms-clone",
+  "name": "eska",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
-  "description": "A functional front-end recreation of a charms.ai-style AI-companion + coin launchpad.",
+  "description": "ESKA — characters worth owning. A Next.js app with real X sign-in and on-chain launch/trade on Robinhood Chain.",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview --port 4173"
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000"
   },
   "dependencies": {
+    "ethers": "^6.13.4",
+    "next": "^15.1.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "tailwindcss": "^4.0.0",
-    "vite": "^5.4.8"
+    "@tailwindcss/postcss": "^4.0.0",
+    "tailwindcss": "^4.0.0"
   }
 }

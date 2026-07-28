@@ -4,3 +4,10 @@ dist-ssr
 *.local
 .DS_Store
 .vite
+
+.env
+.env.local
+
+# next.js
+.next
+next-env.d.ts
