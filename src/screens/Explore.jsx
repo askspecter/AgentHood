@@ -2,10 +2,9 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
-import Hero from '../components/Hero'
 import Ticker from '../components/Ticker'
 import CharmCarousel from '../components/CharmCarousel'
-import { usd } from '../lib/format'
+import { usd, pct } from '../lib/format'
 import { Verified, ArrowStat } from '../components/icons'
 
 /**
@@ -39,10 +38,8 @@ export default function Explore() {
 
   return (
     <div>
-      <Hero stats={{ count: agents.length }} />
-
       {agents.length > 0 && (
-        <div className="fade-up mb-9 pt-1">
+        <div className="fade-up mb-9 pt-2">
           <CharmCarousel charms={cast} prices={prices} />
         </div>
       )}
@@ -92,6 +89,7 @@ function Section({ children, id }) {
 function GridCard({ charm, price }) {
   const nav = useNavigate()
   const open = () => nav(`/c/${charm.id}`)
+  const up = (charm.change24 ?? 0) >= 0
   return (
     <div onClick={open} className="card card-hover p-4 flex flex-col items-center text-center cursor-pointer">
       <div className="relative mb-3 mt-1 grid place-items-center">
@@ -107,8 +105,11 @@ function GridCard({ charm, price }) {
       </div>
       <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
 
-      <div className="flex items-center justify-center gap-1 mt-1.5 font-mono num text-xs text-[var(--color-ink-soft)]">
-        {charm.mcap ? usd(charm.mcap) : '—'}<span className="text-[10px] text-[var(--color-ink-faint)] ml-0.5">MC</span>
+      <div className="flex items-center justify-center gap-2.5 mt-1.5 font-mono num text-xs">
+        <span className="text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</span>
+        <span className={`inline-flex items-center gap-1 ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>
+          <ArrowStat up={up} size={14} />{pct(charm.change24 ?? 0)}
+        </span>
       </div>
 
       <button onClick={(e) => { e.stopPropagation(); open() }}
