@@ -63,7 +63,7 @@ export function StoreProvider({ children }) {
   // and no RPC error is surfaced.
   const loadAgents = useCallback(() => {
     setAgentsLoading(true)
-    fetch(`/api/launches?network=${NETWORK}&limit=24`)
+    fetch(`/api/launches?network=${NETWORK}&limit=20`)
       .then((r) => r.json())
       .then((json) => {
         if (json.error) return

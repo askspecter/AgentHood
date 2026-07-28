@@ -48,8 +48,10 @@ export default function WalletActions() {
 
 function Overlay({ children, onClose, title }) {
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-end sm:place-items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-md card p-5 rounded-t-3xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[60] grid place-items-end sm:place-items-center bg-black/70 backdrop-blur-md p-0 sm:p-4" onClick={onClose}>
+      <div className="w-full sm:max-w-md p-5 rounded-t-3xl sm:rounded-3xl border border-white/10 max-h-[92vh] overflow-y-auto"
+        style={{ background: '#0e0c16', boxShadow: '0 -20px 60px -20px rgba(0,0,0,0.9)' }}
+        onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-serif text-2xl">{title}</h3>
           <button onClick={onClose} className="grid place-items-center w-8 h-8 rounded-full hover:bg-[var(--color-paper-2)] text-[var(--color-ink-soft)]">✕</button>
