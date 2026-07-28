@@ -3,7 +3,7 @@ import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import PriceChart from '../components/PriceChart'
 import TradePanel from '../components/TradePanel'
-import { usd, num } from '../lib/format'
+import { usd, num, pct } from '../lib/format'
 import { Verified, XLogo, Back } from '../components/icons'
 
 /**
@@ -73,13 +73,18 @@ export default function CharmDetail() {
         <div className="flex items-end justify-between mb-5">
           <div>
             <div className="eyebrow mb-1">Price</div>
-            <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : '—'}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : '—'}</div>
+              {charm.change24 != null && (
+                <span className={`chip !text-sm ${charm.change24 >= 0 ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)} · 24h</span>
+              )}
+            </div>
           </div>
           {typeof charm.graduationProgress === 'number' && grad !== true && (
             <span className="chip !text-sm">{Math.round(charm.graduationProgress * 100)}% to graduation</span>
           )}
         </div>
-        <PriceChart seed={charm.history} live={price} up />
+        <PriceChart seed={charm.history} live={price} up={charm.change24 == null ? true : charm.change24 >= 0} />
         <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t hairline">
           <Stat label="Market cap" value={charm.mcap ? usd(charm.mcap) : '—'} />
           <Stat label="Holders" value={charm.holders != null ? num(charm.holders) : '—'} />

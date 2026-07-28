@@ -105,7 +105,7 @@ function Card({ charm, price, onOpen, onTrade }) {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(60% 60% at 50% 42%, rgba(255,255,255,0.10), transparent 70%)' }} />
         <div className="floaty"><CharmAvatar charm={charm} size={112} ring /></div>
-        <span className={`absolute top-3.5 right-3.5 chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>
+        {charm.change24 != null && <span className={`absolute top-3.5 right-3.5 chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>}
       </div>
 
       {/* body */}

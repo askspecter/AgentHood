@@ -27,7 +27,7 @@ function EthMark({ size = 22 }) {
 }
 
 export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false, bare = false }) {
-  const { wallet, connect } = useStore()
+  const { wallet, connect, ethUsd } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, '') } : null
 
   const [tok, setTok] = useState(token || '')
@@ -36,7 +36,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
   const [meta, setMeta] = useState(null)
   const [side, setSide] = useState('buy')
   const [amount, setAmount] = useState('')
-  const [slippage, setSlippage] = useState(1)
+  const [slippage, setSlippage] = useState(5)
 
   const [quote, setQuote] = useState(null)
   const [quoting, setQuoting] = useState(false)
@@ -115,6 +115,10 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
 
   const sym = (quote?.symbol || symbol || 'TOKEN').replace(/^\$/, '')
   const outLabel = quote ? quote.amountOutLabel : '0'
+  // The trade's worth in dollars, from the ETH leg × the live rate. On a buy the
+  // ETH leg is what you spend; on a sell it's what you receive (from the quote).
+  const ethLeg = side === 'buy' ? (Number(amount) || 0) : (quote ? parseFloat(quote.amountOutLabel) || 0 : 0)
+  const worthUsd = ethUsd && ethLeg > 0 ? `$${(ethLeg * ethUsd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '$0.00'
   const sellChip = sellIsEth
     ? <><EthMark /> <span className="font-semibold">ETH</span></>
     : <><Logo logo={logo} sym={sym} /> <span className="font-semibold">{sym}</span></>
@@ -141,7 +145,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
           value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
           placeholder="0" inputMode="decimal"
           className="w-full bg-transparent outline-none text-2xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{quote && sellIsEth === (side === 'buy') ? quote.amountInLabel?.replace(/^[\d.,]+\s*/, '') && `≈ ${quote.amountInLabel}` : '$0.00'}</div>
+        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{worthUsd}</div>
         <div className="flex items-center justify-between mt-2">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{sellChip}</span>
           <div className="flex items-center gap-2">
@@ -164,7 +168,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       <div className="rounded-2xl p-3 bg-[var(--color-paper-2)] mt-1.5">
         <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Buy</div>
         <div className="text-2xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
-        <div className="text-sm text-[var(--color-ink-faint)] mt-1">$0.00</div>
+        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{worthUsd}</div>
         <div className="flex items-center justify-between mt-3">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{buyChip}</span>
         </div>

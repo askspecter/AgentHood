@@ -105,8 +105,11 @@ function GridCard({ charm, price }) {
       </div>
       <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
 
-      <div className="flex items-center justify-center gap-2.5 mt-1.5 font-mono num text-xs">
+      <div className="flex items-center justify-center gap-2 mt-1.5 font-mono num text-xs">
         <span className="text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</span>
+        {charm.change24 != null && (
+          <span className={charm.change24 >= 0 ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}>{pct(charm.change24)}</span>
+        )}
         {charm.holders != null && (
           <span className="inline-flex items-center gap-1 text-[var(--color-ink-faint)]">
             <Mentions size={12} />{num(charm.holders)}
