@@ -135,14 +135,14 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
         </label>
       )}
       {/* Sell box */}
-      <div className="rounded-2xl p-3.5 bg-[var(--color-paper-2)]">
+      <div className="rounded-2xl p-3 bg-[var(--color-paper-2)]">
         <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Sell</div>
         <input
           value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
           placeholder="0" inputMode="decimal"
-          className="w-full bg-transparent outline-none text-3xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-        <div className="text-sm text-[var(--color-ink-faint)] mt-1">{quote && sellIsEth === (side === 'buy') ? quote.amountInLabel?.replace(/^[\d.,]+\s*/, '') && `≈ ${quote.amountInLabel}` : '$0.00'}</div>
-        <div className="flex items-center justify-between mt-3">
+          className="w-full bg-transparent outline-none text-2xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
+        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{quote && sellIsEth === (side === 'buy') ? quote.amountInLabel?.replace(/^[\d.,]+\s*/, '') && `≈ ${quote.amountInLabel}` : '$0.00'}</div>
+        <div className="flex items-center justify-between mt-2">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{sellChip}</span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-[var(--color-ink-soft)]">{sellAvailLabel}</span>
@@ -161,9 +161,9 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       </div>
 
       {/* Buy box */}
-      <div className="rounded-2xl p-3.5 bg-[var(--color-paper-2)] mt-1.5">
+      <div className="rounded-2xl p-3 bg-[var(--color-paper-2)] mt-1.5">
         <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Buy</div>
-        <div className="text-3xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
+        <div className="text-2xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
         <div className="text-sm text-[var(--color-ink-faint)] mt-1">$0.00</div>
         <div className="flex items-center justify-between mt-3">
           <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{buyChip}</span>
