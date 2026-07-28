@@ -9,7 +9,7 @@ export const TONES = [
   ['#7db4ff', '#2f5ea8'], // azure
   ['#ff9d7d', '#a8522f'], // coral
 ]
-function toneFor(charm) {
+export function toneFor(charm) {
   if (Array.isArray(charm.tone)) return charm.tone
   const key = charm.id || charm.name || 'e'
   let h = 0

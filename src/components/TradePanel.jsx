@@ -28,7 +28,7 @@ export default function TradePanel({ charm }) {
   }
 
   return (
-    <div className="card p-5 sticky top-24">
+    <div className="card p-5 lg:sticky lg:top-24">
       <div className="seg w-full mb-4">
         <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 ${side === 'buy' ? 'on' : ''}`}>Buy</button>
         <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 ${side === 'sell' ? 'on' : ''}`}>Sell</button>
