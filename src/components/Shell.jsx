@@ -69,27 +69,43 @@ export default function Shell() {
         <Outlet />
       </main>
 
-      {/* ===== mobile bottom tab bar ===== */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[rgba(7,6,12,.85)] backdrop-blur-xl border-t hairline">
-        <div className="grid grid-cols-4 max-w-md mx-auto">
-          {TABS.map((t) => {
-            const Icon = t.icon
-            return (
-              <NavLink key={t.to} to={t.to} end={t.end}
-                className={({ isActive }) =>
-                  `flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium ${
-                    isActive ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
-                  }`}>
-                {({ isActive }) => (<><Icon active={isActive} /><span>{t.label}</span></>)}
-              </NavLink>
-            )
-          })}
-          <button onClick={() => nav('/create')} className="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium text-[var(--color-ink-faint)]">
-            <span className="grid place-items-center w-6 h-6 rounded-full text-white text-base leading-none" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>+</span>
-            Create
+      {/* ===== mobile floating pill nav ===== */}
+      <div className="md:hidden fixed inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
+        style={{ bottom: 'calc(0.7rem + env(safe-area-inset-bottom, 0px))' }}>
+        <div className="pointer-events-auto flex items-center gap-2.5">
+          {/* the pill */}
+          <div className="flex items-center gap-1 rounded-[24px] p-1.5 border border-white/10
+                          bg-[rgba(18,16,26,0.7)] backdrop-blur-2xl shadow-[0_18px_44px_-14px_rgba(0,0,0,0.85)]">
+            {TABS.map((t) => {
+              const Icon = t.icon
+              return (
+                <NavLink key={t.to} to={t.to} end={t.end}
+                  className={({ isActive }) =>
+                    `relative flex flex-col items-center justify-center gap-1 w-[62px] py-2 rounded-[18px] text-[11px] font-medium transition-colors ${
+                      isActive ? 'text-white' : 'text-[var(--color-ink-faint)]'
+                    }`}>
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span className="absolute inset-0 rounded-[18px] pointer-events-none"
+                          style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(180,150,255,0.55)' }} />
+                      )}
+                      <span className="relative"><Icon active={isActive} /></span>
+                      <span className="relative">{t.label}</span>
+                    </>
+                  )}
+                </NavLink>
+              )
+            })}
+          </div>
+          {/* separate holographic create button */}
+          <button onClick={() => nav('/create')} aria-label="Create character"
+            className="orb-spin grid place-items-center w-14 h-14 rounded-full shrink-0 active:scale-95 transition-transform"
+            style={{ background: 'var(--holo)', boxShadow: '0 12px 32px -8px rgba(180,150,255,0.75), inset 0 1px 0 rgba(255,255,255,0.6)' }}>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
           </button>
         </div>
-      </nav>
+      </div>
 
       <IntroModal open={intro} onClose={() => setIntro(false)} />
     </div>
