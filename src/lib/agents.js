@@ -77,6 +77,7 @@ export function tokenToAgent(t, ethUsd = null) {
     mcap: mcapUsd ?? 0,
     marketCapWeth: t.marketCapWeth ?? null,
     change24: Number.isFinite(t.change24) ? t.change24 : null,
+    featured: t.featured ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
     creator: t.deployer ? short(t.deployer) : 'pons',

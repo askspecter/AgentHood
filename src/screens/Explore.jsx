@@ -21,18 +21,28 @@ const TABS = [
   { key: 'graduated', label: 'Graduated' },
 ]
 
+// Rank by the real on-chain market cap (in WETH), which — unlike the USD `mcap`
+// — is present even when the ETH/USD rate is missing, so the order never
+// collapses to "newest coin with any non-zero number first".
+const capOf = (c) => (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0)
+// Top: established (featured) coins first, then by cap — so PONS and the other
+// known coins never get demoted below a fresh launch that read a stray cap.
+const byTop = (a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || capOf(b) - capOf(a)
+// New: freshly-discovered (non-featured) launches first, then by cap.
+const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
+
 export default function Explore() {
   const { agents, agentsLoading, loadAgents, prices } = useStore()
   const [tab, setTab] = useState('top')
   const [q, setQ] = useState('')
 
-  const cast = useMemo(() => [...agents].sort((a, b) => b.mcap - a.mcap).slice(0, 6), [agents])
+  const cast = useMemo(() => [...agents].sort(byTop).slice(0, 6), [agents])
 
   const list = useMemo(() => {
     let l = agents.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.ticker.toLowerCase().includes(q.toLowerCase()))
     if (tab === 'graduated') l = l.filter((c) => c.graduated === true)
-    if (tab === 'top') l = [...l].sort((a, b) => b.mcap - a.mcap)
-    // 'new' keeps the feed's newest-first order
+    if (tab === 'top') l = [...l].sort(byTop)
+    else if (tab === 'new') l = [...l].sort(byNew)
     return l
   }, [agents, tab, q])
 

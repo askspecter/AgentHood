@@ -292,6 +292,12 @@ export async function GET(request) {
         .filter((l) => !featuredSet.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
         .sort(byMcap);
 
+      // Tag the source so the client can keep established (featured) coins ranked
+      // ahead of freshly-discovered ones on the Top tab, and show the discovered
+      // ones first on New — without depending on a USD rate that may be missing.
+      for (const l of featured) l.featured = true;
+      for (const l of extra) l.featured = false;
+
       launches = [...featured, ...extra];
       const shown = launches.slice(0, 24);
       await Promise.all([

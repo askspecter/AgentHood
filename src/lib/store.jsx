@@ -11,19 +11,32 @@ import { tokenToAgent, replyFor } from './agents'
 
 const NETWORK = 'robinhood'
 const CHAT_KEY = 'eska.chats.v1'
+const FEED_KEY = 'eska.feed.v1'
 const StoreCtx = createContext(null)
 
 function loadChats() {
   try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {} } catch { return {} }
 }
 
+// The last feed we successfully loaded. Painting it instantly on the next visit
+// turns the cold-load blank grid into a warm one that refreshes in the
+// background, so the front page never sits empty while the RPC works.
+function loadFeed() {
+  try {
+    const j = JSON.parse(localStorage.getItem(FEED_KEY))
+    return j && Array.isArray(j.agents) && j.agents.length ? j : null
+  } catch { return null }
+}
+
 export function StoreProvider({ children }) {
   const [wallet, setWallet] = useState(null)
 
-  const [agents, setAgents] = useState([])
-  const [ethUsd, setEthUsd] = useState(null)
-  const [explorer, setExplorer] = useState(null)
-  const [agentsLoading, setAgentsLoading] = useState(true)
+  const initFeed = typeof window === 'undefined' ? null : loadFeed()
+  const [agents, setAgents] = useState(initFeed?.agents ?? [])
+  const [ethUsd, setEthUsd] = useState(initFeed?.ethUsd ?? null)
+  const [explorer, setExplorer] = useState(initFeed?.explorer ?? null)
+  // With a cached feed we show it immediately and refresh quietly — no skeletons.
+  const [agentsLoading, setAgentsLoading] = useState(!initFeed)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
 
@@ -63,7 +76,9 @@ export function StoreProvider({ children }) {
         const rate = json.ethUsd ?? null
         setEthUsd(rate)
         setExplorer(json.explorer ?? null)
-        setAgents((json.launches || []).map((t) => tokenToAgent(t, rate)))
+        const mapped = (json.launches || []).map((t) => tokenToAgent(t, rate))
+        setAgents(mapped)
+        try { localStorage.setItem(FEED_KEY, JSON.stringify({ agents: mapped, ethUsd: rate, explorer: json.explorer ?? null, at: Date.now() })) } catch {}
       })
       .catch(() => {})
       .finally(() => setAgentsLoading(false))
