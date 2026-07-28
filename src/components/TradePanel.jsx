@@ -124,13 +124,6 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
 
   return (
     <div className="card p-4">
-      {/* Market / Limit / Orders — Market is live; the rest are placeholders */}
-      <div className="seg mb-4">
-        <button className="on flex-1">Market</button>
-        <button className="flex-1 opacity-50" disabled>Limit</button>
-        <button className="flex-1 opacity-50" disabled>Orders</button>
-      </div>
-
       {/* Sell box */}
       <div className="rounded-2xl p-4 bg-[var(--color-paper-2)]">
         <div className="text-sm text-[var(--color-ink-soft)] mb-1">Sell</div>
