@@ -27,6 +27,37 @@ const TOKEN_LAUNCHED_TOPIC =
   "0xdb51ea9ad51ab453a65a4cb7e60c3cb378c9501bb002609f8f97778fb6c4235a";
 
 /**
+ * Featured pons coins — a reliable base list so the established coins never
+ * drop out of the feed because auto-discovery missed them.
+ *
+ * These are NOT a fixed leaderboard: every one is re-priced live from the chain
+ * on each refresh, and the feed is ranked by that live market cap alongside the
+ * auto-discovered coins. So the ORDER updates itself as caps move, new coins
+ * that grow big are still picked up by discovery, and this list only guarantees
+ * the known coins are always present. Add or remove addresses here (or via the
+ * PONS_SEED_TOKENS env) as the roster changes.
+ */
+const FEATURED_PONS = [
+  "0x39dBED3a2bd333467115dE45665cC57F813C4571", // PONS
+  "0x2076CD26D8Cf26f91655d4Ada3dD2fdBFdd8e7a4", // APES
+  "0x62C71cd34a52c30d894419CBcc55Db2aFA8032eA", // YOLO
+  "0x45F82AC5d507e988f7406935da8eEfe495a360e0", // BRODIE
+  "0xA8aD8DAcbb2123458BD628e7De689524905bFcb7", // LONG
+  "0xB0Fea401F1ee62F0e7cC3Bdf94b20c25aB5117e2", // MOTION
+  "0x69984Ad3322300039f2855f81C44Dbc532EFe744", // TYGR
+  "0x9516922a56171AB9834b88864d1010a6D8633296", // Artcoin
+  "0x9d98f99b0b6B2b7F99ab8BC187e1C59793eccb2c", // PIPECAT
+  "0x1aBf16f660CCbAa22CE8646deB1B63635D582228", // FONZ
+  "0x30dB03A051205CcBeb1B6524dDf87fbC6c0127bC", // TA
+  "0x8ECEA3d0E648DB646d824AA51EedeB16aC3d6878", // wire
+  "0x92D176ccBeEffeCd8089e841D09ea17b6C22D969", // VLAD
+  "0x29fbaa3668E688C83fae9b5Dd13cC3CfC097ccBF", // DAHOOD
+  "0x7FE995a80075dF3Dc8Ae11A9b82c7FE4202CD87f", // HMM
+  "0x859ead0EE2fd39a2804bB27713742577f7bE79c1", // CC
+  "0xC9E7C34fa156a235e8B8601171a543bc9c84a1B9", // TAMPONS
+];
+
+/**
  * Discover launch token addresses from the block explorer's own index.
  *
  * pons launches happened long before the current head, and the RPC times out on
@@ -159,7 +190,7 @@ export async function GET(request) {
     ]);
 
     const seeds = [
-      chain.reference?.token,
+      ...FEATURED_PONS,
       process.env.OFFICIAL_TOKEN,
       ...(process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/),
     ].filter(Boolean);
@@ -172,11 +203,11 @@ export async function GET(request) {
     // Seeds and top-tokens first (most likely to be the big coins), then the
     // newest launches.
     for (const a of [...seeds, ...topTokens, ...discovered]) {
-      try {
-        const addr = getAddress(a);
-        const k = addr.toLowerCase();
-        if (!seen.has(k)) { seen.add(k); candidates.push(addr); }
-      } catch { /* skip a malformed address */ }
+      let addr;
+      try { addr = getAddress(a); }
+      catch { try { addr = getAddress(String(a).toLowerCase()); } catch { continue; } }
+      const k = addr.toLowerCase();
+      if (!seen.has(k)) { seen.add(k); candidates.push(addr); }
     }
     const picked = candidates.slice(0, cap);
 
