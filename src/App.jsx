@@ -9,6 +9,8 @@ import ChatThread from './screens/ChatThread'
 import Create from './screens/Create'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
+import Trade from './screens/Trade'
+import Launch from './screens/Launch'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -29,6 +31,8 @@ export default function App() {
             <Route path="chat/:id" element={<ChatThread />} />
             <Route path="create" element={<Create />} />
             <Route path="you" element={<Profile />} />
+            <Route path="trade" element={<Trade />} />
+            <Route path="launch" element={<Launch />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

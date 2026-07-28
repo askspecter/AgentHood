@@ -65,6 +65,10 @@ export default function Profile() {
           <button onClick={doAddCash} className="btn btn-primary">Add cash</button>
           <Link to="/" className="btn btn-secondary">Discover coins</Link>
         </div>
+        <div className="flex gap-2 mt-2">
+          <Link to="/launch" className="btn btn-holo static flex-1 justify-center">Launch a coin</Link>
+          <Link to="/trade" className="btn btn-secondary flex-1 justify-center">Trade on-chain</Link>
+        </div>
       </div>
 
       {/* tabs */}
