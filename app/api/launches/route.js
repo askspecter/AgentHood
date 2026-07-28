@@ -14,29 +14,41 @@ const TOKEN_LAUNCHED_TOPIC =
  * every log, so we page through the factory's TokenLaunched events (no block
  * limit), collect token addresses, and price them by direct contract reads.
  */
-async function discoverViaExplorer(explorer, factories, pages = 4) {
+async function fetchJson(url, timeoutMs = 7000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", signal: controller.signal });
+    if (!res.ok) return null;
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function discoverViaExplorer(explorer, factories, pages = 2) {
   const found = [];
   for (const factory of factories) {
     if (!factory) continue;
     const base = `${explorer.replace(/\/+$/, "")}/api/v2/addresses/${factory}/logs`;
     let params = null;
     for (let p = 0; p < pages; p++) {
+      let json;
       try {
         const url = params ? `${base}?${new URLSearchParams(params)}` : base;
-        const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store" });
-        if (!res.ok) break;
-        const json = await res.json();
-        for (const log of json.items || []) {
-          const topics = log.topics || [];
-          if ((topics[0] || "").toLowerCase() !== TOKEN_LAUNCHED_TOPIC) continue;
-          const t = topics[1];
-          if (t) found.push({ token: "0x" + t.slice(-40), block: Number(log.block_number) || 0 });
-        }
-        params = json.next_page_params;
-        if (!params) break;
+        json = await fetchJson(url);
       } catch {
         break;
       }
+      if (!json) break;
+      for (const log of json.items || []) {
+        const topics = log.topics || [];
+        if ((topics[0] || "").toLowerCase() !== TOKEN_LAUNCHED_TOPIC) continue;
+        const t = topics[1];
+        if (t) found.push({ token: "0x" + t.slice(-40), block: Number(log.block_number) || 0 });
+      }
+      params = json.next_page_params;
+      if (!params) break;
     }
   }
   found.sort((a, b) => b.block - a.block); // newest first
