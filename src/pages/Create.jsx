@@ -72,7 +72,7 @@ export default function Create() {
         </div>
 
         <div>
-          <div className="card p-6 sticky top-24 text-center">
+          <div className="card p-6 md:sticky md:top-24 text-center">
             <div className="eyebrow mb-4">Preview</div>
             <div className="flex justify-center mb-3"><CharmAvatar charm={preview} size={72} ring /></div>
             <div className="flex items-center justify-center gap-1.5">
