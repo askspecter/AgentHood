@@ -89,7 +89,7 @@ async function discoverViaExplorer(explorer, factories, pages = 2) {
  * the big graduated coins (PONS, YOLO, …) surface at all — we take the top
  * tokens, then keep only the ones that turn out to be real pons launches.
  */
-async function discoverTopTokens(explorer, pages = 3) {
+async function discoverTopTokens(explorer, pages = Number(process.env.PONS_TOP_PAGES || 5)) {
   const addrs = [];
   const base = `${explorer.replace(/\/+$/, "")}/api/v2/tokens?type=ERC-20`;
   let params = null;
@@ -122,7 +122,7 @@ function serialise(value) {
  * once. Lives on the module, so it survives across requests to a warm instance.
  */
 const CACHE = new Map();
-const CACHE_TTL_MS = Number(process.env.LAUNCH_CACHE_TTL_MS || 180_000);
+const CACHE_TTL_MS = Number(process.env.LAUNCH_CACHE_TTL_MS || 300_000);
 
 /**
  * GET /api/launches?network=robinhood&limit=20
@@ -166,7 +166,7 @@ export async function GET(request) {
 
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
     // market cap so the feed shows the biggest pons coins — not just the newest.
-    const cap = Number(process.env.PONS_ENRICH_CAP || 40);
+    const cap = Number(process.env.PONS_ENRICH_CAP || 50);
     const seen = new Set();
     const candidates = [];
     // Seeds and top-tokens first (most likely to be the big coins), then the
@@ -182,7 +182,7 @@ export async function GET(request) {
 
     let launches = [];
     if (picked.length) {
-      const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 4));
+      const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 5));
       launches = enriched
         // Real pons launches with an actual priced pool — this drops the spam
         // launches that have no liquidity (marketCapWeth null) and non-pons ERC-20s.

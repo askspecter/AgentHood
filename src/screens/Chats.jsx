@@ -26,7 +26,7 @@ export default function Chats() {
           {threads.map(({ agent, last }, i) => (
             <Link key={agent.id} to={`/chat/${agent.id}`}
               className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
-              <CharmAvatar charm={agent} size={44} square={!!agent.logo} />
+              <CharmAvatar charm={agent} size={44} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{agent.name} <span className="text-xs text-[var(--color-ink-faint)] font-mono">${agent.ticker}</span></span>
@@ -50,7 +50,7 @@ export default function Chats() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((c) => (
             <Link key={c.id} to={`/chat/${c.id}`} className="card card-hover p-4 flex items-center gap-3">
-              <CharmAvatar charm={c} size={44} square={!!c.logo} />
+              <CharmAvatar charm={c} size={44} />
               <div className="min-w-0">
                 <div className="font-medium truncate">{c.name}</div>
                 <div className="text-xs text-[var(--color-ink-soft)] truncate">{c.tagline}</div>

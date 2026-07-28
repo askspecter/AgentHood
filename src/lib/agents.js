@@ -9,6 +9,21 @@
 
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 
+/** Make a token's logo loadable in a browser: ipfs:// → a public gateway. */
+function normalizeLogo(raw) {
+  if (!raw || typeof raw !== 'string') return null
+  const s = raw.trim()
+  if (!s) return null
+  if (s.startsWith('ipfs://')) {
+    const path = s.replace(/^ipfs:\/\/(ipfs\/)?/, '')
+    return `https://ipfs.io/ipfs/${path}`
+  }
+  if (/^https?:\/\//.test(s) || s.startsWith('data:')) return s
+  // A bare CID.
+  if (/^[a-zA-Z0-9]{46,}$/.test(s)) return `https://ipfs.io/ipfs/${s}`
+  return null
+}
+
 /** Stable 32-bit hash of a string — same address always yields the same flavour. */
 function hash(str) {
   let h = 0
@@ -40,7 +55,7 @@ export function tokenToAgent(t, ethUsd = null) {
     token: t.token,
     name,
     ticker: symbol,
-    logo: t.logo || null,
+    logo: normalizeLogo(t.logo),
     priceInWeth: t.priceInWeth ?? null,
     price: priceUsd ?? 0,
     priceUsd,
