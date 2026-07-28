@@ -33,10 +33,11 @@ const fmtQty = (n) =>
 
 export default function Profile() {
   const nav = useNavigate()
-  const { wallet, connect } = useStore()
+  const { wallet, connect, ethUsd: storeEthUsd } = useStore()
 
   const [folio, setFolio] = useState(null)
-  const [ethUsd, setEthUsd] = useState(null)
+  const [folioEthUsd, setFolioEthUsd] = useState(null)
+  const [walletEth, setWalletEth] = useState(null)
   const [address, setAddress] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -49,8 +50,13 @@ export default function Profile() {
     try {
       // Address first, so the wallet card can render even if the (slower) scan
       // of held coins is still running or the rate lookup fails.
+      // The wallet's native balance comes from a single fast getBalance call —
+      // it must show even if the (heavier) holdings scan times out on a public
+      // RPC. This is why "add ETH then see nothing" happened: the balance was
+      // taken from the slow portfolio call instead of this one.
       const w = await fetch(`/api/wallet?network=${NETWORK}`).then((r) => (r.ok ? r.json() : null))
       if (w?.address) setAddress(w.address)
+      if (w?.balance?.formatted != null) setWalletEth(Number(w.balance.formatted))
 
       const res = await fetch('/api/terminal', {
         method: 'POST',
@@ -60,7 +66,7 @@ export default function Profile() {
       const json = await res.json()
       if (json.data) {
         setFolio(json.data)
-        setEthUsd(json.ethUsd ?? null)
+        setFolioEthUsd(json.ethUsd ?? null)
         if (json.data.address) setAddress(json.data.address)
       } else if (json.error) {
         setError(friendly(json.error))
@@ -96,8 +102,10 @@ export default function Profile() {
     )
   }
 
-  const eth = folio?.eth ?? null
-  const totalUsd = folio ? (ethUsd ? folio.totalWeth * ethUsd : null) : null
+  const rate = folioEthUsd ?? storeEthUsd
+  const eth = walletEth ?? folio?.eth ?? null
+  const totalWeth = folio?.totalWeth ?? eth
+  const totalUsd = totalWeth != null && rate ? totalWeth * rate : null
   const holdings = folio?.holdings ?? []
 
   return (
@@ -125,10 +133,9 @@ export default function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
             <div className="eyebrow mb-1">Total value</div>
-            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : fmtEth(folio?.totalWeth)}</div>
-            <div className="text-xs text-[var(--color-ink-faint)] mt-1">ETH + priced coins</div>
+            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : (totalWeth != null ? fmtEth(totalWeth) : '—')}</div>
           </div>
-          <Mini label="ETH balance" value={fmtEth(eth)} sub={ethUsd && eth != null ? fmtUsd(eth * ethUsd) : null} />
+          <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '—'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
           <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
