@@ -48,15 +48,15 @@ export default function WalletActions() {
 
 function Overlay({ children, onClose, title }) {
   return (
-    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:items-center" onClick={onClose}>
-      <div className="w-full sm:max-w-sm max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/10"
-        style={{ background: '#0e0c16', boxShadow: '0 -24px 60px -20px rgba(0,0,0,0.9)' }}
+    <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 backdrop-blur-md p-4" onClick={onClose}>
+      <div className="w-full max-w-[360px] max-h-[86vh] flex flex-col rounded-3xl border border-white/10"
+        style={{ background: '#0e0c16', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.95)' }}
         onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-4 pt-4 pb-2 shrink-0">
-          <h3 className="font-serif text-2xl">{title}</h3>
+        <div className="flex items-center justify-between px-4 pt-3.5 pb-1.5 shrink-0">
+          <h3 className="font-serif text-xl">{title}</h3>
           <button onClick={onClose} className="grid place-items-center w-8 h-8 rounded-full hover:bg-[var(--color-paper-2)] text-[var(--color-ink-soft)]">✕</button>
         </div>
-        <div className="px-4 pb-5 overflow-y-auto">{children}</div>
+        <div className="px-4 pb-4 overflow-y-auto">{children}</div>
       </div>
     </div>
   )
