@@ -69,7 +69,8 @@ export default function Shell() {
         <Outlet />
       </main>
 
-      {/* ===== mobile floating pill nav ===== */}
+      {/* ===== mobile floating pill nav (hidden in the focused create flow) ===== */}
+      {loc.pathname !== '/create' && (
       <div className="md:hidden fixed inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
         style={{ bottom: 'calc(0.7rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="pointer-events-auto flex items-center gap-1 rounded-[24px] p-1.5 border border-white/10
@@ -106,6 +107,7 @@ export default function Shell() {
           </button>
         </div>
       </div>
+      )}
 
       <IntroModal open={intro} onClose={() => setIntro(false)} />
     </div>
