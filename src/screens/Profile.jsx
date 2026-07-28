@@ -133,7 +133,7 @@ export default function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
             <div className="eyebrow mb-1">Total value</div>
-            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : (totalWeth != null ? fmtEth(totalWeth) : '—')}</div>
+            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '—'}</div>
           </div>
           <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '—'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
           <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
