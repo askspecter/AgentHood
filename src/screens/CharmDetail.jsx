@@ -82,8 +82,8 @@ export default function CharmDetail() {
         <PriceChart seed={charm.history} live={price} up />
         <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t hairline">
           <Stat label="Market cap" value={charm.mcap ? usd(charm.mcap) : '—'} />
+          <Stat label="Holders" value={charm.holders != null ? num(charm.holders) : '—'} />
           <Stat label="Supply" value={num(charm.supply)} />
-          <Stat label="Chain" value="pons" />
         </div>
         {explorer && addr && (
           <a href={`${explorer}/token/${addr}`} target="_blank" rel="noopener noreferrer"

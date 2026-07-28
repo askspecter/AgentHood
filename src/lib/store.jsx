@@ -41,11 +41,13 @@ export function StoreProvider({ children }) {
         const user = data?.user
         if (!user) { setWallet(null); return }
         let address = ''
+        let ethBalance = null
         try {
           const w = await fetch('/api/wallet').then((r) => (r.ok ? r.json() : null))
           if (w?.address) address = w.address
+          if (w?.balance?.formatted != null) ethBalance = Number(w.balance.formatted)
         } catch {}
-        if (!cancelled) setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address, kind: 'x' })
+        if (!cancelled) setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address, ethBalance, kind: 'x' })
       })
       .catch(() => {})
     return () => { cancelled = true }

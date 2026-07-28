@@ -141,6 +141,24 @@ async function discoverTopTokens(explorer, pages = Number(process.env.PONS_TOP_P
   return addrs;
 }
 
+/** Attach each token's holder count from the explorer's token info. */
+async function attachHolders(explorer, launches, concurrency = 5) {
+  const base = `${explorer.replace(/\/+$/, "")}/api/v2/tokens/`;
+  for (let i = 0; i < launches.length; i += concurrency) {
+    const batch = launches.slice(i, i + concurrency);
+    await Promise.all(
+      batch.map(async (l) => {
+        try {
+          const j = await fetchJson(base + l.token);
+          if (j) l.holders = Number(j.holders ?? j.holders_count ?? j.holder_count) || null;
+        } catch {
+          /* holders are a nice-to-have; never fail the feed over them */
+        }
+      })
+    );
+  }
+}
+
 function serialise(value) {
   return JSON.parse(
     JSON.stringify(value, (_key, v) => (typeof v === "bigint" ? v.toString() : v))
@@ -214,11 +232,22 @@ export async function GET(request) {
     let launches = [];
     if (picked.length) {
       const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 5));
-      launches = enriched
-        // Real pons launches with an actual priced pool — this drops the spam
-        // launches that have no liquidity (marketCapWeth null) and non-pons ERC-20s.
-        .filter((l) => l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
-        .sort((a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0));
+      const featuredSet = new Set(FEATURED_PONS.map((a) => a.toLowerCase()));
+      const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
+
+      // Featured coins always show (even if a price read failed this cycle), as
+      // long as they read as a token at all. Ranked by live market cap.
+      const featured = enriched
+        .filter((l) => featuredSet.has((l.token || "").toLowerCase()) && (l.symbol || l.name))
+        .sort(byMcap);
+      // Auto-discovered coins must be real pons launches with a priced pool, so
+      // no-liquidity spam and non-pons ERC-20s are dropped.
+      const extra = enriched
+        .filter((l) => !featuredSet.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
+        .sort(byMcap);
+
+      launches = [...featured, ...extra];
+      await attachHolders(chain.explorer, launches.slice(0, 24));
     }
 
     const value = serialise({
