@@ -39,7 +39,7 @@ export default function WalletActions() {
       {modal === 'send' && <SendModal wallet={wallet} onClose={() => setModal(null)} />}
       {modal === 'trade' && (
         <Overlay onClose={() => setModal(null)} title="Trade">
-          <TradePanel editableToken />
+          <TradePanel editableToken bare />
         </Overlay>
       )}
     </>
@@ -48,9 +48,9 @@ export default function WalletActions() {
 
 function Overlay({ children, onClose, title }) {
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-end sm:place-items-center bg-black/70 backdrop-blur-md p-0 sm:p-4" onClick={onClose}>
-      <div className="w-full sm:max-w-md p-5 rounded-t-3xl sm:rounded-3xl border border-white/10 max-h-[92vh] overflow-y-auto"
-        style={{ background: '#0e0c16', boxShadow: '0 -20px 60px -20px rgba(0,0,0,0.9)' }}
+    <div className="fixed inset-0 z-[60] grid place-items-center bg-black/70 backdrop-blur-md p-4" onClick={onClose}>
+      <div className="w-full max-w-sm p-4 rounded-3xl border border-white/10 max-h-[88vh] overflow-y-auto"
+        style={{ background: '#0e0c16', boxShadow: '0 24px 60px -20px rgba(0,0,0,0.9)' }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-serif text-2xl">{title}</h3>
