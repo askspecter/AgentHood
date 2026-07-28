@@ -11,8 +11,8 @@ export default function LoginButton() {
 
   if (!wallet) {
     return (
-      <button className="btn btn-primary" onClick={connect} title="Sign in with X">
-        <XGlyph size={13} color="#fff" />
+      <button className="btn btn-holo" onClick={connect} title="Sign in with X">
+        <XGlyph size={13} color="#0b0a12" />
         <span className="hidden sm:inline">Sign in</span>
       </button>
     )
