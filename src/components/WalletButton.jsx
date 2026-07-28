@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { usd } from '../lib/format'
+import { XGlyph } from './icons'
 
 export default function LoginButton() {
   const { wallet, connect, disconnect, cash } = useStore()
@@ -10,49 +11,39 @@ export default function LoginButton() {
 
   if (!wallet) {
     return (
-      <div className="relative">
-        <button className="btn btn-white text-sm !py-2 !px-5" onClick={() => setOpen((o) => !o)}>Log in</button>
-        {open && (
-          <div className="absolute right-0 mt-2 w-60 card p-2 z-50">
-            <p className="px-3 pt-2 pb-1 text-xs font-semibold text-[var(--color-ink-soft)]">Sign in to Charms</p>
-            {[
-              ['wallet', '👛', 'Continue with wallet'],
-              ['email', '✉️', 'Continue with email'],
-              ['x', '𝕏', 'Continue with X'],
-              ['telegram', '✈️', 'Continue with Telegram'],
-            ].map(([kind, ic, label]) => (
-              <button
-                key={kind}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white text-left text-sm"
-                onClick={() => { connect(kind); setOpen(false) }}
-              >
-                <span className="text-lg w-5 text-center">{ic}</span>
-                {label}
-              </button>
-            ))}
-            <p className="px-3 py-2 text-[10px] text-[var(--color-ink-soft)]">Demo only — no real wallet or funds are used.</p>
-          </div>
-        )}
-      </div>
+      <button
+        className="btn text-sm !py-2 !px-4 bg-black text-white border border-white/25 hover:bg-[#111]"
+        onClick={connect}
+        title="Sign in with X"
+      >
+        <XGlyph size={14} color="#fff" />
+        Log in with X
+      </button>
     )
   }
 
   return (
     <div className="relative">
-      <button className="flex items-center gap-1.5 bg-white rounded-full pl-2.5 pr-3 py-1.5 shadow-sm text-sm" onClick={() => setOpen((o) => !o)}>
+      <button
+        className="flex items-center gap-2 rounded-full pl-2.5 pr-3.5 py-1.5 text-sm bg-white/5 border border-white/15"
+        onClick={() => setOpen((o) => !o)}
+      >
         <span className="w-2 h-2 rounded-full bg-[var(--color-up)]" />
         <span className="font-mono font-semibold">{usd(cash)}</span>
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-64 card p-3 z-50">
-          <div className="text-sm font-semibold">{wallet.handle}</div>
+          <div className="flex items-center gap-2 mb-1">
+            <XGlyph size={13} color="var(--color-ink)" />
+            <span className="text-sm font-semibold">{wallet.handle}</span>
+          </div>
           <div className="font-mono text-xs text-[var(--color-ink-soft)] mb-3">{wallet.address}</div>
           <div className="flex items-center justify-between text-sm mb-3">
             <span className="text-[var(--color-ink-soft)]">Balance</span>
             <span className="font-mono font-semibold">{usd(cash)} USDC</span>
           </div>
           <button className="btn btn-ghost w-full text-sm mb-2" onClick={() => { setOpen(false); nav('/you') }}>View profile</button>
-          <button className="btn btn-ghost w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Log out</button>
+          <button className="btn btn-danger w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Log out</button>
         </div>
       )}
     </div>

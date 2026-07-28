@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { CHARMS as SEED } from '../data/charms'
 
-const KEY = 'charms.clone.v1'
+const KEY = 'eska.app.v1'
 const StoreCtx = createContext(null)
 
 function load() {
@@ -56,10 +56,10 @@ export function StoreProvider({ children }) {
     return () => clearInterval(t)
   }, [charms])
 
-  function connect(kind = 'wallet') {
+  function connect() {
+    // demo sign-in with X only — no real OAuth happens
     const address = '0x' + Math.random().toString(16).slice(2, 10) + '…' + Math.random().toString(16).slice(2, 6)
-    const handle = kind === 'wallet' ? 'you.sol' : 'you'
-    setWallet({ address, handle, kind })
+    setWallet({ address, handle: '@you', kind: 'x' })
   }
   function disconnect() { setWallet(null) }
 
@@ -122,8 +122,7 @@ export function StoreProvider({ children }) {
       id,
       name: draft.name,
       ticker: draft.ticker.toUpperCase(),
-      emoji: draft.emoji || '✨',
-      hue: Math.floor(Math.random() * 360),
+      hue: draft.hue ?? Math.floor(Math.random() * 360),
       tagline: draft.tagline,
       lore: draft.lore,
       creator: wallet?.handle ?? 'you',

@@ -1,26 +1,42 @@
-export default function CharmAvatar({ charm, size = 48, ring = false, shape = 'circle', showStatus = false }) {
+// Cinematic monogram orb: dual-hue radial gradient, hairline ring, soft glow.
+export default function CharmAvatar({ charm, size = 48, ring = false }) {
   const s = size
-  const bg = `linear-gradient(150deg, hsl(${charm.hue} 90% 84%), hsl(${(charm.hue + 45) % 360} 82% 66%))`
-  const radius = shape === 'circle' ? '50%' : s * 0.32
+  const h = charm.hue ?? 40
+  const letter = (charm.name?.[0] ?? 'E').toUpperCase()
   return (
     <div
-      className="relative shrink-0 grid place-items-center"
+      className="relative shrink-0 grid place-items-center select-none"
       style={{
-        width: s, height: s,
-        borderRadius: radius,
-        background: bg,
+        width: s, height: s, borderRadius: '50%',
+        background: `radial-gradient(120% 120% at 30% 22%,
+          hsl(${h} 65% 52% / .95) 0%,
+          hsl(${(h + 50) % 360} 70% 26%) 55%,
+          #07080d 120%)`,
         boxShadow: ring
-          ? `0 0 0 4px rgba(255,255,255,.9), 0 12px 26px -10px hsl(${charm.hue} 70% 45% / .6)`
-          : '0 6px 16px -8px rgba(20,32,59,.4)',
-        fontSize: s * 0.5,
+          ? `0 0 0 1px rgba(255,255,255,.28), 0 0 ${s * 0.6}px -${s * 0.12}px hsl(${h} 80% 55% / .65)`
+          : `inset 0 0 0 1px rgba(255,255,255,.14), 0 ${s * 0.16}px ${s * 0.5}px -${s * 0.2}px hsl(${h} 80% 45% / .55)`,
       }}
       aria-hidden
     >
-      <span style={{ filter: 'saturate(1.1)' }}>{charm.emoji}</span>
-      {showStatus && charm.online && (
+      <span
+        className="font-serif"
+        style={{
+          fontSize: s * 0.46,
+          color: 'rgba(255,255,255,.92)',
+          textShadow: '0 1px 8px rgba(0,0,0,.5)',
+          lineHeight: 1,
+        }}
+      >
+        {letter}
+      </span>
+      {charm.online && (
         <span
-          className="absolute rounded-full bg-[var(--color-up)] border-2 border-white"
-          style={{ width: s * 0.22, height: s * 0.22, right: s * 0.02, bottom: s * 0.02 }}
+          className="absolute rounded-full"
+          style={{
+            width: s * 0.18, height: s * 0.18, right: s * 0.02, bottom: s * 0.02,
+            background: 'var(--color-up)',
+            boxShadow: '0 0 0 2px #05060a, 0 0 10px rgba(63,214,143,.8)',
+          }}
         />
       )}
     </div>

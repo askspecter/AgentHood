@@ -1,5 +1,5 @@
-export function Verified({ size = 16, gold = false }) {
-  const fill = gold ? '#f4a419' : '#2f7dff'
+export function Verified({ size = 16, gold = true }) {
+  const fill = gold ? 'var(--color-accent)' : '#7f9cf5'
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" className="inline-block align-middle">
       <path
@@ -35,13 +35,21 @@ export function ArrowStat({ up, size = 18 }) {
   )
 }
 
+export function XGlyph({ size = 14, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+      <path d="M17.8 3h3.1l-6.9 7.9L22 21h-6.2l-4.8-6.3L5.4 21H2.3l7.4-8.5L2 3h6.3l4.4 5.8L17.8 3zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5z" />
+    </svg>
+  )
+}
+
 export function XLogo({ size = 14 }) {
   return (
     <span
-      className="inline-grid place-items-center rounded-full bg-black text-white"
-      style={{ width: size + 8, height: size + 8, fontSize: size * 0.9 }}
+      className="inline-grid place-items-center rounded-full bg-black text-white border border-white/20"
+      style={{ width: size + 10, height: size + 10 }}
     >
-      𝕏
+      <XGlyph size={size * 0.8} color="#fff" />
     </span>
   )
 }
@@ -49,8 +57,14 @@ export function XLogo({ size = 14 }) {
 export function Info({ size = 34 }) {
   return (
     <span
-      className="grid place-items-center rounded-full font-serif"
-      style={{ width: size, height: size, background: 'var(--color-ink)', color: '#fff', fontSize: size * 0.5 }}
+      className="grid place-items-center rounded-full font-serif border"
+      style={{
+        width: size, height: size,
+        background: 'rgba(255,255,255,.05)',
+        borderColor: 'rgba(255,255,255,.18)',
+        color: 'var(--color-ink)',
+        fontSize: size * 0.52,
+      }}
     >
       i
     </span>

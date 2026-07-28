@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useStore } from '../lib/store'
 import { usd, num } from '../lib/format'
+import { XGlyph } from './icons'
 
 export default function TradePanel({ charm }) {
-  const { wallet, connect, cash, holdings, prices, buy, sell } = useStore()
+  const { wallet, connect, holdings, prices, buy, sell } = useStore()
   const [side, setSide] = useState('buy')
   const [amount, setAmount] = useState('')
   const [flash, setFlash] = useState(null)
@@ -16,7 +17,7 @@ export default function TradePanel({ charm }) {
   const quickBuy = [10, 25, 100, 250]
 
   function submit() {
-    if (!wallet) return connect('wallet')
+    if (!wallet) return connect()
     const amt = parseFloat(amount)
     if (!amt || amt <= 0) return
     let res
@@ -32,16 +33,16 @@ export default function TradePanel({ charm }) {
   }
 
   return (
-    <div className="card p-5 sticky top-20">
-      <div className="flex gap-1 p-1 rounded-full bg-[rgba(20,32,59,.05)] mb-4">
-        <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 py-2 rounded-full text-sm font-semibold ${side === 'buy' ? 'bg-white shadow text-[var(--color-up)]' : 'text-[var(--color-ink-soft)]'}`}>Buy</button>
-        <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 py-2 rounded-full text-sm font-semibold ${side === 'sell' ? 'bg-white shadow text-[var(--color-down)]' : 'text-[var(--color-ink-soft)]'}`}>Sell</button>
+    <div className="card card-glow p-5 sticky top-20">
+      <div className="flex gap-1 p-1 rounded-full bg-white/5 border border-white/10 mb-4">
+        <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${side === 'buy' ? 'bg-[var(--color-accent-dim)] text-[var(--color-accent-hi)]' : 'text-[var(--color-ink-soft)]'}`}>Buy</button>
+        <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 py-2 rounded-full text-sm font-semibold transition ${side === 'sell' ? 'bg-[rgba(255,93,108,.12)] text-[var(--color-down)]' : 'text-[var(--color-ink-soft)]'}`}>Sell</button>
       </div>
 
-      <label className="text-xs font-semibold text-[var(--color-ink-soft)]">
-        {side === 'buy' ? 'Amount (USDC)' : `Units of ${charm.ticker}`}
+      <label className="eyebrow">
+        {side === 'buy' ? 'Amount / USDC' : `Units / ${charm.ticker}`}
       </label>
-      <div className="mt-1 mb-3 flex items-center card !rounded-xl px-3 py-2.5">
+      <div className="mt-1.5 mb-3 flex items-center rounded-xl px-3 py-2.5 bg-white/4 border border-white/12">
         <span className="text-[var(--color-ink-soft)] mr-1">{side === 'buy' ? '$' : ''}</span>
         <input
           type="number" min="0" value={amount}
@@ -74,8 +75,8 @@ export default function TradePanel({ charm }) {
         </div>
       )}
 
-      <button onClick={submit} className={`btn w-full ${side === 'buy' ? 'btn-primary' : 'btn-sky'}`}>
-        {!wallet ? 'Connect to trade' : side === 'buy' ? `Buy ${charm.ticker}` : `Sell ${charm.ticker}`}
+      <button onClick={submit} className={`btn w-full ${side === 'buy' ? 'btn-primary' : 'btn-ghost'}`}>
+        {!wallet ? (<><XGlyph size={13} /> Log in to trade</>) : side === 'buy' ? `Buy ${charm.ticker}` : `Sell ${charm.ticker}`}
       </button>
 
       {flash && (
@@ -84,7 +85,7 @@ export default function TradePanel({ charm }) {
         </div>
       )}
 
-      <div className="mt-5 pt-4 border-t border-[rgba(20,32,59,.08)] text-sm">
+      <div className="mt-5 pt-4 border-t hairline text-sm">
         <div className="flex justify-between mb-1"><span className="text-[var(--color-ink-soft)]">Your position</span><span className="font-mono">{num(units)} {charm.ticker}</span></div>
         <div className="flex justify-between"><span className="text-[var(--color-ink-soft)]">Value</span><span className="font-mono font-semibold">{usd(holdValue)}</span></div>
       </div>

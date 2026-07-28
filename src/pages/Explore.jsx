@@ -4,11 +4,10 @@ import CharmCard from '../components/CharmCard'
 import FeaturedCard from '../components/FeaturedCard'
 
 const TABS = [
-  { key: 'trending', label: 'Trending', icon: '📈', fn: (a, b) => b.change24 - a.change24 },
-  { key: 'top', label: 'Top', icon: '👑', fn: (a, b) => b.mcap - a.mcap },
-  { key: 'icons', label: 'Icons', icon: '🔵', fn: (a, b) => b.followers - a.followers },
-  { key: 'new', label: 'New', icon: '✦', fn: (a, b) => (b.isMine ? 1 : 0) - (a.isMine ? 1 : 0) },
-  { key: 'external', label: 'External', icon: '🌐', fn: (a, b) => a.name.localeCompare(b.name) },
+  { key: 'trending', label: 'Trending', fn: (a, b) => b.change24 - a.change24 },
+  { key: 'top', label: 'Top', fn: (a, b) => b.mcap - a.mcap },
+  { key: 'icons', label: 'Icons', fn: (a, b) => b.followers - a.followers },
+  { key: 'new', label: 'New', fn: (a, b) => (b.isMine ? 1 : 0) - (a.isMine ? 1 : 0) },
 ]
 
 export default function Explore() {
@@ -48,38 +47,39 @@ export default function Explore() {
           </div>
         ))}
       </div>
-      <div className="flex justify-center gap-1.5 mt-3 mb-6">
+      <div className="flex justify-center gap-1.5 mt-4 mb-8">
         {featured.map((_, i) => (
           <span
             key={i}
-            className="h-1.5 rounded-full transition-all"
-            style={{ width: i === dot ? 22 : 6, background: i === dot ? 'var(--color-sky-deep)' : 'rgba(20,32,59,.2)' }}
+            className="h-1 rounded-full transition-all"
+            style={{ width: i === dot ? 24 : 6, background: i === dot ? 'var(--color-accent)' : 'rgba(255,255,255,.2)' }}
           />
         ))}
       </div>
 
       {/* explore heading */}
-      <h1 className="font-serif text-4xl mb-4">Explore</h1>
+      <div className="eyebrow mb-1">The index</div>
+      <h1 className="font-serif text-4xl mb-5">Explore</h1>
 
-      {/* search (optional, subtle) */}
       <input
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search charms & tickers…"
-        className="w-full card px-4 py-2.5 text-sm outline-none mb-4 focus:ring-2 ring-[var(--color-sky-deep)]"
+        placeholder="Search characters and tickers"
+        className="w-full card !rounded-full px-5 py-3 text-sm outline-none mb-4 bg-transparent focus:border-[rgba(217,165,82,.5)]"
       />
 
       {/* filter pills */}
-      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-5 -mx-1 px-1">
+      <div className="flex gap-2 overflow-x-auto no-scrollbar mb-6 -mx-1 px-1">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition ${
-              tab === t.key ? 'bg-[rgba(47,125,255,.14)] text-[var(--color-sky-top)]' : 'bg-white/60 text-[var(--color-ink-soft)] hover:bg-white'
+            className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap transition border ${
+              tab === t.key
+                ? 'bg-[var(--color-accent-dim)] text-[var(--color-accent-hi)] border-[rgba(217,165,82,.4)]'
+                : 'bg-white/4 text-[var(--color-ink-soft)] border-white/10 hover:bg-white/8'
             }`}
           >
-            <span className="text-xs">{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -92,7 +92,7 @@ export default function Explore() {
         ))}
       </div>
       {list.length === 0 && (
-        <div className="text-center py-16 text-[var(--color-ink-soft)]">No charms match “{q}”.</div>
+        <div className="text-center py-16 text-[var(--color-ink-soft)]">Nothing matches "{q}".</div>
       )}
       <div className="h-4" />
     </div>
