@@ -233,7 +233,7 @@ function StepReview({ d, preview, vis, setVis, onEdit, onLaunch, wallet }) {
       </p>
 
       <button onClick={onLaunch} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {!wallet ? (<><XGlyph size={13} color="#0b0a12" /> Sign in with X to launch</>) : `Launch ${preview.name}`}
+        {!wallet ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : `Launch ${preview.name}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Demo launch — no real token is created and no funds are spent.</p>
     </div>

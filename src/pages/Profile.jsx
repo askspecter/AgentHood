@@ -18,7 +18,7 @@ export default function Profile() {
         <div className="orb-spin mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)' }}><XGlyph size={20} color="#0b0a12" /></div>
         <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
         <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see your balance, coins and activity.</p>
-        <button onClick={connect} className="btn btn-primary mx-auto"><XGlyph size={13} color="#fff" /> Sign in with X</button>
+        <button onClick={connect} className="btn btn-primary mx-auto">Sign in with <XGlyph size={13} color="#fff" /></button>
       </div>
     )
   }
