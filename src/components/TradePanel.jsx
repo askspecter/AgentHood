@@ -26,10 +26,12 @@ function EthMark({ size = 22 }) {
   )
 }
 
-export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
+export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false }) {
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, '') } : null
-  const sym = (symbol || 'TOKEN').replace(/^\$/, '')
+
+  const [tok, setTok] = useState(token || '')
+  useEffect(() => { if (token) setTok(token) }, [token])
 
   const [meta, setMeta] = useState(null)
   const [side, setSide] = useState('buy')
@@ -46,7 +48,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
   const [ethBalance, setEthBalance] = useState(null)
   const [tokBalance, setTokBalance] = useState(null)
 
-  const tradeable = isAddr(token)
+  const tradeable = isAddr(tok)
 
   useEffect(() => {
     fetch(`/api/factory?network=${NETWORK}`).then((r) => r.json()).then((j) => !j.error && setMeta(j)).catch(() => {})
@@ -62,9 +64,9 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
   useEffect(() => {
     if (!user || !tradeable) { setTokBalance(null); return }
     let c = false
-    fetch(`/api/wallet?network=${NETWORK}&token=${token}`).then((r) => r.json()).then((j) => { if (!c) setTokBalance(j?.token || null) }).catch(() => {})
+    fetch(`/api/wallet?network=${NETWORK}&token=${tok}`).then((r) => r.json()).then((j) => { if (!c) setTokBalance(j?.token || null) }).catch(() => {})
     return () => { c = true }
-  }, [token, user, tradeable, done])
+  }, [tok, user, tradeable, done])
 
   const getQuote = useCallback(async () => {
     setError(null)
@@ -73,12 +75,12 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
     try {
       const res = await fetch('/api/quote', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, side, amount, network: NETWORK, slippage }),
+        body: JSON.stringify({ token: tok, side, amount, network: NETWORK, slippage }),
       })
       const j = await res.json()
       if (!res.ok) { setError(friendly(j.error)); setQuote(null) } else setQuote(j)
     } catch { setError('') } finally { setQuoting(false) }
-  }, [token, tradeable, amount, side, slippage])
+  }, [tok, tradeable, amount, side, slippage])
 
   useEffect(() => {
     if (!tradeable || !amount || Number(amount) <= 0) { setQuote(null); return }
@@ -102,15 +104,16 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
     try {
       const res = await fetch('/api/terminal/execute', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, side, amountInRaw: quote.amountInRaw, expectedOutRaw: quote.amountOutRaw, slippage, network: NETWORK }),
+        body: JSON.stringify({ token: tok, side, amountInRaw: quote.amountInRaw, expectedOutRaw: quote.amountOutRaw, slippage, network: NETWORK }),
       })
       const j = await res.json()
       if (!res.ok) setError(friendly(j.hint ? `${j.error} ${j.hint}` : j.error) || 'The trade failed.')
       else setDone({ hash: j.hash })
       setStatus(null)
     } catch { setError('The trade failed.'); setStatus(null) } finally { setBusy(false) }
-  }, [user, quote, tradeable, token, side, slippage])
+  }, [user, quote, tradeable, tok, side, slippage])
 
+  const sym = (quote?.symbol || symbol || 'TOKEN').replace(/^\$/, '')
   const outLabel = quote ? quote.amountOutLabel : '0'
   const sellChip = sellIsEth
     ? <><EthMark /> <span className="font-semibold">ETH</span></>
@@ -124,6 +127,13 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo }) {
 
   return (
     <div className="card p-4">
+      {editableToken && (
+        <label className="block mb-3">
+          <span className="text-xs text-[var(--color-ink-soft)]">Token address</span>
+          <input value={tok} onChange={(e) => { setTok(e.target.value.trim()); setQuote(null) }}
+            placeholder="0x… paste a coin to trade" spellCheck={false} className="input mt-1" />
+        </label>
+      )}
       {/* Sell box */}
       <div className="rounded-2xl p-4 bg-[var(--color-paper-2)]">
         <div className="text-sm text-[var(--color-ink-soft)] mb-1">Sell</div>

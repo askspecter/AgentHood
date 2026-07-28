@@ -1,30 +1,28 @@
 import { useCallback, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { parseEther, parseUnits, isAddress } from 'ethers'
 import { useStore } from '../lib/store'
+import TradePanel from './TradePanel'
 
 /**
- * Portfolio quick actions — Add Funds · Receive · Send · Trade.
+ * Portfolio quick actions — Receive · Send · Trade.
  *
- * Real, on the X-derived wallet: Add Funds / Receive show the deposit address,
- * Send moves ETH or a token out via /api/terminal/send (signed server-side),
- * and Trade opens the swap.
+ * Real, on the X-derived wallet: Receive shows the deposit address, Send moves
+ * ETH or a token out via /api/terminal/send (signed server-side), and Trade
+ * opens the pons-style swap sheet for any coin.
  */
 export default function WalletActions() {
-  const nav = useNavigate()
   const { wallet } = useStore()
-  const [modal, setModal] = useState(null) // 'deposit' | 'receive' | 'send'
+  const [modal, setModal] = useState(null) // 'receive' | 'send' | 'trade'
 
   const actions = [
-    { key: 'deposit', label: 'Add Funds', icon: PlusIcon, onClick: () => setModal('deposit') },
     { key: 'receive', label: 'Receive', icon: ReceiveIcon, onClick: () => setModal('receive') },
     { key: 'send', label: 'Send', icon: SendIcon, onClick: () => setModal('send') },
-    { key: 'trade', label: 'Trade', icon: TradeIcon, onClick: () => nav('/trade') },
+    { key: 'trade', label: 'Trade', icon: TradeIcon, onClick: () => setModal('trade') },
   ]
 
   return (
     <>
-      <div className="grid grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
         {actions.map((a) => (
           <button key={a.key} onClick={a.onClick}
             className="group flex flex-col items-center gap-2 py-3 rounded-2xl border hairline bg-[var(--color-paper-2)] hover:bg-[var(--color-line)] active:scale-95 transition">
@@ -37,10 +35,13 @@ export default function WalletActions() {
         ))}
       </div>
 
-      {(modal === 'deposit' || modal === 'receive') && (
-        <DepositModal wallet={wallet} receive={modal === 'receive'} onClose={() => setModal(null)} />
-      )}
+      {modal === 'receive' && <DepositModal wallet={wallet} receive onClose={() => setModal(null)} />}
       {modal === 'send' && <SendModal wallet={wallet} onClose={() => setModal(null)} />}
+      {modal === 'trade' && (
+        <Overlay onClose={() => setModal(null)} title="Trade">
+          <TradePanel editableToken />
+        </Overlay>
+      )}
     </>
   )
 }
