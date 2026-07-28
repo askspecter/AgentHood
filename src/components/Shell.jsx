@@ -44,14 +44,15 @@ export default function Shell() {
 
           <div className="ml-auto flex items-center">
             {wallet ? (
-              <Link to="/you" className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition max-w-[190px]">
-                {wallet.avatar ? (
-                  <img src={wallet.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                ) : (
-                  <span className="orb-spin w-6 h-6 rounded-full grid place-items-center font-semibold text-xs shrink-0"
-                    style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
-                )}
-                <span className="text-xs font-medium truncate">{wallet.handle}</span>
+              <Link to="/you" className="flex items-center gap-2 pl-1 pr-3.5 py-1 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition max-w-[190px]">
+                <span className="shrink-0 p-[1.5px] rounded-full" style={{ background: 'var(--holo)' }}>
+                  {wallet.avatar ? (
+                    <img src={wallet.avatar} alt="" className="w-6 h-6 rounded-full object-cover block" />
+                  ) : (
+                    <span className="w-6 h-6 rounded-full grid place-items-center font-semibold text-[11px] bg-[var(--color-paper)] text-[var(--color-ink)]">{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+                  )}
+                </span>
+                <span className="text-sm font-medium truncate leading-none">{wallet.handle}</span>
               </Link>
             ) : (
               <LoginButton />
