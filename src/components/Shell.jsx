@@ -89,8 +89,8 @@ export default function Shell() {
                       <span className="absolute inset-0 rounded-[18px] pointer-events-none"
                         style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(180,150,255,0.55)' }} />
                     )}
-                    <span className="relative"><Icon active={isActive} /></span>
-                    <span className="relative">{t.label}</span>
+                    <span className="relative h-6 grid place-items-center"><Icon active={isActive} /></span>
+                    <span className="relative leading-none">{t.label}</span>
                   </>
                 )}
               </NavLink>
@@ -98,12 +98,14 @@ export default function Shell() {
           })}
           {/* create — a compact holographic item inside the pill */}
           <button onClick={() => nav('/create')} aria-label="Create character"
-            className="flex flex-col items-center justify-center gap-1 w-[60px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-soft)] active:scale-95 transition-transform">
-            <span className="orb-spin grid place-items-center w-7 h-7 rounded-full"
-              style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 14px -3px rgba(180,150,255,0.85)' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            className="flex flex-col items-center justify-center gap-1 w-[60px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-faint)] active:scale-95 transition-transform">
+            <span className="relative h-6 grid place-items-center">
+              <span className="orb-spin grid place-items-center w-6 h-6 rounded-full"
+                style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 14px -3px rgba(180,150,255,0.85)' }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="3.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+              </span>
             </span>
-            <span>Create</span>
+            <span className="relative leading-none">Create</span>
           </button>
         </div>
       </div>
