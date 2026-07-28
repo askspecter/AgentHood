@@ -1,0 +1,81 @@
+import { useEffect, useRef, useState } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import { useStore } from '../lib/store'
+import CharmAvatar from '../components/CharmAvatar'
+import { usd } from '../lib/format'
+import { Back } from '../components/icons'
+
+/**
+ * Chat with a pons agent. Replies are local, ticker-aware flavour (no model);
+ * the coin itself is real, and Trade opens the on-chain swap.
+ */
+export default function ChatThread() {
+  const { id } = useParams()
+  const nav = useNavigate()
+  const { getAgent, chats, sendMessage, prices, agentsLoading } = useStore()
+  const charm = getAgent(id)
+  const [text, setText] = useState('')
+  const endRef = useRef(null)
+  const msgs = chats[id] ?? []
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs.length])
+
+  if (!charm) {
+    return <div className="text-center py-20 text-[var(--color-ink-soft)]">{agentsLoading ? 'Loading agent…' : <>Agent not found. <Link className="underline" to="/chats">Back to chats</Link></>}</div>
+  }
+
+  function submit(e) {
+    e.preventDefault()
+    const t = text.trim()
+    if (!t) return
+    sendMessage(id, t); setText('')
+  }
+
+  const price = prices[charm.id] ?? charm.price
+  const starters = ['gm, how are you?', `what's your deal, ${charm.name}?`, 'should I buy?', 'how is your market cap?']
+
+  return (
+    <div className="max-w-2xl mx-auto flex flex-col" style={{ minHeight: 'calc(100vh - 10rem)' }}>
+      <div className="card p-3 flex items-center gap-3 mb-4">
+        <Link to="/chats" className="grid place-items-center w-9 h-9 rounded-lg hover:bg-[var(--color-paper-2)]"><Back size={17} /></Link>
+        <CharmAvatar charm={charm} size={40} square={!!charm.logo} />
+        <div className="flex-1 min-w-0">
+          <div className="font-medium leading-tight truncate">{charm.name}</div>
+          <div className="text-xs text-[var(--color-ink-soft)]">
+            Online · <span className="font-mono">${charm.ticker} {charm.priceUsd != null ? usd(price) : ''}</span>
+          </div>
+        </div>
+        <button onClick={() => nav(`/trade?token=${charm.token}`)} className="btn btn-secondary !py-1.5 text-xs">Trade</button>
+      </div>
+
+      <div className="flex-1 space-y-3 overflow-y-auto">
+        {msgs.length === 0 && (
+          <div className="card p-6 text-center">
+            <div className="flex justify-center"><CharmAvatar charm={charm} size={56} ring square={!!charm.logo} /></div>
+            <p className="mt-4 font-serif text-2xl">{charm.name}</p>
+            <p className="text-sm text-[var(--color-ink-soft)] mt-1 max-w-sm mx-auto">{charm.lore}</p>
+            <div className="flex flex-wrap gap-2 justify-center mt-5">
+              {starters.map((s) => <button key={s} onClick={() => sendMessage(id, s)} className="chip hover:bg-[var(--color-line)]">{s}</button>)}
+            </div>
+          </div>
+        )}
+        {msgs.map((m, i) => (
+          <div key={i} className={`flex items-end gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.role === 'charm' && <CharmAvatar charm={charm} size={28} square={!!charm.logo} />}
+            <div className={`max-w-[76%] px-4 py-2.5 text-sm leading-relaxed rounded-2xl ${m.role === 'user' ? 'text-white rounded-br-md' : 'card rounded-bl-md'}`}
+              style={m.role === 'user' ? { background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' } : undefined}>{m.text}</div>
+          </div>
+        ))}
+        <div ref={endRef} />
+      </div>
+
+      <form onSubmit={submit} className="mt-4 flex gap-2 sticky bottom-20 md:bottom-4">
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder={`Message ${charm.name}`} className="input flex-1 !rounded-full !py-3" />
+        <button className="btn btn-primary" disabled={!text.trim()}>Send</button>
+      </form>
+      <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-2 mb-4">
+        Replies are local flavour from ${charm.ticker}, not a live model. The coin is real — trade it anytime.
+      </p>
+    </div>
+  )
+}

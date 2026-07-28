@@ -4,7 +4,7 @@ import LoginButton from './WalletButton'
 
 const TABS = [
   { to: '/', label: 'Discover', end: true, icon: HomeIcon },
-  { to: '/trade', label: 'Trade', icon: TradeIcon },
+  { to: '/chats', label: 'Chat', icon: ChatIcon },
   { to: '/you', label: 'Portfolio', icon: YouIcon },
 ]
 
@@ -31,7 +31,7 @@ export default function Shell() {
           <Link to="/"><Wordmark /></Link>
 
           <nav className="hidden md:flex items-center gap-1 ml-2">
-            {[...TABS, { to: '/launch', label: 'Launch' }].map((t) => (
+            {[...TABS, { to: '/trade', label: 'Trade' }, { to: '/launch', label: 'Launch' }].map((t) => (
               <NavLink key={t.to} to={t.to} end={t.end}
                 className={({ isActive }) =>
                   `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
@@ -112,8 +112,8 @@ function base(active) { return active ? 'var(--color-ink)' : 'currentColor' }
 function HomeIcon({ active }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><path d="M3 11l9-7 9 7" /><path d="M5 10v10h14V10" fill={active ? 'var(--color-paper-2)' : 'none'} /></svg>
 }
-function TradeIcon({ active }) {
-  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><path d="M4 17h11l-3 3M20 7H9l3-3" fill="none" /></svg>
+function ChatIcon({ active }) {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><path d="M4 5h16v11H9l-4 3V5z" fill={active ? 'var(--color-paper-2)' : 'none'} /></svg>
 }
 function YouIcon({ active }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><circle cx="12" cy="8" r="4" fill={active ? 'var(--color-paper-2)' : 'none'} /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
