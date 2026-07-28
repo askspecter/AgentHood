@@ -1,12 +1,11 @@
 import { useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import HoloOrb from './HoloOrb'
+import HoloSphere from './HoloSphere'
 import { num } from '../lib/format'
 
 export default function Hero({ stats }) {
   const nav = useNavigate()
   const sceneRef = useRef(null)
-  const orbRef = useRef(null)
 
   function onMove(e) {
     const el = sceneRef.current
@@ -16,12 +15,10 @@ export default function Hero({ stats }) {
     const y = (e.clientY - r.top) / r.height - 0.5
     el.style.setProperty('--px', `${x * 30}px`)
     el.style.setProperty('--py', `${y * 30}px`)
-    if (orbRef.current) orbRef.current.style.transform = `rotateY(${x * 18}deg) rotateX(${-y * 18}deg)`
   }
   function onLeave() {
     sceneRef.current?.style.setProperty('--px', '0px')
     sceneRef.current?.style.setProperty('--py', '0px')
-    if (orbRef.current) orbRef.current.style.transform = 'rotateY(0) rotateX(0)'
   }
 
   return (
@@ -82,7 +79,7 @@ export default function Hero({ stats }) {
       <div className="relative min-h-[340px] lg:min-h-[560px] grid place-items-center"
         style={{ transform: 'translate(calc(var(--px,0px) * 0.35), calc(var(--py,0px) * 0.35))' }}>
         <div className="fade-up fade-up-2">
-          <HoloOrb ref={orbRef} size={300} />
+          <HoloSphere size={300} />
         </div>
       </div>
     </section>
