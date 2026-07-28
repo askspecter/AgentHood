@@ -13,20 +13,20 @@ export default function Chats() {
   const suggestions = charms.filter((c) => c.online && !chats[c.id]).slice(0, 6)
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="eyebrow mb-1">Conversations</div>
+    <div className="max-w-3xl mx-auto">
       <h1 className="font-serif text-4xl mb-1">Chats</h1>
-      <p className="text-[var(--color-ink-soft)] mb-6">They remember you. Pick up where you left off.</p>
+      <p className="text-[var(--color-ink-soft)] mb-8">They remember you. Pick up where you left off.</p>
 
       {threads.length > 0 && (
-        <div className="card divide-y divide-white/8 mb-8 overflow-hidden">
-          {threads.map(({ charm, last }) => (
-            <Link key={charm.id} to={`/chat/${charm.id}`} className="flex items-center gap-3 p-4 hover:bg-white/4">
-              <CharmAvatar charm={charm} size={46} />
+        <div className="card overflow-hidden mb-10">
+          {threads.map(({ charm, last }, i) => (
+            <Link key={charm.id} to={`/chat/${charm.id}`}
+              className={`flex items-center gap-3 p-4 hover:bg-[#fafafa] ${i ? 'border-t hairline' : ''}`}>
+              <CharmAvatar charm={charm} size={44} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold">{charm.name}</span>
-                  <span className="text-xs text-[var(--color-ink-soft)]">{timeAgo(last.ts)}</span>
+                  <span className="font-medium">{charm.name}</span>
+                  <span className="text-xs text-[var(--color-ink-faint)]">{timeAgo(last.ts)}</span>
                 </div>
                 <div className="text-sm text-[var(--color-ink-soft)] truncate">
                   {last.role === 'user' ? 'You: ' : ''}{last.text}
@@ -37,13 +37,13 @@ export default function Chats() {
         </div>
       )}
 
-      <h2 className="font-serif text-2xl mb-3">{threads.length ? 'Someone new' : 'Start a conversation'}</h2>
+      <h2 className="font-serif text-2xl mb-4">{threads.length ? 'Someone new' : 'Start a conversation'}</h2>
       <div className="grid sm:grid-cols-2 gap-3">
         {suggestions.map((c) => (
-          <Link key={c.id} to={`/chat/${c.id}`} className="card p-4 flex items-center gap-3 hover:-translate-y-0.5 transition-transform">
+          <Link key={c.id} to={`/chat/${c.id}`} className="card card-hover p-4 flex items-center gap-3">
             <CharmAvatar charm={c} size={44} />
             <div className="min-w-0">
-              <div className="font-semibold text-sm">{c.name}</div>
+              <div className="font-medium">{c.name}</div>
               <div className="text-xs text-[var(--color-ink-soft)] truncate">{c.tagline}</div>
             </div>
           </Link>

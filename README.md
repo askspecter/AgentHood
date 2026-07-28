@@ -1,52 +1,38 @@
 # ESKA
 
-A cinematic character-coin app: every character has a personality, a story,
-and a tradeable coin. Dark, film-grade UI — near-black surfaces, gold accent,
-serif display type, no emoji anywhere. All code, characters, and copy are
-original.
+A market for characters worth owning. Every character has a personality, a
+story, and a tradeable coin — discover them, trade the ones you believe in, or
+mint your own.
+
+Design: a quiet, premium product aesthetic — light zinc surfaces, a single
+restrained indigo accent, editorial serif display, tabular-numeric data, and a
+responsive layout (SaaS top-navbar on desktop, tab bar on mobile). All code,
+characters, and copy are original.
 
 ## What works
 
-Everything runs client-side with simulated data (persisted to `localStorage`),
-so every feature actually does something:
+Everything runs client-side with simulated data (persisted to `localStorage`):
 
-- **Home** — featured character carousel with live-moving prices, search,
-  Trending / Top / Icons / New filters, two-column index grid.
-- **Character detail** — live price chart, market stats, lore, watchlist.
-- **Trade** — buy/sell a character's coin against a demo USDC balance;
-  positions and P/L update in real time.
-- **Chat** — talk to a character; it replies in-character (scripted from its
-  personality, not a live LLM). Threads are remembered.
-- **Create** — mint your own character (name, ticker, aura, soul, vibe) with a
-  live preview.
-- **You** — balance, add cash, Coins / Creations / Activity / Gallery tabs.
-- **Settings** — account rows, appearance toggle, log out.
-- **Login** — X only (simulated; no real OAuth, wallet, or funds).
-- **Intro** — four-slide onboarding sheet (Trade / Mint / Chat / Shape the lore).
+- **Discover** — editorial hero, featured character, market stats, and a
+  full index table (desktop) / card list (mobile) with live-moving prices.
+- **Character detail** — live price chart, market stats, story, watchlist.
+- **Trade** — buy/sell against a demo USDC balance; positions and P/L update live.
+- **Chat** — talk to a character; it replies in-character (scripted, not a live LLM).
+- **Create** — mint your own character (name, ticker, aura, soul, vibe) with a live preview.
+- **Portfolio** — net worth, add cash, Coins / Creations / Activity tabs.
+- **Settings** — account rows, appearance toggle, sign out.
+- **Sign in** — X only (simulated; no real OAuth, wallet, or funds).
 
 ## Run it
 
 ```bash
 npm install
 npm run dev      # http://localhost:5173
-npm run build    # production build in dist/
-npm run preview  # preview the production build
+npm run build
+npm run preview
 ```
 
 ## Stack
 
 Vite · React 18 · React Router · Tailwind CSS v4.
-Fonts: Instrument Serif, Instrument Sans, Space Mono (open source, bundled).
-
-## Layout
-
-```
-src/
-  main.jsx / App.jsx      # entry + routes
-  index.css               # design system (dark cinematic theme)
-  data/charms.js          # seed characters + market data
-  lib/store.jsx           # app state: login, balance, trades, chats, mints
-  lib/format.js           # number/currency/time helpers
-  components/             # Shell, LoginButton, cards, chart, trade panel, icons
-  pages/                  # Explore, CharmDetail, Chats, ChatThread, Create, Profile, Settings
-```
+Fonts: Instrument Sans, Instrument Serif, Space Mono (open source, bundled).

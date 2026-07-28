@@ -11,13 +11,9 @@ export default function LoginButton() {
 
   if (!wallet) {
     return (
-      <button
-        className="btn text-sm !py-2 !px-4 bg-black text-white border border-white/25 hover:bg-[#111]"
-        onClick={connect}
-        title="Sign in with X"
-      >
-        <XGlyph size={14} color="#fff" />
-        Log in with X
+      <button className="btn btn-primary" onClick={connect} title="Sign in with X">
+        <XGlyph size={13} color="#fff" />
+        <span className="hidden sm:inline">Sign in</span>
       </button>
     )
   }
@@ -25,11 +21,12 @@ export default function LoginButton() {
   return (
     <div className="relative">
       <button
-        className="flex items-center gap-2 rounded-full pl-2.5 pr-3.5 py-1.5 text-sm bg-white/5 border border-white/15"
+        className="flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline hover:bg-[#f4f4f5] transition"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="w-2 h-2 rounded-full bg-[var(--color-up)]" />
-        <span className="font-mono font-semibold">{usd(cash)}</span>
+        <span className="w-6 h-6 rounded-full grid place-items-center font-serif text-xs text-white"
+          style={{ background: 'linear-gradient(145deg,#818cf8,#4f46e5)' }}>Y</span>
+        <span className="font-mono text-xs num font-medium">{usd(cash)}</span>
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-64 card p-3 z-50">
@@ -40,10 +37,10 @@ export default function LoginButton() {
           <div className="font-mono text-xs text-[var(--color-ink-soft)] mb-3">{wallet.address}</div>
           <div className="flex items-center justify-between text-sm mb-3">
             <span className="text-[var(--color-ink-soft)]">Balance</span>
-            <span className="font-mono font-semibold">{usd(cash)} USDC</span>
+            <span className="font-mono num font-semibold">{usd(cash)} USDC</span>
           </div>
-          <button className="btn btn-ghost w-full text-sm mb-2" onClick={() => { setOpen(false); nav('/you') }}>View profile</button>
-          <button className="btn btn-danger w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Log out</button>
+          <button className="btn btn-secondary w-full text-sm mb-2" onClick={() => { setOpen(false); nav('/you') }}>View portfolio</button>
+          <button className="btn btn-danger w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Sign out</button>
         </div>
       )}
     </div>
