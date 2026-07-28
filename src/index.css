@@ -174,6 +174,64 @@ body {
 @keyframes pulseUp { from { opacity: .4 } to { opacity: 1 } }
 .flash { animation: pulseUp .5s ease; }
 
-@keyframes fadeUp { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
-.fade-up { animation: fadeUp .4s cubic-bezier(.2,.7,.2,1) both; }
-.fade-up-1 { animation-delay: .05s } .fade-up-2 { animation-delay: .1s } .fade-up-3 { animation-delay: .15s }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: none } }
+.fade-up { animation: fadeUp .6s cubic-bezier(.2,.7,.2,1) both; }
+.fade-up-1 { animation-delay: .06s } .fade-up-2 { animation-delay: .13s }
+.fade-up-3 { animation-delay: .2s } .fade-up-4 { animation-delay: .28s } .fade-up-5 { animation-delay: .36s }
+
+/* ---- aurora background ---- */
+.aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.aurora span {
+  position: absolute; border-radius: 50%;
+  filter: blur(60px); opacity: .55; mix-blend-mode: multiply;
+  animation: floatBlob 18s ease-in-out infinite;
+}
+@keyframes floatBlob {
+  0%,100% { transform: translate(0,0) scale(1) }
+  33% { transform: translate(6%, -8%) scale(1.12) }
+  66% { transform: translate(-7%, 5%) scale(.94) }
+}
+
+/* ---- gradient kinetic text ---- */
+.grad-text {
+  background: linear-gradient(100deg, #4f46e5, #7c3aed 30%, #db2777 55%, #4f46e5 90%);
+  background-size: 220% auto;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent;
+  animation: gradShift 7s linear infinite;
+}
+@keyframes gradShift { to { background-position: 220% center } }
+
+/* ---- floating orbs ---- */
+@keyframes orbit { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-16px) } }
+.orb-float { animation: orbit 7s ease-in-out infinite; }
+
+/* ---- shine sweep on primary buttons ---- */
+.btn-primary { position: relative; overflow: hidden; }
+.btn-primary::after {
+  content: ""; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,.35), transparent);
+  transform: skewX(-18deg); transition: none;
+}
+.btn-primary:hover::after { animation: shine .8s ease; }
+@keyframes shine { from { left: -60% } to { left: 130% } }
+
+/* ---- marquee ---- */
+@keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+.marquee { display: flex; gap: 2.5rem; width: max-content; animation: marquee 40s linear infinite; }
+.marquee-wrap:hover .marquee { animation-play-state: paused; }
+
+/* ---- reveal on scroll ---- */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ---- spotlight that follows the cursor ---- */
+.spotlight::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 30%), rgba(79,70,229,.10), transparent 70%);
+  transition: background .1s;
+}
+
+/* ---- live ticker pulse dot ---- */
+@keyframes livePulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(5,150,105,.5) } 50% { opacity: .6; box-shadow: 0 0 0 5px rgba(5,150,105,0) } }
+.live-dot { animation: livePulse 2s ease-in-out infinite; }

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import Sparkline from '../components/Sparkline'
+import Hero from '../components/Hero'
+import Ticker from '../components/Ticker'
 import { usd, num, pct } from '../lib/format'
+import { useReveal } from '../lib/hooks'
 import { Verified, XLogo } from '../components/icons'
 
 const TABS = [
@@ -18,12 +21,13 @@ export default function Explore() {
   const [tab, setTab] = useState('trending')
   const [q, setQ] = useState('')
 
-  const featured = useMemo(() => [...charms].sort((a, b) => b.mcap - a.mcap)[0], [charms])
-  const stats = useMemo(() => {
-    const mcap = charms.reduce((s, c) => s + c.mcap, 0)
-    const holders = charms.reduce((s, c) => s + c.holders, 0)
-    return { count: charms.length, mcap, holders }
-  }, [charms])
+  const stats = useMemo(() => ({
+    count: charms.length,
+    mcap: charms.reduce((s, c) => s + c.mcap, 0),
+    holders: charms.reduce((s, c) => s + c.holders, 0),
+  }), [charms])
+
+  const spotlight = useMemo(() => [...charms].sort((a, b) => b.change24 - a.change24).slice(0, 3), [charms])
 
   const list = useMemo(() => {
     let l = charms.filter(
@@ -35,93 +39,76 @@ export default function Explore() {
 
   return (
     <div>
-      {/* hero */}
-      <section className="fade-up mb-4">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <span className="chip chip-brand">New</span>
-          <span className="text-sm text-[var(--color-ink-soft)]">A market for characters worth owning.</span>
-        </div>
-        <h1 className="font-serif text-5xl lg:text-6xl leading-[1.02] max-w-2xl tracking-[-0.01em]">
-          Discover characters before the timeline does.
-        </h1>
-        <p className="mt-4 text-lg text-[var(--color-ink-soft)] max-w-xl">
-          Every character has a personality, a story, and a coin. Trade the ones you believe in, or mint your own.
-        </p>
-      </section>
+      <Hero charms={charms} stats={stats} />
+      <Ticker charms={charms} prices={prices} />
 
-      {/* featured + stats */}
-      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-4 mb-10">
-        <Featured charm={featured} price={prices[featured?.id]} />
-        <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
-          <StatCard label="Characters live" value={num(stats.count) + '+'} />
-          <StatCard label="Total market cap" value={usd(stats.mcap)} />
-          <StatCard label="Holders" value={num(stats.holders)} className="col-span-2 lg:col-span-1" />
+      {/* spotlight trio */}
+      <Section>
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <div className="eyebrow mb-1">Moving now</div>
+            <h2 className="font-serif text-3xl">Today's spotlight</h2>
+          </div>
         </div>
-      </div>
+        <div className="grid md:grid-cols-3 gap-4">
+          {spotlight.map((c, i) => <SpotlightCard key={c.id} charm={c} price={prices[c.id]} rank={i} />)}
+        </div>
+      </Section>
 
       {/* index */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="seg">
-          {TABS.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} className={tab === t.key ? 'on' : ''}>{t.label}</button>
-          ))}
+      <Section id="index">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <div>
+            <div className="eyebrow mb-1">The index</div>
+            <h2 className="font-serif text-3xl">Every character, live</h2>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="seg">
+              {TABS.map((t) => <button key={t.key} onClick={() => setTab(t.key)} className={tab === t.key ? 'on' : ''}>{t.label}</button>)}
+            </div>
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="input sm:w-52" />
+          </div>
         </div>
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search characters…" className="input sm:w-64" />
-      </div>
-
-      <IndexTable list={list} prices={prices} />
-      <IndexCards list={list} prices={prices} />
-      {list.length === 0 && <div className="text-center py-16 text-[var(--color-ink-soft)]">No results for "{q}".</div>}
+        <IndexTable list={list} prices={prices} />
+        <IndexCards list={list} prices={prices} />
+        {list.length === 0 && <div className="text-center py-16 text-[var(--color-ink-soft)]">No results for "{q}".</div>}
+      </Section>
     </div>
   )
 }
 
-function Featured({ charm, price }) {
+function Section({ children, id }) {
+  const ref = useReveal()
+  return <section id={id} ref={ref} className="reveal mb-12">{children}</section>
+}
+
+function SpotlightCard({ charm, price, rank }) {
   const nav = useNavigate()
-  if (!charm) return null
   const up = charm.change24 >= 0
   return (
-    <div className="card card-hover overflow-hidden cursor-pointer relative" onClick={() => nav(`/c/${charm.id}`)}>
-      <div className="absolute inset-x-0 top-0 h-28"
-        style={{ background: `linear-gradient(180deg, hsl(${charm.hue} 45% 94%), transparent)` }} />
-      <div className="relative p-6">
-        <div className="flex items-center justify-between mb-6">
-          <span className="chip">Featured</span>
-          <span className={`chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)} 24h</span>
+    <div onClick={() => nav(`/c/${charm.id}`)} className="card card-hover p-5 cursor-pointer relative overflow-hidden">
+      <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-40"
+        style={{ background: `hsl(${charm.hue} 60% 75%)` }} />
+      <div className="relative">
+        <div className="flex items-center justify-between mb-4">
+          <span className="chip">#{rank + 1} today</span>
+          <span className={`chip ${up ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)}</span>
         </div>
-        <div className="flex items-center gap-4">
-          <CharmAvatar charm={charm} size={64} ring />
+        <div className="flex items-center gap-3">
+          <CharmAvatar charm={charm} size={52} ring />
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-serif text-2xl">{charm.name}</span>
-              <Verified size={16} />
-            </div>
-            <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-0.5">
-              <span className="font-mono">${charm.ticker}</span>
-              <span className="opacity-40">·</span>
-              <XLogo size={10} /><span>{charm.creator}</span>
-            </div>
+            <div className="flex items-center gap-1.5"><span className="font-serif text-xl">{charm.name}</span><Verified size={14} /></div>
+            <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-soft)] mt-0.5"><XLogo size={9} />{charm.creator}</div>
           </div>
         </div>
-        <p className="mt-4 text-[var(--color-ink-soft)]">{charm.tagline}</p>
-        <div className="mt-5 flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between mt-4">
           <div>
-            <div className="eyebrow mb-0.5">Price</div>
-            <div className="font-mono num text-2xl font-semibold">{usd(price ?? charm.price)}</div>
+            <div className="font-mono num text-lg font-semibold">{usd(price ?? charm.price)}</div>
+            <div className="eyebrow mt-0.5">{usd(charm.mcap)} mcap</div>
           </div>
-          <Sparkline data={charm.history} up={up} width={120} height={44} className="hidden sm:block shrink-0" />
-          <button onClick={(e) => { e.stopPropagation(); nav(`/c/${charm.id}`) }} className="btn btn-primary shrink-0">Trade</button>
+          <Sparkline data={charm.history} up={up} width={90} height={36} />
         </div>
       </div>
-    </div>
-  )
-}
-
-function StatCard({ label, value, className = '' }) {
-  return (
-    <div className={`card p-5 ${className}`}>
-      <div className="eyebrow mb-2">{label}</div>
-      <div className="font-mono num text-2xl font-semibold">{value}</div>
     </div>
   )
 }
@@ -154,15 +141,11 @@ function IndexTable({ list, prices }) {
                   </div>
                 </td>
                 <td className="px-5 py-3 font-mono num">{usd(prices[c.id] ?? c.price)}</td>
-                <td className="px-5 py-3">
-                  <span className={`font-mono num text-xs px-1.5 py-0.5 rounded ${up ? 'chip-up' : 'chip-down'}`}>{pct(c.change24)}</span>
-                </td>
+                <td className="px-5 py-3"><span className={`font-mono num text-xs px-1.5 py-0.5 rounded ${up ? 'chip-up' : 'chip-down'}`}>{pct(c.change24)}</span></td>
                 <td className="px-5 py-3 font-mono num">{usd(c.mcap)}</td>
                 <td className="px-5 py-3 font-mono num text-[var(--color-ink-soft)]">{num(c.holders)}</td>
                 <td className="px-5 py-3"><Sparkline data={c.history} up={up} width={100} height={28} /></td>
-                <td className="px-5 py-3 text-right">
-                  <button onClick={(e) => { e.stopPropagation(); nav(`/c/${c.id}`) }} className="btn btn-secondary !py-1.5 !px-3.5 text-xs">Trade</button>
-                </td>
+                <td className="px-5 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); nav(`/c/${c.id}`) }} className="btn btn-secondary !py-1.5 !px-3.5 text-xs">Trade</button></td>
               </tr>
             )
           })}
@@ -185,6 +168,7 @@ function IndexCards({ list, prices }) {
               <div className="flex items-center gap-1.5 font-medium">{c.name} <Verified size={12} /></div>
               <div className="font-mono text-xs text-[var(--color-ink-faint)]">${c.ticker}</div>
             </div>
+            <Sparkline data={c.history} up={up} width={54} height={24} className="hidden xs:block" />
             <div className="text-right">
               <div className="font-mono num text-sm font-medium">{usd(prices[c.id] ?? c.price)}</div>
               <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pct(c.change24)}</div>
