@@ -22,13 +22,8 @@ const TABS = [
   { key: 'graduated', label: 'Graduated' },
 ]
 
-const friendly = (m) =>
-  /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
-    ? "Couldn't reach Robinhood Chain right now — the feed is unavailable. Tap refresh."
-    : String(m || '')
-
 export default function Explore() {
-  const { agents, agentsLoading, agentsError, loadAgents, prices } = useStore()
+  const { agents, agentsLoading, loadAgents, prices } = useStore()
   const [tab, setTab] = useState('top')
   const [q, setQ] = useState('')
 
@@ -71,8 +66,6 @@ export default function Explore() {
           ))}
           <button onClick={loadAgents} disabled={agentsLoading} className="shrink-0 ml-auto">{agentsLoading ? '…' : '↻'}</button>
         </div>
-
-        {agentsError && <div className="chip chip-down w-full mb-4">{friendly(agentsError)}</div>}
 
         {agentsLoading && agents.length === 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">

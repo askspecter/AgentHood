@@ -25,6 +25,8 @@ export default function CharmDetail() {
 
   const price = prices[charm.id] ?? charm.price
   const grad = charm.graduated
+  const addr = charm.token
+  const goTrade = () => nav(addr ? `/trade?token=${addr}` : '/trade')
 
   return (
     <div>
@@ -47,8 +49,8 @@ export default function CharmDetail() {
                 </div>
                 <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-1">
                   <XLogo size={10} /><span>{charm.creator}</span>
-                  <span className="opacity-40">·</span>
-                  <span className="font-mono text-xs">{charm.token.slice(0, 6)}…{charm.token.slice(-4)}</span>
+                  {addr && <><span className="opacity-40">·</span>
+                  <span className="font-mono text-xs">{addr.slice(0, 6)}…{addr.slice(-4)}</span></>}
                 </div>
                 <div className="flex flex-wrap gap-1.5 mt-3">
                   {charm.vibe.map((v) => <span key={v} className="chip">{v}</span>)}
@@ -57,7 +59,7 @@ export default function CharmDetail() {
             </div>
             <div className="flex items-center gap-2 mt-5">
               <Link to={`/chat/${charm.id}`} className="btn btn-primary flex-1 sm:flex-none">Chat with {charm.name}</Link>
-              <button onClick={() => nav(`/trade?token=${charm.token}`)} className="btn btn-holo static">Trade ${charm.ticker}</button>
+              <button onClick={goTrade} className="btn btn-holo static">Trade ${charm.ticker}</button>
             </div>
           </div>
 
@@ -66,7 +68,7 @@ export default function CharmDetail() {
             <div className="flex items-end justify-between mb-5">
               <div>
                 <div className="eyebrow mb-1">Price</div>
-                <div className="font-mono num text-3xl font-semibold">{charm.priceUsd != null ? usd(price) : '—'}</div>
+                <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : "—"}</div>
               </div>
               {typeof charm.graduationProgress === 'number' && grad !== true && (
                 <span className="chip !text-sm">{Math.round(charm.graduationProgress * 100)}% to graduation</span>
@@ -78,8 +80,8 @@ export default function CharmDetail() {
               <Stat label="Supply" value={num(charm.supply)} />
               <Stat label="Chain" value="pons" />
             </div>
-            {explorer && (
-              <a href={`${explorer}/token/${charm.token}`} target="_blank" rel="noopener noreferrer"
+            {explorer && addr && (
+              <a href={`${explorer}/token/${addr}`} target="_blank" rel="noopener noreferrer"
                 className="inline-block mt-4 text-xs text-[var(--color-accent)] hover:underline">View on explorer ↗</a>
             )}
           </div>
@@ -98,7 +100,7 @@ export default function CharmDetail() {
             <p className="text-sm text-[var(--color-ink-soft)] mb-4">
               Buy or sell ${charm.ticker} through the pons router, signed by your X wallet.
             </p>
-            <button onClick={() => nav(`/trade?token=${charm.token}`)} className="btn btn-primary w-full mb-2">Trade ${charm.ticker}</button>
+            <button onClick={goTrade} className="btn btn-primary w-full mb-2">Trade ${charm.ticker}</button>
             <Link to={`/chat/${charm.id}`} className="btn btn-secondary w-full">Chat with {charm.name}</Link>
           </div>
         </div>
