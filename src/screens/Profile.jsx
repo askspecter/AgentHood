@@ -45,19 +45,21 @@ export default function Profile() {
 
   const load = useCallback(async () => {
     if (!wallet) return
-    setLoading(true)
     setError(null)
-    try {
-      // Address first, so the wallet card can render even if the (slower) scan
-      // of held coins is still running or the rate lookup fails.
-      // The wallet's native balance comes from a single fast getBalance call —
-      // it must show even if the (heavier) holdings scan times out on a public
-      // RPC. This is why "add ETH then see nothing" happened: the balance was
-      // taken from the slow portfolio call instead of this one.
-      const w = await fetch(`/api/wallet?network=${NETWORK}`).then((r) => (r.ok ? r.json() : null))
-      if (w?.address) setAddress(w.address)
-      if (w?.balance?.formatted != null) setWalletEth(Number(w.balance.formatted))
 
+    // Fast path — the balance is one getBalance call and must paint immediately,
+    // not wait behind the heavy holdings scan (which times out on a public RPC).
+    fetch(`/api/wallet?network=${NETWORK}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((w) => {
+        if (w?.address) setAddress(w.address)
+        if (w?.balance?.formatted != null) setWalletEth(Number(w.balance.formatted))
+      })
+      .catch(() => {})
+
+    // Slower path — every coin the wallet holds, priced.
+    setLoading(true)
+    try {
       const res = await fetch('/api/terminal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,13 +70,9 @@ export default function Profile() {
         setFolio(json.data)
         setFolioEthUsd(json.ethUsd ?? null)
         if (json.data.address) setAddress(json.data.address)
-      } else if (json.error) {
-        setError(friendly(json.error))
-      } else if (json.lines?.length) {
-        setError(friendly(json.lines.map((l) => l.text).join(' ')))
       }
     } catch {
-      setError('Could not read your wallet.')
+      /* the balance above still shows; holdings just stay empty */
     } finally {
       setLoading(false)
     }
