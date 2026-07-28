@@ -1,7 +1,6 @@
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import LoginButton from './WalletButton'
-import { bal } from '../lib/format'
 
 const TABS = [
   { to: '/', label: 'Discover', end: true, icon: HomeIcon },
@@ -22,8 +21,7 @@ function Wordmark({ className = '' }) {
 export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
-  const { wallet, cash } = useStore()
-  const balance = bal(cash)
+  const { wallet } = useStore()
 
   return (
     <div className="min-h-full flex flex-col">
@@ -47,9 +45,13 @@ export default function Shell() {
           <div className="ml-auto flex items-center">
             {wallet ? (
               <Link to="/you" className="flex items-center gap-2 pl-1.5 pr-3.5 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition">
-                <span className="orb-spin w-6 h-6 rounded-full grid place-items-center font-semibold text-xs"
-                  style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
-                <span className="font-mono text-xs num font-medium">{balance}</span>
+                {wallet.avatar ? (
+                  <img src={wallet.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+                ) : (
+                  <span className="orb-spin w-6 h-6 rounded-full grid place-items-center font-semibold text-xs"
+                    style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+                )}
+                <span className="text-xs font-medium">{wallet.handle}</span>
               </Link>
             ) : (
               <LoginButton />

@@ -1,144 +1,187 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import CharmAvatar from '../components/CharmAvatar'
-import Sparkline from '../components/Sparkline'
-import { usd, bal, num, pct, timeAgo } from '../lib/format'
-import { Gear, XGlyph, Coin } from '../components/icons'
+import { Gear, XGlyph, Coin, Verified } from '../components/icons'
+
+/**
+ * Portfolio — real, on-chain.
+ *
+ * Everything here is read from the wallet minted for your X account: the ETH
+ * balance and every coin it holds, priced live. The `portfolio` command's own
+ * endpoint (/api/terminal) is the single source, so the numbers here and in the
+ * terminal can never disagree.
+ */
+
+const NETWORK = 'robinhood'
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+const fmtUsd = (n) =>
+  n == null ? '—' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })
+const fmtEth = (n) =>
+  n == null ? '—' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' ETH'
+const fmtQty = (n) =>
+  Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 6 })
 
 export default function Profile() {
   const nav = useNavigate()
-  const { wallet, connect, cash, holdings, prices, getCharm, activity, custom, portfolioValue, addCash } = useStore()
-  const [tab, setTab] = useState('coins')
-  const [flash, setFlash] = useState(false)
+  const { wallet, connect } = useStore()
+
+  const [folio, setFolio] = useState(null)
+  const [ethUsd, setEthUsd] = useState(null)
+  const [address, setAddress] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  const load = useCallback(async () => {
+    if (!wallet) return
+    setLoading(true)
+    setError(null)
+    try {
+      // Address first, so the wallet card can render even if the (slower) scan
+      // of held coins is still running or the rate lookup fails.
+      const w = await fetch(`/api/wallet?network=${NETWORK}`).then((r) => (r.ok ? r.json() : null))
+      if (w?.address) setAddress(w.address)
+
+      const res = await fetch('/api/terminal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: 'portfolio', network: NETWORK }),
+      })
+      const json = await res.json()
+      if (json.data) {
+        setFolio(json.data)
+        setEthUsd(json.ethUsd ?? null)
+        if (json.data.address) setAddress(json.data.address)
+      } else if (json.lines?.length) {
+        setError(json.lines.map((l) => l.text).join(' '))
+      }
+    } catch {
+      setError('Could not read your wallet.')
+    } finally {
+      setLoading(false)
+    }
+  }, [wallet])
+
+  useEffect(() => { load() }, [load])
+
+  const copyAddr = useCallback(async () => {
+    if (!address) return
+    try {
+      await navigator.clipboard.writeText(address)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch {}
+  }, [address])
 
   if (!wallet) {
     return (
       <div className="max-w-md mx-auto text-center py-24">
         <div className="orb-spin mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)' }}><XGlyph size={20} color="#0b0a12" /></div>
         <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see your balance, coins and activity.</p>
+        <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see the wallet minted for your account, its balance and every coin it holds.</p>
         <button onClick={connect} className="btn btn-primary mx-auto">Sign in with <XGlyph size={13} color="#fff" /></button>
       </div>
     )
   }
 
-  const total = cash + portfolioValue
-  const positions = Object.entries(holdings).map(([id, h]) => {
-    const charm = getCharm(id)
-    const price = prices[id] ?? charm?.price ?? 0
-    const value = h.units * price
-    const pnl = value - h.cost
-    return { charm, h, value, pnl, pnlPct: h.cost ? (pnl / h.cost) * 100 : 0 }
-  }).filter((p) => p.charm).sort((a, b) => b.value - a.value)
-
-  function doAddCash() { addCash(1000); setFlash(true); setTimeout(() => setFlash(false), 1800) }
-  const TABS = ['coins', 'creations', 'activity']
+  const eth = folio?.eth ?? null
+  const totalUsd = folio ? (ethUsd ? folio.totalWeth * ethUsd : null) : null
+  const holdings = folio?.holdings ?? []
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* header */}
+      {/* header — real X identity */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <span className="orb-spin w-12 h-12 rounded-full grid place-items-center font-bold text-xl"
-            style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+          {wallet.avatar ? (
+            <img src={wallet.avatar} alt="" className="w-12 h-12 rounded-full object-cover border hairline" />
+          ) : (
+            <span className="orb-spin w-12 h-12 rounded-full grid place-items-center font-bold text-xl"
+              style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(wallet.handle?.replace(/^@/, '')[0] || 'Y').toUpperCase()}</span>
+          )}
           <div>
-            <div className="font-semibold text-lg">{wallet.handle}</div>
-            <span className="inline-flex items-center gap-1.5 chip"><XGlyph size={10} color="var(--color-ink-soft)" /> Verified</span>
+            <div className="font-semibold text-lg leading-tight">{wallet.name || wallet.handle}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-[var(--color-ink-soft)]">{wallet.handle}</span>
+              <span className="inline-flex items-center gap-1 chip"><Verified size={11} /> Verified</span>
+            </div>
           </div>
         </div>
         <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Gear size={18} /></button>
       </div>
 
-      {/* balance card */}
+      {/* real wallet balance card */}
       <div className="card p-6 mb-4">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="sm:col-span-1">
-            <div className="eyebrow mb-1">Net worth</div>
-            <div className="font-mono num text-3xl font-semibold">{bal(total)}</div>
-            {flash && <div className="text-[var(--color-up)] text-xs font-medium mt-1 flash">+$1,000 added</div>}
+            <div className="eyebrow mb-1">Total value</div>
+            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : fmtEth(folio?.totalWeth)}</div>
+            <div className="text-xs text-[var(--color-ink-faint)] mt-1">ETH + priced coins</div>
           </div>
-          <Mini label="Cash" value={bal(cash)} />
-          <Mini label="In coins" value={bal(portfolioValue)} />
+          <Mini label="ETH balance" value={fmtEth(eth)} sub={ethUsd && eth != null ? fmtUsd(eth * ethUsd) : null} />
+          <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
-        <div className="flex gap-2 mt-5">
-          <button onClick={doAddCash} className="btn btn-primary">Add cash</button>
-          <Link to="/" className="btn btn-secondary">Discover coins</Link>
-        </div>
-        <div className="flex gap-2 mt-2">
+
+        {address && (
+          <button onClick={copyAddr} title="Copy address"
+            className="mt-4 w-full text-left font-mono text-xs text-[var(--color-ink-soft)] p-3 rounded-lg border hairline hover:bg-[var(--color-paper-2)] break-all">
+            {address} <span className="text-[var(--color-accent)]">{copied ? 'copied ✓' : 'copy'}</span>
+          </button>
+        )}
+
+        <div className="flex gap-2 mt-4">
           <Link to="/launch" className="btn btn-holo static flex-1 justify-center">Launch a coin</Link>
           <Link to="/trade" className="btn btn-secondary flex-1 justify-center">Trade on-chain</Link>
         </div>
       </div>
 
-      {/* tabs */}
-      <div className="seg mb-5">
-        {TABS.map((t) => <button key={t} onClick={() => setTab(t)} className={`capitalize ${tab === t ? 'on' : ''}`}>{t}</button>)}
+      {/* holdings — real coins in the wallet */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="eyebrow">Holdings</div>
+        <button onClick={load} disabled={loading} className="text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">{loading ? 'Reading…' : '↻ Refresh'}</button>
       </div>
 
-      {tab === 'coins' && (positions.length === 0 ? (
-        <Empty title="No coins yet" subtitle="Add cash, then discover and trade a character coin." action={<button onClick={doAddCash} className="btn btn-primary">Add cash</button>} />
+      {error && <div className="chip chip-down w-full mb-3">{error}</div>}
+
+      {holdings.length === 0 ? (
+        <Empty
+          title={loading ? 'Reading your wallet…' : 'No coins held'}
+          subtitle={loading ? 'Scanning balances on Robinhood Chain.' : 'Coins you buy or launch will show up here, priced live.'}
+          action={!loading && <Link to="/trade" className="btn btn-primary">Trade a coin</Link>}
+        />
       ) : (
         <div className="card overflow-hidden">
-          {positions.map(({ charm, h, value, pnl, pnlPct }, i) => (
-            <Link key={charm.id} to={`/c/${charm.id}`} className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
-              <CharmAvatar charm={charm} size={40} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium">{charm.name}</div>
-                <div className="text-xs text-[var(--color-ink-faint)] font-mono num">{num(h.units)} {charm.ticker}</div>
-              </div>
-              <Sparkline data={charm.history} up={pnl >= 0} width={64} height={26} />
-              <div className="text-right">
-                <div className="font-mono num font-medium">{usd(value)}</div>
-                <div className={`text-xs font-mono num ${pnl >= 0 ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pct(pnlPct)}</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ))}
-
-      {tab === 'creations' && (custom.length === 0 ? (
-        <Empty title="No creations yet" subtitle="Mint a character and it will show up here." action={<button onClick={() => nav('/create')} className="btn btn-primary">Create a character</button>} />
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {custom.map((c) => (
-            <Link key={c.id} to={`/c/${c.id}`} className="card card-hover p-4 flex flex-col items-center text-center">
-              <CharmAvatar charm={c} size={56} />
-              <div className="font-medium mt-2">{c.name}</div>
-              <div className="font-mono text-xs text-[var(--color-ink-faint)]">${c.ticker}</div>
-            </Link>
-          ))}
-        </div>
-      ))}
-
-      {tab === 'activity' && (activity.length === 0 ? (
-        <Empty title="No activity yet" subtitle="Your deposits and trades will appear here." />
-      ) : (
-        <div className="card overflow-hidden">
-          {activity.slice(0, 24).map((a, i) => {
-            const charm = a.id ? getCharm(a.id) : null
-            const verb = a.type === 'buy' ? 'Bought' : a.type === 'sell' ? 'Sold' : a.type === 'launch' ? 'Minted' : 'Added cash'
-            const color = a.type === 'buy' ? 'text-[var(--color-up)]' : a.type === 'sell' ? 'text-[var(--color-down)]' : ''
+          {holdings.map((h, i) => {
+            const valueUsd = h.valueUsd ?? (h.valueWeth != null && ethUsd ? h.valueWeth * ethUsd : null)
             return (
-              <div key={i} className={`flex items-center gap-3 p-3.5 text-sm ${i ? 'border-t hairline' : ''}`}>
-                {charm ? <CharmAvatar charm={charm} size={30} /> : <span className="w-8 h-8 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)]"><Coin size={16} /></span>}
-                <div className="flex-1"><span className={`font-medium ${color}`}>{verb}</span> {charm ? charm.name : 'to balance'}{a.units != null && <span className="font-mono num text-[var(--color-ink-faint)]"> · {num(a.units)} {charm?.ticker}</span>}</div>
-                {a.usd != null && <span className="font-mono num">{usd(a.usd)}</span>}
-                <span className="text-xs text-[var(--color-ink-faint)] w-8 text-right">{timeAgo(a.ts)}</span>
-              </div>
+              <Link key={h.token} to={`/trade?token=${h.token}`} className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
+                <span className="w-9 h-9 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)]"><Coin size={18} /></span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{h.name || `$${(h.symbol || '???').replace(/^\$/, '')}`}</div>
+                  <div className="text-xs text-[var(--color-ink-faint)] font-mono num">{fmtQty(h.qty)} ${(h.symbol || 'TOKEN').replace(/^\$/, '')}</div>
+                </div>
+                <div className="text-right font-mono num font-medium">
+                  {valueUsd != null ? fmtUsd(valueUsd) : h.valueWeth != null ? fmtEth(h.valueWeth) : '—'}
+                </div>
+              </Link>
             )
           })}
         </div>
-      ))}
+      )}
+
+      <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">
+        Balances are read for coins launched through pons within the scanned window, so a very old position can be missing even though it is still in the wallet.
+      </p>
     </div>
   )
 }
 
-function Mini({ label, value }) {
+function Mini({ label, value, sub }) {
   return (
     <div>
       <div className="eyebrow mb-1">{label}</div>
       <div className="font-mono num text-lg font-semibold">{value}</div>
+      {sub && <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{sub}</div>}
     </div>
   )
 }
