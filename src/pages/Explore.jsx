@@ -1,14 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import CharmAvatar from '../components/CharmAvatar'
-import Sparkline from '../components/Sparkline'
-import Hero from '../components/Hero'
+import CharmAvatar, { toneFor } from '../components/CharmAvatar'
 import Ticker from '../components/Ticker'
 import CharmCarousel from '../components/CharmCarousel'
 import { usd, num, pct } from '../lib/format'
 import { useReveal } from '../lib/hooks'
-import { Verified, XLogo } from '../components/icons'
+import { Verified, Mentions, ArrowStat } from '../components/icons'
 
 const TABS = [
   { key: 'trending', label: 'Trending', fn: (a, b) => b.change24 - a.change24 },
@@ -22,13 +20,7 @@ export default function Explore() {
   const [tab, setTab] = useState('trending')
   const [q, setQ] = useState('')
 
-  const stats = useMemo(() => ({
-    count: charms.length,
-    mcap: charms.reduce((s, c) => s + c.mcap, 0),
-    holders: charms.reduce((s, c) => s + c.holders, 0),
-  }), [charms])
-
-  const spotlight = useMemo(() => [...charms].sort((a, b) => b.change24 - a.change24).slice(0, 6), [charms])
+  const cast = useMemo(() => [...charms].sort((a, b) => b.change24 - a.change24).slice(0, 6), [charms])
 
   const list = useMemo(() => {
     let l = charms.filter(
@@ -40,31 +32,31 @@ export default function Explore() {
 
   return (
     <div>
-      <Hero charms={charms} stats={stats} prices={prices} />
+      {/* cast — a titleless swipeable feature strip */}
+      <div className="fade-up mb-9 pt-1">
+        <CharmCarousel charms={cast} prices={prices} />
+      </div>
+
       <Ticker charms={charms} prices={prices} />
 
-      {/* spotlight — swipeable rail */}
-      <Section>
-        <div className="flex items-baseline justify-between mb-5">
-          <h2 className="display text-3xl">Moving now</h2>
-          <span className="eyebrow hidden sm:block">Swipe · 24h</span>
-        </div>
-        <CharmCarousel charms={spotlight} prices={prices} />
-      </Section>
-
-      {/* index */}
+      {/* explore — grid of boxes */}
       <Section id="index">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <h2 className="display text-3xl">The index</h2>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="seg">
-              {TABS.map((t) => <button key={t.key} onClick={() => setTab(t.key)} className={tab === t.key ? 'on' : ''}>{t.label}</button>)}
-            </div>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="input sm:w-52" />
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <h2 className="display text-3xl">Explore</h2>
+          <div className="relative w-full sm:w-56">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search characters…" className="input" />
           </div>
         </div>
-        <IndexTable list={list} prices={prices} />
-        <IndexCards list={list} prices={prices} />
+
+        <div className="seg no-scrollbar mb-5 flex overflow-x-auto max-w-full">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+          {list.map((c) => <GridCard key={c.id} charm={c} />)}
+        </div>
         {list.length === 0 && <div className="text-center py-16 text-[var(--color-ink-soft)]">No results for "{q}".</div>}
       </Section>
     </div>
@@ -76,69 +68,36 @@ function Section({ children, id }) {
   return <section id={id} ref={ref} className="reveal mb-12 scroll-mt-24">{children}</section>
 }
 
-function IndexTable({ list, prices }) {
+function GridCard({ charm }) {
   const nav = useNavigate()
+  const up = charm.change24 >= 0
+  const [c1] = toneFor(charm)
+  const open = () => nav(`/c/${charm.id}`)
   return (
-    <div className="hidden md:block card overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="text-left border-b hairline">
-            {['#', 'Character', 'Price', '24h', 'Market cap', 'Holders', 'Last 24h', ''].map((h) => (
-              <th key={h} className="eyebrow px-5 py-3 font-semibold">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((c, k) => {
-            const up = c.change24 >= 0
-            return (
-              <tr key={c.id} onClick={() => nav(`/c/${c.id}`)} className="trow cursor-pointer border-b hairline last:border-0">
-                <td className="px-5 py-3 font-mono num text-[var(--color-ink-faint)]">{k + 1}</td>
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-3">
-                    <CharmAvatar charm={c} size={34} />
-                    <div>
-                      <div className="flex items-center gap-1.5 font-medium">{c.name} <Verified size={12} /></div>
-                      <div className="font-mono text-xs text-[var(--color-ink-faint)]">${c.ticker}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-5 py-3 font-mono num">{usd(prices[c.id] ?? c.price)}</td>
-                <td className="px-5 py-3"><span className={`font-mono num text-xs px-1.5 py-0.5 rounded ${up ? 'chip-up' : 'chip-down'}`}>{pct(c.change24)}</span></td>
-                <td className="px-5 py-3 font-mono num">{usd(c.mcap)}</td>
-                <td className="px-5 py-3 font-mono num text-[var(--color-ink-soft)]">{num(c.holders)}</td>
-                <td className="px-5 py-3"><Sparkline data={c.history} up={up} width={100} height={28} /></td>
-                <td className="px-5 py-3 text-right"><button onClick={(e) => { e.stopPropagation(); nav(`/c/${c.id}`) }} className="btn btn-secondary !py-1.5 !px-3.5 text-xs">Trade</button></td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
-    </div>
-  )
-}
+    <div onClick={open}
+      className="card card-hover p-4 flex flex-col items-center text-center cursor-pointer">
+      <div className="relative mb-3 mt-1 grid place-items-center">
+        <span className="absolute rounded-full blur-2xl opacity-45 pointer-events-none"
+          style={{ width: 76, height: 76, background: c1 }} />
+        <div className="relative"><CharmAvatar charm={charm} size={76} ring /></div>
+      </div>
 
-function IndexCards({ list, prices }) {
-  const nav = useNavigate()
-  return (
-    <div className="md:hidden space-y-2.5">
-      {list.map((c) => {
-        const up = c.change24 >= 0
-        return (
-          <div key={c.id} onClick={() => nav(`/c/${c.id}`)} className="card card-hover p-3.5 flex items-center gap-3 cursor-pointer">
-            <CharmAvatar charm={c} size={44} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 font-medium">{c.name} <Verified size={12} /></div>
-              <div className="font-mono text-xs text-[var(--color-ink-faint)]">${c.ticker}</div>
-            </div>
-            <Sparkline data={c.history} up={up} width={54} height={24} className="hidden xs:block" />
-            <div className="text-right">
-              <div className="font-mono num text-sm font-medium">{usd(prices[c.id] ?? c.price)}</div>
-              <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pct(c.change24)}</div>
-            </div>
-          </div>
-        )
-      })}
+      <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+        <span className="font-semibold truncate">{charm.name}</span>
+        <Verified size={13} />
+      </div>
+
+      <div className="flex items-center justify-center gap-3 mt-1.5 font-mono num text-xs">
+        <span className="inline-flex items-center gap-1 text-[var(--color-ink-soft)]">
+          {usd(charm.mcap)}<ArrowStat up={up} size={14} />
+        </span>
+        <span className="inline-flex items-center gap-1 text-[var(--color-ink-faint)]">
+          {num(charm.holders)}<Mentions size={13} />
+        </span>
+      </div>
+
+      <button onClick={(e) => { e.stopPropagation(); open() }}
+        className="btn btn-holo static w-full mt-4 !py-2 text-sm">Trade</button>
     </div>
   )
 }
