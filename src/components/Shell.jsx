@@ -15,7 +15,8 @@ const TABS = [
 function Wordmark({ className = '' }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="grid place-items-center w-7 h-7 rounded-lg text-white font-serif text-lg leading-none" style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>E</span>
+      <span className="orb-spin grid place-items-center w-7 h-7 rounded-[9px] font-bold text-sm leading-none"
+        style={{ background: 'var(--holo)', color: '#0b0a12', boxShadow: '0 0 18px -4px rgba(180,150,255,0.8), inset 0 1px 0 rgba(255,255,255,0.6)' }}>E</span>
       <span className="font-semibold text-lg tracking-tight">ESKA</span>
     </span>
   )
@@ -30,7 +31,7 @@ export default function Shell() {
   return (
     <div className="min-h-full flex flex-col">
       {/* ===== desktop top navbar ===== */}
-      <header className="sticky top-0 z-40 border-b hairline bg-[rgba(10,9,18,.72)] backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b hairline bg-[rgba(7,6,12,.68)] backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 lg:px-8 h-16 flex items-center gap-6">
           <Link to="/"><Wordmark /></Link>
 
@@ -69,7 +70,7 @@ export default function Shell() {
       </main>
 
       {/* ===== mobile bottom tab bar ===== */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[rgba(10,9,18,.85)] backdrop-blur-xl border-t hairline">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[rgba(7,6,12,.85)] backdrop-blur-xl border-t hairline">
         <div className="grid grid-cols-4 max-w-md mx-auto">
           {TABS.map((t) => {
             const Icon = t.icon
