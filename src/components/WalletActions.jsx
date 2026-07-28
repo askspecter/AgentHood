@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { parseEther, parseUnits, isAddress } from 'ethers'
 import { useStore } from '../lib/store'
 import TradePanel from './TradePanel'
@@ -47,7 +48,11 @@ export default function WalletActions() {
 }
 
 function Overlay({ children, onClose, title }) {
-  return (
+  if (typeof document === 'undefined') return null
+  // Portal to <body> so the fixed overlay escapes the portfolio card's
+  // backdrop-filter stacking context — otherwise later cards (the holdings
+  // empty state, the nav) paint on top of it.
+  return createPortal(
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 backdrop-blur-md p-4" onClick={onClose}>
       <div className="w-full max-w-[360px] max-h-[86vh] flex flex-col rounded-3xl border border-white/10"
         style={{ background: '#0e0c16', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.95)' }}
@@ -58,7 +63,8 @@ function Overlay({ children, onClose, title }) {
         </div>
         <div className="px-4 pb-4 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
