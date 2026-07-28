@@ -14,6 +14,10 @@ import { XGlyph, Back } from '../components/icons'
 
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+const friendly = (m) =>
+  /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
+    ? "Couldn't reach Robinhood Chain right now — the RPC is unavailable. Try again in a moment."
+    : String(m || '')
 
 // Friendly labels for the field names launchpads use; hidden fields are still
 // encoded but filled automatically (fee wallet → your X wallet, salt → random).
@@ -141,7 +145,7 @@ export default function Launch() {
 
       <div className="card p-5">
         {loading && <div className="chip w-full mb-4">Reading the factory’s verified ABI…</div>}
-        {metaError && <div className="chip chip-down w-full mb-4">Could not read the factory ABI. {metaError}</div>}
+        {metaError && <div className="chip chip-down w-full mb-4">Could not read the factory ABI. {friendly(metaError)}</div>}
 
         {meta?.chosen && (
           <>
@@ -187,7 +191,7 @@ export default function Launch() {
             </button>
 
             {status && <div className="chip w-full mt-4">{status}</div>}
-            {error && <div className="chip chip-down w-full mt-4">{error}</div>}
+            {error && <div className="chip chip-down w-full mt-4">{friendly(error)}</div>}
             {result && (
               <div className="chip chip-up w-full mt-4">
                 Created.{' '}

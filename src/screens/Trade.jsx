@@ -16,6 +16,10 @@ const NETWORK = 'robinhood'
 const SLIPPAGE_OPTIONS = [1, 5, 15]
 const isAddr = (t) => /^0x[a-fA-F0-9]{40}$/.test((t || '').trim())
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+const friendly = (m) =>
+  /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
+    ? "Couldn't reach Robinhood Chain right now — the RPC is unavailable. Try again in a moment."
+    : String(m || '')
 
 export default function Trade() {
   const { wallet, connect } = useStore()
@@ -147,7 +151,7 @@ export default function Trade() {
       </p>
 
       <div className="card p-5">
-        {metaError && <div className="chip chip-down w-full mb-4">{metaError}</div>}
+        {metaError && <div className="chip chip-down w-full mb-4">{friendly(metaError)}</div>}
 
         {user ? (
           <div className="flex items-center gap-2 text-sm text-[var(--color-ink-soft)] mb-4">
@@ -211,7 +215,7 @@ export default function Trade() {
         )}
 
         {status && <div className="chip w-full mt-4">{status}</div>}
-        {error && <div className="chip chip-down w-full mt-4">{error}</div>}
+        {error && <div className="chip chip-down w-full mt-4">{friendly(error)}</div>}
         {done && (
           <div className="chip chip-up w-full mt-4">
             Swap confirmed.{' '}
