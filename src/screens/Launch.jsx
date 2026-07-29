@@ -135,11 +135,11 @@ async function aiIdea(kind, context = {}) {
     return await res.json() // { items } for name/personality, { text } otherwise
   } catch { return null }
 }
-async function aiImage(prompt) {
+async function aiImage(prompt, style) {
   try {
     const res = await fetch('/api/ai/image', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, style }),
     })
     if (!res.ok) return null
     const j = await res.json()
@@ -147,7 +147,6 @@ async function aiImage(prompt) {
   } catch { return null }
 }
 const styleLabel = (key) => STYLES.find((s) => s.key === key)?.label || ''
-const stylePrompt = (key) => STYLES.find((s) => s.key === key)?.p || ''
 
 /* Store an image (data URL or remote URL) durably and get back a stable URL for
    on-chain metadata. Returns null if storage isn't configured — callers keep the
@@ -366,14 +365,15 @@ export default function Launch() {
     if (step !== 2) return
     let cancelled = false, ready = false
     setPct(0)
-    const prompt = [
+    // The subject only — the server slots this into the chosen style's template,
+    // so the style fragment is no longer merged in here (it owns the render).
+    const subject = [
       d.name,
-      stylePrompt(d.style),
       d.gender && GENDERS.find((g) => g.key === d.gender)?.label,
       d.look,
     ].filter(Boolean).join(', ')
-    const needGen = !d.logo && !!prompt
-    const job = needGen ? aiImage(prompt) : Promise.resolve(null)
+    const needGen = !d.logo && (!!subject || !!d.style)
+    const job = needGen ? aiImage(subject, d.style) : Promise.resolve(null)
     job.then((url) => { if (!cancelled && url) set('logo', url) }).catch(() => {}).finally(() => { ready = true })
 
     const t0 = performance.now()

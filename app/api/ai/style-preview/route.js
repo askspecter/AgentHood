@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { kvGet, kvSet, kvConfigured } from "@/lib/logostore";
 import { fluxImageUrl } from "@/lib/flux";
+import { stylePreviewPrompt } from "@/lib/styles";
 
 /**
  * GET /api/ai/style-preview?style=<key>
@@ -10,30 +11,15 @@ import { fluxImageUrl } from "@/lib/flux";
  * served as bytes forever after — so the picker looks like a gallery without
  * shipping any third-party images. Falls back with an error the client hides
  * (showing a gradient tile) when FAL_KEY or KV isn't set.
+ *
+ * The preview prompt comes from the SAME style engine (lib/styles) the real
+ * generator uses, so the tile you pick and the logo you get are the same style.
+ * Cache is v2 because the prompts changed with that unification — old v1 tiles
+ * lazily regenerate the first time each style is viewed again.
  */
 
-const cacheKey = (k) => `pons:stylepreview:v1:${k}`;
+const cacheKey = (k) => `pons:stylepreview:v2:${k}`;
 const TTL = 60 * 60 * 24 * 365 * 5;
-
-const STYLE_PROMPTS = {
-  realistic: "photorealistic studio portrait of a person, natural soft lighting, ultra detailed",
-  anime: "anime style portrait, vibrant colors, clean cel shading, expressive eyes",
-  pixel: "16-bit pixel art portrait of a hero character, retro game sprite",
-  ps2: "early-2000s PS2-era 3D game render portrait, low poly, nostalgic",
-  lineart: "black and white line art portrait, minimal clean ink, white background",
-  cyberpunk: "cyberpunk portrait, neon lights, futuristic city, moody",
-  mascot: "cute glossy 3D mascot character, big friendly eyes, soft studio light",
-  film: "cinematic film still portrait, dramatic lighting, shallow depth of field",
-  comic: "comic book style portrait, bold ink outlines, halftone shading, dynamic",
-  ethereal: "ethereal dreamy portrait, soft glow, translucent light, heavenly",
-  fantasy: "epic fantasy portrait, glowing magic runes, ornate, cinematic",
-  dark: "dark moody portrait, low-key dramatic lighting, deep shadows",
-  cartoon: "3D animated cartoon portrait, Pixar-like, expressive, colorful",
-  manhwa: "korean manhwa webtoon style portrait, clean soft shading, handsome",
-  vaporwave: "vaporwave portrait, pastel neon, retro 80s aesthetic, gradient glow",
-  chibi: "chibi style character, super deformed, big head, tiny cute body",
-  ghibli: "studio ghibli inspired portrait, soft watercolor, whimsical, warm",
-};
 
 function imageResponse(type, data) {
   return new NextResponse(data, {
@@ -56,7 +42,7 @@ async function toWebp(url) {
 
 export async function GET(request) {
   const style = new URL(request.url).searchParams.get("style") || "";
-  const prompt = STYLE_PROMPTS[style];
+  const prompt = stylePreviewPrompt(style);
   if (!prompt) return NextResponse.json({ error: "Unknown style." }, { status: 400 });
   if (!kvConfigured()) return NextResponse.json({ error: "Storage not configured." }, { status: 501 });
 
@@ -73,7 +59,7 @@ export async function GET(request) {
 
   // Generate once, cache, serve.
   try {
-    const url = await fluxImageUrl(`${prompt}. Centered headshot, simple background.`);
+    const url = await fluxImageUrl(prompt);
     const img = await toWebp(url);
     await kvSet(cacheKey(style), JSON.stringify({ type: img.type, data: img.data.toString("base64") }), TTL);
     return imageResponse(img.type, img.data);

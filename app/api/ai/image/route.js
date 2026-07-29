@@ -1,16 +1,22 @@
 import { NextResponse } from "next/server";
 import { persistImage } from "@/lib/logostore";
 import { fluxImageUrl } from "@/lib/flux";
+import { styleImagePrompt } from "@/lib/styles";
 
 /**
- * POST /api/ai/image  { prompt }
+ * POST /api/ai/image  { prompt, style }
  *
  * Generates a coin avatar/logo from a text prompt with FLUX.1 [schnell] on
  * fal.ai. The generated image is then stored durably in Vercel KV so the coin's
  * on-chain logo points at a stable URL we host — not fal's temporary one.
  *
- * If FAL_KEY isn't set, returns 503 and the client keeps its procedural avatar.
- * If KV isn't set, it falls back to returning fal's URL directly.
+ * `style` is the picked style key (e.g. "pixel", "anime"). It DRIVES the prompt
+ * via the shared style engine in lib/styles — the same one the preview tiles
+ * use, so what you pick is what you get. It used to be buried inside a fixed
+ * cinematic-realism template here, which dragged flat styles (pixel, line art,
+ * anime, chibi) back toward a 3D digital painting — a picked style that
+ * generated as something else. With no/unknown style it falls back to that
+ * generic template, so older callers are unchanged.
  */
 export async function POST(request) {
   let body;
@@ -22,11 +28,10 @@ export async function POST(request) {
 
   const prompt = String(body?.prompt || "").slice(0, 500).trim();
   if (!prompt) return NextResponse.json({ error: "Empty prompt." }, { status: 400 });
+  const style = String(body?.style || "").trim();
 
-  // Frame every prompt as a single striking CHARACTER portrait (an avatar) with a
-  // rich, cinematic, thematic background — the coin is the token; its logo is a
-  // character, like the reference app. Not a literal coin.
-  const full = `Character portrait of ${prompt}. A single striking character or mascot, head and shoulders, centered, facing forward, expressive, cinematic dramatic lighting, rich atmospheric thematic background that fits the character, depth of field, ultra detailed, sharp focus, high quality digital art, no text, no watermark, not a coin, not a medal.`;
+  // The style owns the render; the prompt is just the subject slotted into it.
+  const full = styleImagePrompt(style, prompt);
 
   let falUrl;
   try {
