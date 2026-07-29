@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { StoreProvider } from './lib/store'
+import ErrorBoundary from './components/ErrorBoundary'
 import Shell from './components/Shell'
 import Explore from './screens/Explore'
 import CharmDetail from './screens/CharmDetail'
@@ -26,22 +27,24 @@ export default function App() {
     <StoreProvider>
       <BrowserRouter>
         <ScrollTop />
-        <Routes>
-          <Route path="/" element={<Shell />}>
-            <Route index element={<Explore />} />
-            <Route path="c/:id" element={<CharmDetail />} />
-            <Route path="chats" element={<Chats />} />
-            <Route path="chat/:id" element={<ChatThread />} />
-            <Route path="launch" element={<Launch />} />
-            <Route path="you" element={<Profile />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="settings/profile" element={<EditProfile />} />
-            <Route path="settings/referral" element={<Referral />} />
-            <Route path="leaderboard" element={<Leaderboard />} />
-            <Route path="terms" element={<Terms />} />
-            <Route path="privacy" element={<Privacy />} />
-          </Route>
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Shell />}>
+              <Route index element={<Explore />} />
+              <Route path="c/:id" element={<CharmDetail />} />
+              <Route path="chats" element={<Chats />} />
+              <Route path="chat/:id" element={<ChatThread />} />
+              <Route path="launch" element={<Launch />} />
+              <Route path="you" element={<Profile />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="settings/profile" element={<EditProfile />} />
+              <Route path="settings/referral" element={<Referral />} />
+              <Route path="leaderboard" element={<Leaderboard />} />
+              <Route path="terms" element={<Terms />} />
+              <Route path="privacy" element={<Privacy />} />
+            </Route>
+          </Routes>
+        </ErrorBoundary>
       </BrowserRouter>
     </StoreProvider>
   )

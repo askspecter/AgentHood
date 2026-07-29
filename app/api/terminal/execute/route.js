@@ -416,22 +416,15 @@ export async function POST(request) {
       );
     }
 
-    // ---- On a WETH sell, unwrap the WETH we just received back to native ETH.
-    // A stock sell settles in USDG and there is nothing to unwrap — the proceeds
-    // are simply held as the stablecoin. ----
-    let unwrapHash = null;
-    if (!isBuy && quoteIsNative) {
-      try {
-        const wethBalance = await weth9.balanceOf(owner);
-        if (wethBalance > 0n) {
-          const unwrapTx = await weth9.withdraw(wethBalance);
-          unwrapHash = unwrapTx.hash;
-          await unwrapTx.wait();
-        }
-      } catch {
-        // The swap landed; if unwrap fails the proceeds are simply held as WETH.
-      }
-    }
+    // A sell's proceeds are left as WETH — deliberately NOT auto-unwrapped.
+    //
+    // Unwrapping (WETH.withdraw) burns the WETH to the zero address, and every
+    // block explorer renders that as "Tokens burnt: WETH → Null", which reads
+    // like the wallet is losing money on every trade even though it isn't. So we
+    // keep the proceeds as WETH and let the holder convert to native ETH on
+    // demand, with the explicit "Unwrap to ETH" action — no silent burn on any
+    // trade. A stock sell already settles in USDG, which is likewise just held.
+    const unwrapHash = null;
 
     return NextResponse.json({
       ok: true,

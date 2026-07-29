@@ -136,12 +136,15 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
   // ETH leg is what you spend; on a sell it's what you receive (from the quote).
   const ethLeg = side === 'buy' ? (Number(amount) || 0) : (quote ? parseFloat(quote.amountOutLabel) || 0 : 0)
   const worthUsd = ethUsd && ethLeg > 0 ? `$${(ethLeg * ethUsd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '$0.00'
+  // A token sell now settles in WETH (we no longer auto-unwrap to ETH — that
+  // burn scared holders). The unwrap path (isWeth) genuinely outputs native ETH.
+  const nativeRecv = isWeth ? 'ETH' : 'WETH'
   const sellChip = sellIsEth
     ? <><EthMark /> <span className="font-semibold">ETH</span></>
     : <><Logo logo={logo} sym={sym} /> <span className="font-semibold">{sym}</span></>
   const buyChip = sellIsEth
     ? <><Logo logo={logo} sym={sym} /> <span className="font-semibold">{sym}</span></>
-    : <><EthMark /> <span className="font-semibold">ETH</span></>
+    : <><EthMark /> <span className="font-semibold">{nativeRecv}</span></>
   const sellAvailLabel = sellIsEth
     ? (ethBalance != null ? `ETH ${ethBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })} available` : 'ETH — available')
     : (tokBalance ? `${Number(tokBalance.formatted).toLocaleString('en-US', { maximumFractionDigits: 4 })} available` : `${sym} — available`)
