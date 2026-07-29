@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar, { TONES } from '../components/CharmAvatar'
@@ -29,6 +29,60 @@ const IDEAS = [
   { tagline: 'A retired satellite that fell in love with the ground.', lore: 'Spent forty years watching Earth and finally came down to make friends.', voice: 'dreamy, tender, vast' },
 ]
 
+/* Name suggestions for the Idea button on step one. */
+const NAME_IDEAS = ['Vanta', 'Lumen', 'Onyx', 'Halcyon', 'Nyx', 'Ember', 'Cobalt', 'Seraph', 'Vesper', 'Zephyr', 'Marrow', 'Quill']
+
+/* Appearance prompts the Idea button drops into the look description. When the AI
+   image API is wired, these are exactly the kind of prompt it will render from. */
+const LOOK_IDEAS = [
+  'A glossy chrome sphere with a single glowing eye, violet rim light, floating in soft fog.',
+  'A tiny round mascot with big eyes and a holographic hoodie, pastel gradient, sticker style.',
+  'A carved obsidian talisman with molten gold cracks, dramatic side lighting on black.',
+  'A translucent jellyfish-orb trailing neon ribbons, deep-space background, dreamy bloom.',
+  'A retro pixel creature, 16-bit, mint and cyan palette, crisp dark backdrop.',
+]
+
+/* Visual styles for the look step. Each sets the coin's tone (its aura/glow) and
+   a matching vibe. Deliberately ESKA's own set, not a copy of anyone else's. */
+const STYLES = [
+  { key: 'holo', label: 'Holo', tone: TONES[0], vibe: 'ethereal' },
+  { key: 'mascot', label: 'Mascot', tone: TONES[3], vibe: 'playful' },
+  { key: 'pixel', label: 'Pixel', tone: TONES[1], vibe: 'retro' },
+  { key: 'noir', label: 'Noir', tone: TONES[6], vibe: 'dry' },
+  { key: 'cyber', label: 'Cyber', tone: TONES[2], vibe: 'hype' },
+  { key: 'dreamy', label: 'Dreamy', tone: TONES[5], vibe: 'dreamy' },
+  { key: 'feral', label: 'Feral', tone: TONES[7], vibe: 'feral' },
+  { key: 'cosmic', label: 'Cosmic', tone: TONES[4], vibe: 'poetic' },
+]
+
+const GENDERS = [
+  { key: 'masc', label: 'He', glyph: '♂' },
+  { key: 'fem', label: 'She', glyph: '♀' },
+  { key: 'neutral', label: 'They', glyph: '⬦' },
+]
+
+/* Shrink a picked image to a small square data URL — the real logo shown on pons. */
+function fileToLogo(file, size = 256) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onerror = reject
+    reader.onload = () => {
+      const img = new Image()
+      img.onerror = reject
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = canvas.height = size
+        const ctx = canvas.getContext('2d')
+        const s = Math.min(img.width, img.height)
+        ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 /* Map the factory's discovered ABI fields onto the pretty inputs. */
 function hintFor(field) {
   const n = field.name || ''
@@ -56,9 +110,9 @@ export default function Launch() {
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, ''), id: wallet.id } : null
 
-  const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge · 3 soul · 4 review · 5 done
+  const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
-  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [] })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], gender: '', style: '', look: '' })
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
@@ -74,6 +128,10 @@ export default function Launch() {
   const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 4) }))
   const deriveTicker = (name) => name.replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase() || 'TICK'
   const idea = () => { const p = IDEAS[Math.floor(Math.random() * IDEAS.length)]; setD((s) => ({ ...s, tagline: p.tagline, lore: p.lore, voice: p.voice })) }
+  const nameIdea = () => set('name', NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)])
+  const lookIdea = () => set('look', LOOK_IDEAS[Math.floor(Math.random() * LOOK_IDEAS.length)])
+  const pickStyle = (st) => setD((s) => ({ ...s, style: st.key, tone: st.tone, vibe: [...new Set([st.vibe, ...s.vibe])].slice(0, 4) }))
+  const setLogoFromFile = async (file) => { try { set('logo', await fileToLogo(file)) } catch { /* ignore unreadable image */ } }
 
   // Discover the factory ABI + the X wallet up front, so the review step can mint
   // without any extra round trip.
@@ -102,7 +160,7 @@ export default function Launch() {
     else setStep((s) => Math.max(0, s - 1))
   }
 
-  const describe = () => [d.tagline, d.vibe.length ? `Vibe: ${d.vibe.join(', ')}` : '', d.lore]
+  const describe = () => [d.tagline, d.vibe.length ? `Vibe: ${d.vibe.join(', ')}` : '', d.lore, d.look]
     .filter(Boolean).join(' · ').slice(0, 280)
 
   const doLaunch = useCallback(async () => {
@@ -151,7 +209,9 @@ export default function Launch() {
     }
   }, [user, canLaunch, meta, fields, d, xWallet])
 
-  // Forge animation → auto-advance to Soul.
+  // "Generating the look" animation. When it reaches 100% the step shows the
+  // ready card (Continue / Edit) instead of auto-advancing — this is where the
+  // AI image generation will run once its API is wired in.
   useEffect(() => {
     if (step !== 2) return
     setPct(0)
@@ -161,7 +221,6 @@ export default function Launch() {
       const p = Math.min(1, (now - t0) / dur)
       setPct(Math.round(p * 100))
       if (p < 1) raf = requestAnimationFrame(tick)
-      else raf = requestAnimationFrame(() => setTimeout(() => setStep(3), 260))
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
@@ -185,9 +244,9 @@ export default function Launch() {
       )}
 
       <div key={step} className="fade-up flex-1 flex flex-col">
-        {step === 0 && <StepName d={d} set={set} onNext={next} />}
-        {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} />}
-        {step === 2 && <StepForge preview={preview} pct={pct} />}
+        {step === 0 && <StepName d={d} set={set} onNext={next} nameIdea={nameIdea} />}
+        {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} setLogoFromFile={setLogoFromFile} />}
+        {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} idea={idea} onNext={next} canLaunch={canLaunch} />}
         {step === 4 && <StepReview d={d} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/trade?token=${result?.token || ''}`)} />}
@@ -197,14 +256,17 @@ export default function Launch() {
 }
 
 /* ---------- 1 · Name ---------- */
-function StepName({ d, set, onNext }) {
+function StepName({ d, set, onNext, nameIdea }) {
   return (
     <div className="flex-1 flex flex-col justify-center">
       <div className="eyebrow mb-3">Identity</div>
       <h1 className="display text-4xl sm:text-5xl mb-10">Name your agent.</h1>
       <div className="relative mb-8">
-        <input autoFocus value={d.name} onChange={(e) => set('name', e.target.value.slice(0, 24))} placeholder="Vanta"
-          className="w-full bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
+        <div className="flex items-end gap-3">
+          <input autoFocus value={d.name} onChange={(e) => set('name', e.target.value.slice(0, 24))} placeholder="Vanta"
+            className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
+          <button onClick={nameIdea} className="chip chip-brand shrink-0 mb-3 !py-1.5">✦ Idea</button>
+        </div>
         <span className="absolute left-0 bottom-0 h-[3px] w-full rounded-full" style={{ background: 'var(--holo-line)', opacity: 0.9 }} />
       </div>
       <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
@@ -219,46 +281,132 @@ function StepName({ d, set, onNext }) {
 }
 
 /* ---------- 2 · Look ---------- */
-function StepLook({ d, preview, set, onNext }) {
+function ChipBtn({ active, onClick, children }) {
+  return (
+    <button onClick={onClick}
+      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium border transition ${
+        active ? 'chip-brand border-transparent' : 'border-[var(--color-line-2)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
+      }`}>
+      {children}
+    </button>
+  )
+}
+
+function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, setLogoFromFile }) {
+  const [open, setOpen] = useState(null) // 'gender' | 'style' | 'image' | null
+  const fileRef = useRef(null)
+  const toggle = (k) => setOpen((o) => (o === k ? null : k))
+  const onFile = async (e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) await setLogoFromFile(f) }
+
   return (
     <div className="flex-1 flex flex-col">
-      <h1 className="display text-4xl sm:text-5xl text-center mb-2">What does<br />{d.name || 'it'} look like?</h1>
-      <p className="text-center text-[var(--color-ink-soft)] mb-8">Pick a tone — its coin, aura and glow follow.</p>
-      <div className="relative grid place-items-center mb-8">
-        <div className="absolute w-56 h-56 rounded-full blur-3xl opacity-50 pointer-events-none" style={{ background: `radial-gradient(circle, ${d.tone[0]}, transparent 65%)` }} />
-        <div className="floaty relative"><CharmAvatar charm={preview} size={160} ring /></div>
+      {/* glowing orb + preview */}
+      <div className="relative grid place-items-center mb-7 mt-1">
+        <div className="absolute w-52 h-52 rounded-full blur-3xl opacity-60 pointer-events-none" style={{ background: `radial-gradient(circle, ${d.tone[0]}, transparent 62%)` }} />
+        <div className="floaty relative"><CharmAvatar charm={preview} size={150} ring /></div>
       </div>
-      <div className="flex flex-wrap justify-center gap-3 mb-6">
-        {TONES.map((t) => {
-          const on = d.tone?.[0] === t[0]
-          return (
-            <button key={t[0]} onClick={() => set('tone', t)} aria-label="Tone" className="w-11 h-11 rounded-full transition-transform"
-              style={{
-                background: `radial-gradient(120% 120% at 32% 24%, ${t[0]}, ${t[1]} 60%, #0b0a14 130%)`,
-                boxShadow: on ? '0 0 0 2px var(--color-paper), 0 0 0 4px #fff, 0 0 20px -4px ' + t[0] : 'inset 0 1px 2px rgba(255,255,255,.3)',
-                transform: on ? 'scale(1.12)' : 'none',
-              }} />
-          )
-        })}
+
+      <h1 className="display text-3xl sm:text-4xl text-center mb-6">What does {d.name || 'it'} look like?</h1>
+
+      <div className="card p-4 sm:p-5">
+        {/* chips */}
+        <div className="flex flex-wrap gap-2 mb-3">
+          <ChipBtn active={open === 'gender'} onClick={() => toggle('gender')}>
+            {open === 'gender' ? '✕' : '☺'} {d.gender ? GENDERS.find((g) => g.key === d.gender)?.label : 'Gender'}
+          </ChipBtn>
+          <ChipBtn active={open === 'style'} onClick={() => toggle('style')}>
+            {open === 'style' ? '✕' : '◐'} {d.style ? STYLES.find((s) => s.key === d.style)?.label : 'Style'}
+          </ChipBtn>
+          <ChipBtn active={open === 'image' || !!d.logo} onClick={() => toggle('image')}>
+            {d.logo ? '✓' : '⌾'} Image
+          </ChipBtn>
+        </div>
+
+        {/* expandable panel */}
+        {open === 'gender' && (
+          <div className="flex flex-wrap gap-2 mb-3 fade-up">
+            {GENDERS.map((g) => (
+              <button key={g.key} onClick={() => { set('gender', d.gender === g.key ? '' : g.key) }}
+                className={`chip ${d.gender === g.key ? 'chip-brand' : 'hover:bg-[var(--color-line)]'}`}>
+                <span className="mr-0.5">{g.glyph}</span> {g.label}
+              </button>
+            ))}
+          </div>
+        )}
+        {open === 'style' && (
+          <div className="-mx-4 sm:-mx-5 px-4 sm:px-5 mb-3 fade-up">
+            <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+              {STYLES.map((st) => {
+                const on = d.style === st.key
+                return (
+                  <button key={st.key} onClick={() => pickStyle(st)} className="shrink-0 text-center">
+                    <span className="block w-16 h-16 rounded-2xl mb-1.5 transition-transform" style={{
+                      background: `radial-gradient(120% 120% at 32% 22%, ${st.tone[0]}, ${st.tone[1]} 58%, #0b0a14 130%)`,
+                      boxShadow: on ? `0 0 0 2px var(--color-paper), 0 0 0 4px #fff, 0 0 22px -4px ${st.tone[0]}` : 'inset 0 1px 2px rgba(255,255,255,.3)',
+                      transform: on ? 'scale(1.06)' : 'none',
+                    }} />
+                    <span className={`text-[11px] ${on ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}>{st.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        {open === 'image' && (
+          <div className="mb-3 fade-up flex items-center gap-2">
+            <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
+            <button onClick={() => fileRef.current?.click()} className="btn btn-secondary !py-2 text-sm">{d.logo ? 'Change image' : 'Upload image'}</button>
+            {d.logo && <button onClick={() => set('logo', '')} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">Remove</button>}
+            <span className="text-xs text-[var(--color-ink-faint)]">Shown as the coin logo on pons</span>
+          </div>
+        )}
+
+        {/* appearance description */}
+        <div className="relative">
+          <textarea value={d.look} onChange={(e) => set('look', e.target.value.slice(0, 240))} rows={3}
+            placeholder={`Pick a style, then describe ${d.name || 'it'}: colors, symbol, mood, details.`}
+            className="input resize-none pr-20" />
+          <button onClick={lookIdea} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">✦ Idea</button>
+        </div>
       </div>
-      <label className="eyebrow block mb-2">Logo image URL <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional, shown on pons</span></label>
-      <input value={d.logo} onChange={(e) => set('logo', e.target.value.trim())} placeholder="https://… image URL" spellCheck={false} className="input mb-8" />
-      <button onClick={onNext} className="btn btn-holo w-full !py-3.5 mt-auto">Forge {d.name || 'it'}</button>
+
+      <button onClick={onNext} className="btn btn-holo w-full !py-3.5 mt-6">Generate {d.name || 'it'}</button>
+      <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
+        Upload an image to use it directly. AI image generation from your description is coming soon.
+      </p>
     </div>
   )
 }
 
-/* ---------- 3 · Forge ---------- */
-function StepForge({ preview, pct }) {
+/* ---------- 3 · Forge → look ready ---------- */
+function StepForge({ preview, pct, onContinue, onEdit }) {
+  const ready = pct >= 100
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center">
       <div className="relative grid place-items-center mb-8">
         <div className="absolute w-64 h-64 rounded-full blur-3xl opacity-60 pointer-events-none" style={{ background: `radial-gradient(circle, ${preview.tone[0]}, transparent 62%)` }} />
-        <div className="absolute rounded-full spin-slow pointer-events-none" style={{ width: 220, height: 220, border: '1px solid rgba(255,255,255,0.1)' }} />
-        <div className="floaty relative"><CharmAvatar charm={preview} size={150} ring /></div>
+        {!ready && <div className="absolute rounded-full spin-slow pointer-events-none" style={{ width: 220, height: 220, border: '1px solid rgba(255,255,255,0.1)' }} />}
+        <div className="floaty relative"><CharmAvatar charm={preview} size={ready ? 168 : 150} ring /></div>
       </div>
-      <div className="font-mono num text-5xl font-bold holo-text">{pct}%</div>
-      <div className="eyebrow mt-3">Forging {preview.name}…</div>
+
+      {ready ? (
+        <>
+          <h1 className="display text-3xl sm:text-4xl mb-1">The look is ready.</h1>
+          <div className="flex items-center justify-center gap-1.5 text-[var(--color-ink-soft)] mb-9">
+            <span className="font-serif text-xl">{preview.name}</span><Verified size={14} />
+            <span className="font-mono text-xs text-[var(--color-ink-faint)]">${preview.ticker}</span>
+          </div>
+          <div className="w-full max-w-sm space-y-2">
+            <button onClick={onContinue} className="btn btn-holo w-full !py-3.5">Continue</button>
+            <button onClick={onEdit} className="btn btn-secondary w-full">Edit look</button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="font-mono num text-5xl font-bold holo-text">{pct}%</div>
+          <div className="eyebrow mt-3">Generating {preview.name}…</div>
+        </>
+      )}
     </div>
   )
 }
