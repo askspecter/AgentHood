@@ -11,10 +11,11 @@ const TABS = [
 
 function Wordmark({ className = '' }) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span className="orb-spin grid place-items-center w-7 h-7 rounded-[9px] font-bold text-sm leading-none"
-        style={{ background: 'var(--holo)', color: '#0b0a12', boxShadow: '0 0 18px -4px rgba(180,150,255,0.8), inset 0 1px 0 rgba(255,255,255,0.6)' }}>E</span>
-      <span className="font-semibold text-lg tracking-tight">ESKA</span>
+    <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <img src="/eska-logo.png" alt="ESKA" width="28" height="28"
+        className="w-7 h-7 rounded-[9px] object-cover shrink-0"
+        style={{ boxShadow: '0 0 18px -6px rgba(180,150,255,0.7), inset 0 1px 0 rgba(255,255,255,0.4)' }} />
+      <span className="eska-type" role="img" aria-label="ESKA" style={{ fontSize: 17 }} />
     </span>
   )
 }

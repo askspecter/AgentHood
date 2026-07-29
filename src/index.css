@@ -201,6 +201,20 @@ body::after {
 @property --holo-a { syntax: "<angle>"; inherits: true; initial-value: 0deg; }
 .orb-spin { animation: hueSpin 24s linear infinite; }
 
+/* ---------- ESKA logotype ---------- */
+/* The real ESKA wordmark, extracted from the brand art into an alpha mask, so it
+   renders in the exact logo font and can be tinted to any theme colour (or the
+   holographic gradient) instead of shipping a fixed-colour image. */
+.eska-type {
+  display: inline-block;
+  height: 1em;
+  aspect-ratio: 399 / 67;
+  background: var(--color-ink);
+  -webkit-mask: url(/eska-wordmark-mask.png) left center / contain no-repeat;
+          mask: url(/eska-wordmark-mask.png) left center / contain no-repeat;
+}
+.eska-type.holo { background: var(--holo-line); }
+
 /* ---------- glass surfaces ---------- */
 .glass, .card, .panel {
   position: relative;
