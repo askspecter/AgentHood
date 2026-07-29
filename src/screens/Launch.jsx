@@ -135,6 +135,21 @@ async function aiImage(prompt) {
 }
 const styleLabel = (key) => STYLES.find((s) => s.key === key)?.label || ''
 
+/* Store an image (data URL or remote URL) durably and get back a stable URL for
+   on-chain metadata. Returns null if storage isn't configured — callers keep the
+   original source as a fallback. */
+async function persistLogo(source) {
+  try {
+    const res = await fetch('/api/logo', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source }),
+    })
+    if (!res.ok) return null
+    const j = await res.json()
+    return j.url || null
+  } catch { return null }
+}
+
 /* Map the factory's discovered ABI fields onto the pretty inputs. */
 function hintFor(field) {
   const n = field.name || ''
@@ -224,7 +239,15 @@ export default function Launch() {
   }, [d.name, d.vibe])
 
   const pickStyle = (st) => setD((s) => ({ ...s, style: st.key, tone: st.tone, vibe: [...new Set([st.vibe, ...s.vibe])].slice(0, 5) }))
-  const setLogoFromFile = async (file) => { try { set('logo', await fileToLogo(file)) } catch { /* ignore unreadable image */ } }
+  const setLogoFromFile = async (file) => {
+    try {
+      const dataUrl = await fileToLogo(file)
+      set('logo', dataUrl) // instant preview
+      // Persist to KV so the on-chain logo is a stable URL, not a huge data URL.
+      const r = await persistLogo(dataUrl)
+      if (r) set('logo', r)
+    } catch { /* ignore unreadable image */ }
+  }
 
   // Discover the factory ABI + the X wallet up front, so the review step can mint
   // without any extra round trip.
@@ -265,6 +288,13 @@ export default function Launch() {
     if (!canLaunch || !meta?.chosen) return
     setBusy(true); setError(null)
     try {
+      // Ensure the logo is a durable, self-hosted URL before it goes on-chain —
+      // never a temporary fal URL or a huge data URL.
+      let logo = d.logo
+      if (logo && !/\/api\/logo\?id=/.test(logo)) {
+        const stable = await persistLogo(logo)
+        if (stable) { logo = stable; set('logo', stable) }
+      }
       const values = {}
       for (const field of fields) {
         const n = field.name || ''
@@ -272,7 +302,7 @@ export default function Launch() {
         const hint = hintFor(field)
         if (/^(name|tokenname)$/i.test(n)) values[key] = d.name
         else if (/^(symbol|ticker)$/i.test(n)) values[key] = d.ticker
-        else if (/(logo|image|icon|avatar|uri)/i.test(n)) { if (d.logo) values[key] = d.logo }
+        else if (/(logo|image|icon|avatar|uri)/i.test(n)) { if (logo) values[key] = logo }
         else if (/(description|desc|bio)/i.test(n)) values[key] = describe()
         else if (hint.fillWithAccount) values[key] = xWallet
         else if (hint.isEth) { values[key] = d.firstBuy || '0'; values[`${key}__isEth`] = true }
