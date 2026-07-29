@@ -11,17 +11,28 @@ import { useEffect, useState } from 'react'
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
 
+const fmtAmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 4 : 8 })
+const fmtUsd = (n) => (n == null ? null : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 4 }))
+
 export default function CreatorFees({ token, symbol }) {
   const [status, setStatus] = useState(null)
+  const [fees, setFees] = useState(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(null)
   const [txHash, setTxHash] = useState(null)
+
+  const loadFees = () => {
+    fetch(`/api/creator/fees?token=${token}&network=${NETWORK}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => setFees(j))
+      .catch(() => {})
+  }
 
   useEffect(() => {
     let cancelled = false
     fetch(`/api/creator/status?token=${token}&network=${NETWORK}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled) setStatus(j) })
+      .then((j) => { if (!cancelled) { setStatus(j); if (j?.isCreator) loadFees() } })
       .catch(() => {})
     return () => { cancelled = true }
   }, [token])
@@ -43,7 +54,7 @@ export default function CreatorFees({ token, symbol }) {
         body: JSON.stringify({ token, network: NETWORK }),
       })
       const j = await res.json()
-      if (res.ok && j.ok) { setTxHash(j.hash); setMsg({ ok: true, text: 'Fees claimed to your wallet.' }) }
+      if (res.ok && j.ok) { setTxHash(j.hash); setMsg({ ok: true, text: 'Fees claimed to your wallet.' }); loadFees() }
       else setMsg({ ok: false, text: j.error || 'Could not claim right now.' })
     } catch {
       setMsg({ ok: false, text: 'Could not reach the claim service.' })
@@ -66,6 +77,21 @@ export default function CreatorFees({ token, symbol }) {
         </div>
       </div>
 
+      {/* accrued fees — read live, pons-style */}
+      {Array.isArray(fees?.accrued) && fees.accrued.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {fees.accrued.map((a) => (
+            <div key={a.symbol} className="flex items-center justify-between p-3 rounded-xl panel-soft">
+              <div>
+                <div className="eyebrow">Accrued {a.symbol}</div>
+                <div className="font-mono num text-lg mt-0.5">{fmtAmt(a.amount)}</div>
+              </div>
+              {a.usd != null && <div className="font-mono num text-sm text-[var(--color-ink-soft)]">{fmtUsd(a.usd)}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="mt-4 text-sm text-[var(--color-ink-soft)] font-mono num">{parts.join(' · ')}</div>
 
       <div className="mt-4 flex items-center justify-between gap-3 p-3 rounded-xl panel-soft">
@@ -86,7 +112,7 @@ export default function CreatorFees({ token, symbol }) {
       )}
 
       <button onClick={claim} disabled={busy} className="btn btn-holo w-full !py-3 mt-4">
-        {busy ? 'Claiming…' : `Claim ${symbol ? '$' + symbol.replace(/^\$/, '') + ' ' : ''}fees`}
+        {busy ? 'Claiming…' : 'Claim fees'}
       </button>
     </div>
   )

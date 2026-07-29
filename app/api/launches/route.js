@@ -259,14 +259,21 @@ export async function GET(request) {
     const pons = chain.pons || {};
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
-    const [topTokens, discovered, launchedHere, rate] = await Promise.all([
+    const [topTokens, discovered, registry, rate] = await Promise.all([
       discoverTopTokens(chain.explorer).catch(() => []),
       discoverViaExplorer(chain.explorer, factories).catch(() => []),
       // Coins launched through ESKA — always show these, even brand-new with no
       // liquidity yet, so a creator sees their own coin the moment they refresh.
-      listLaunched({ limit: 100 }).then((r) => r.tokens || []).catch(() => []),
+      listLaunched({ limit: 100 }).catch(() => ({ tokens: [], entries: [] })),
       getEthUsd(),
     ]);
+    const launchedHere = registry.tokens || [];
+    // Map each launched-here token to the X handle of whoever launched it, so the
+    // feed can credit "@name" instead of the deployer's hex address.
+    const handleByToken = new Map();
+    for (const e of registry.entries || []) {
+      if (e?.token && e?.xUsername) handleByToken.set(String(e.token).toLowerCase(), e.xUsername);
+    }
 
     const seeds = [
       ...FEATURED_PONS,
@@ -321,6 +328,11 @@ export async function GET(request) {
       for (const l of extra) l.featured = false;
 
       launches = [...featured, ...extra];
+      // Credit the launcher's X handle where we know it.
+      for (const l of launches) {
+        const h = handleByToken.get((l.token || "").toLowerCase());
+        if (h) l.xUsername = h;
+      }
       const shown = launches.slice(0, 24);
       await Promise.all([
         attachHolders(chain.explorer, shown),

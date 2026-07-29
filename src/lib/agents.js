@@ -82,7 +82,7 @@ export function tokenToAgent(t, ethUsd = null) {
     featured: t.featured ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
-    creator: t.deployer ? short(t.deployer) : 'pons',
+    creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'pons'),
     followers: (hash(t.token) % 90000) + 200, // stable flavour number
     graduated: t.graduated ?? null,
     graduationProgress: t.graduationProgress ?? null,
