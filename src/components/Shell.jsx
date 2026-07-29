@@ -6,6 +6,7 @@ const TABS = [
   { to: '/', label: 'Discover', end: true, icon: HomeIcon },
   { to: '/chats', label: 'Chat', icon: ChatIcon },
   { to: '/you', label: 'Portfolio', icon: YouIcon },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
 function Wordmark({ className = '' }) {
@@ -75,7 +76,7 @@ export default function Shell() {
             return (
               <NavLink key={t.to} to={t.to} end={t.end}
                 className={({ isActive }) =>
-                  `relative flex flex-col items-center justify-center gap-1 w-[60px] py-2 rounded-[18px] text-[11px] font-medium transition-colors ${
+                  `relative flex flex-col items-center justify-center gap-1 w-[56px] py-2 rounded-[18px] text-[11px] font-medium transition-colors ${
                     isActive ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
                   }`}>
                 {({ isActive }) => (
@@ -93,7 +94,7 @@ export default function Shell() {
           })}
           {/* Launch — the holographic action inside the pill */}
           <button onClick={() => nav('/launch')} aria-label="Launch a coin"
-            className="flex flex-col items-center justify-center gap-1 w-[60px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-faint)] active:scale-95 transition-transform">
+            className="flex flex-col items-center justify-center gap-1 w-[56px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-faint)] active:scale-95 transition-transform">
             <span className="relative h-6 grid place-items-center">
               <span className="orb-spin grid place-items-center w-6 h-6 rounded-full"
                 style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 14px -3px rgba(180,150,255,0.85)' }}>
@@ -117,4 +118,7 @@ function ChatIcon({ active }) {
 }
 function YouIcon({ active }) {
   return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><circle cx="12" cy="8" r="4" fill={active ? 'var(--color-paper-2)' : 'none'} /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg>
+}
+function SettingsIcon({ active }) {
+  return <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={base(active)} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round"><circle cx="12" cy="12" r="3.2" fill={active ? 'var(--color-paper-2)' : 'none'} /><path d="M12 2.8v2.4M12 18.8v2.4M4.3 7.2l2 1.2M17.7 15.6l2 1.2M4.3 16.8l2-1.2M17.7 8.4l2-1.2" /></svg>
 }
