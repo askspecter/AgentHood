@@ -66,6 +66,14 @@ async function mapBounded(items, concurrency, fn) {
   }
 }
 
+/** Resolve `promise`, or `fallback` if it hasn't settled within `ms` — a hard cap. */
+function withTimeout(promise, ms, fallback) {
+  return Promise.race([
+    Promise.resolve(promise).catch(() => fallback),
+    new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 /**
  * The wallet's ERC-20 balances straight from the block explorer's index —
  * address, balance and metadata in one call.
@@ -492,6 +500,12 @@ export async function POST(request) {
           return NextResponse.json(cachedFolio.value);
         }
 
+        // Hard time budget: whatever isn't ready by the deadline is skipped so a
+        // reload never drags — the wallet still shows, just some prices may fill
+        // in on the next refresh. The heavy pieces below are all bounded to it.
+        const t0 = Date.now();
+        const overBudget = () => Date.now() - t0 > 4000;
+
         // Two independent ways to know what a wallet holds, unioned so neither
         // gap shows through:
         //
@@ -500,14 +514,24 @@ export async function POST(request) {
         //  2. A direct chain scan of every ERC-20 that has ever transferred to
         //     or from this wallet — the real answer, covering stocks, airdrops
         //     and positions far older than the feed's block window.
+        //
+        // Kick the explorer balance read off up front so it runs WHILE the launch
+        // metadata is built — the two don't depend on each other — and cap it so a
+        // slow explorer can't blow the budget.
+        const balancesPromise = withTimeout(
+          explorerBalances(chain.explorer, owner.address, 3500),
+          3500,
+          []
+        );
+
         let scanTargets = launches;
         try {
           const registry = await listLaunched({ limit: 50 });
           const known = new Set(launches.map((l) => l.token.toLowerCase()));
           const extra = registry.tokens.filter((t) => !known.has(t.toLowerCase()));
           if (extra.length) {
-            const enriched = await enrichLaunchesByAddress(provider, chain, extra);
-            scanTargets = [...launches, ...enriched];
+            const enriched = await withTimeout(enrichLaunchesByAddress(provider, chain, extra), 1500, null);
+            if (enriched) scanTargets = [...launches, ...enriched];
           }
         } catch {
           /* registry is optional — a feed-only scan is still useful */
@@ -524,12 +548,7 @@ export async function POST(request) {
           }
         }
 
-        // Holdings, resolved the fast way first: the block explorer already
-        // indexes every balance, so one call returns the whole set — no wide
-        // getLogs scan, no balanceOf on hundreds of tokens. That is what keeps
-        // this from hanging on "Reading…" and what makes a coin the wallet just
-        // bought show up. The RPC transfer scan stays only as a fallback.
-        const balances = await explorerBalances(chain.explorer, owner.address);
+        const balances = await balancesPromise;
 
         const holdings = [];
         let scanned = 0;
@@ -551,8 +570,9 @@ export async function POST(request) {
 
             // No live price yet and not one of our launches: one bounded spot read
             // (WETH pair, then the stock/USDG pair). Only the handful of coins the
-            // wallet actually holds hit this, so it stays fast.
-            if (priceInWeth == null && priceUsd == null && !known) {
+            // wallet actually holds hit this — and it's skipped once the budget is
+            // spent, so the coin still lists (just unpriced until the next refresh).
+            if (priceInWeth == null && priceUsd == null && !known && !overBudget()) {
               for (const kind of [null, "stock"]) {
                 try {
                   const sp = await spotPrice(provider, chain, token, { ethUsd, kind });
@@ -564,6 +584,7 @@ export async function POST(request) {
                     if (priceUsd != null || priceInWeth != null) break;
                   }
                 } catch { /* leave it unpriced — the balance still shows */ }
+                if (overBudget()) break;
               }
             }
 
@@ -579,14 +600,15 @@ export async function POST(request) {
           });
         } else {
           // ---- Fallback: RPC transfer scan + balanceOf (explorer unavailable) ----
-          let discovery = { tokens: [], truncated: false };
-          try {
-            discovery = await discoverWalletTokens(provider, owner.address, {
+          // Bounded too: a wide getLogs scan can hang, so it gets whatever time is
+          // left in the budget and no more.
+          const discovery = await withTimeout(
+            discoverWalletTokens(provider, owner.address, {
               startBlock: chain.pons?.factoryStartBlock || 0,
-            });
-          } catch {
-            /* no discovery — fall back to the launch-based list */
-          }
+            }),
+            Math.max(800, 4000 - (Date.now() - t0)),
+            { tokens: [], truncated: true }
+          );
           const candidates = new Set(launchMap.keys());
           for (const t of discovery.tokens) {
             try { candidates.add(getAddress(t)); } catch { /* skip malformed */ }
@@ -608,7 +630,7 @@ export async function POST(request) {
               let name = known?.name ?? null;
               let priceInWeth = Number.isFinite(known?.priceInWeth) ? known.priceInWeth : null;
               let priceUsd = null;
-              if (!known) {
+              if (!known && !overBudget()) {
                 try {
                   const meta = await tokenMeta(provider, token);
                   decimals = meta.decimals ?? 18;
@@ -616,6 +638,7 @@ export async function POST(request) {
                   name = meta.name;
                 } catch { /* an unreadable name is fine */ }
                 for (const kind of [null, "stock"]) {
+                  if (overBudget()) break;
                   try {
                     const sp = await spotPrice(provider, chain, token, { ethUsd, kind });
                     if (sp.ok) {
@@ -654,14 +677,15 @@ export async function POST(request) {
         if (wethAddr && isAddress(wethAddr)) {
           const wkey = wethAddr.toLowerCase();
           if (!holdings.some((h) => (h.token || "").toLowerCase() === wkey)) {
-            // Retry: a single flaky read must not be why WETH goes missing.
+            // Retry once: a single flaky read must not be why WETH goes missing,
+            // but don't let it drag the reload either.
             let raw = null;
-            for (let i = 0; i < 3 && raw == null; i++) {
+            for (let i = 0; i < 2 && raw == null; i++) {
               try {
                 raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
               } catch {
                 raw = null;
-                await new Promise((r) => setTimeout(r, 250));
+                await new Promise((r) => setTimeout(r, 150));
               }
             }
             if (raw != null && raw > 0n) {
