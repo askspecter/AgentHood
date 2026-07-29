@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Gear, XGlyph, Coin, Verified } from '../components/icons'
+import CharmAvatar from '../components/CharmAvatar'
 import WalletActions from '../components/WalletActions'
 
 /**
@@ -30,10 +31,21 @@ const fmtEth = (n) =>
   n == null ? '—' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' ETH'
 const fmtQty = (n) =>
   Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 6 })
+const fmtPct = (n) => (n == null ? null : `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`)
+const fmtSignedUsd = (n) =>
+  n == null ? null : `${n >= 0 ? '+' : '−'}$${Math.abs(n).toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 
 export default function Profile() {
   const nav = useNavigate()
-  const { wallet, connect, ethUsd: storeEthUsd } = useStore()
+  const { wallet, connect, ethUsd: storeEthUsd, agents } = useStore()
+
+  // The live feed carries each coin's real 24h change and logo. Match holdings
+  // to it by address so the portfolio can show a coloured +/- and a proper icon.
+  const feedByToken = useMemo(() => {
+    const m = new Map()
+    for (const a of agents) m.set((a.token || a.id || '').toLowerCase(), a)
+    return m
+  }, [agents])
 
   const [folio, setFolio] = useState(null)
   const [folioEthUsd, setFolioEthUsd] = useState(null)
@@ -107,6 +119,23 @@ export default function Profile() {
   const totalUsd = totalWeth != null && rate ? totalWeth * rate : null
   const holdings = folio?.holdings ?? []
 
+  // Portfolio 24h PnL, summed over the coins we can price a 24h change for.
+  // Each coin's value 24h ago is value / (1 + change%/100); the delta is the
+  // unrealised move over the day. ETH is excluded (no per-day rate here).
+  const pnl = useMemo(() => {
+    let now = 0, then = 0
+    for (const h of holdings) {
+      const feed = feedByToken.get((h.token || '').toLowerCase())
+      const ch = feed && Number.isFinite(feed.change24) ? feed.change24 : null
+      const v = h.valueUsd ?? (h.valueWeth != null && rate ? h.valueWeth * rate : null)
+      if (ch == null || v == null) continue
+      const prev = v / (1 + ch / 100)
+      now += v; then += prev
+    }
+    if (then <= 0) return null
+    return { pct: (now / then - 1) * 100, usd: now - then }
+  }, [holdings, feedByToken, rate])
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* header — real X identity */}
@@ -128,12 +157,20 @@ export default function Profile() {
       </div>
 
       {/* real wallet balance card */}
-      <div className="card p-6 mb-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-1">
-            <div className="eyebrow mb-1">Total value</div>
-            <div className="font-mono num text-3xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '—'}</div>
-          </div>
+      <div className="card p-5 sm:p-6 mb-4">
+        <div className="eyebrow mb-1">Total value</div>
+        <div className="flex items-center flex-wrap gap-x-3 gap-y-1">
+          <div className="font-mono num text-3xl sm:text-4xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '—'}</div>
+          {pnl && (
+            <span className={`inline-flex items-baseline gap-1.5 chip !text-sm ${pnl.pct >= 0 ? 'chip-up' : 'chip-down'}`}>
+              <span className="font-mono num font-semibold">{fmtPct(pnl.pct)}</span>
+              <span className="font-mono num opacity-80">{fmtSignedUsd(pnl.usd)}</span>
+              <span className="opacity-70">· 24h</span>
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t hairline">
           <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '—'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
           <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
@@ -160,15 +197,25 @@ export default function Profile() {
         <div className="card overflow-hidden">
           {holdings.map((h, i) => {
             const valueUsd = h.valueUsd ?? (h.valueWeth != null && rate ? h.valueWeth * rate : null)
+            const feed = feedByToken.get((h.token || '').toLowerCase())
+            const ch = feed && Number.isFinite(feed.change24) ? feed.change24 : null
+            const sym = (h.symbol || 'TOKEN').replace(/^\$/, '')
             return (
-              <Link key={h.token} to={`/trade?token=${h.token}`} className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
-                <span className="w-9 h-9 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)]"><Coin size={18} /></span>
+              <Link key={h.token} to={`/trade?token=${h.token}`} className={`flex items-center gap-3 p-3.5 sm:p-4 hover:bg-[var(--color-paper-2)] transition ${i ? 'border-t hairline' : ''}`}>
+                {feed
+                  ? <CharmAvatar charm={feed} size={38} />
+                  : <span className="w-[38px] h-[38px] grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)] shrink-0"><Coin size={18} /></span>}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{h.name || `$${(h.symbol || '???').replace(/^\$/, '')}`}</div>
-                  <div className="text-xs text-[var(--color-ink-faint)] font-mono num">{fmtQty(h.qty)} ${(h.symbol || 'TOKEN').replace(/^\$/, '')}</div>
+                  <div className="font-medium truncate">{h.name || `$${sym}`}</div>
+                  <div className="text-xs text-[var(--color-ink-faint)] font-mono num truncate">{fmtQty(h.qty)} ${sym}</div>
                 </div>
-                <div className="text-right font-mono num font-medium">
-                  {valueUsd != null ? fmtUsd(valueUsd) : h.valueWeth != null ? fmtEth(h.valueWeth) : '—'}
+                <div className="text-right shrink-0">
+                  <div className="font-mono num font-semibold">
+                    {valueUsd != null ? fmtUsd(valueUsd) : h.valueWeth != null ? fmtEth(h.valueWeth) : '—'}
+                  </div>
+                  {ch != null && (
+                    <div className={`text-xs font-mono num ${ch >= 0 ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{fmtPct(ch)}</div>
+                  )}
                 </div>
               </Link>
             )
