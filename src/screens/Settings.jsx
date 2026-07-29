@@ -25,11 +25,11 @@ export default function Settings() {
       </Section>
 
       <Section title="Resources">
-        <Row icon="tos" label="Terms of service" />
-        <Row icon="privacy" label="Privacy policy" />
-        <Row icon="x" label="Follow us on X" />
-        <Row icon="support" label="Support" />
-        <Row icon="docs" label="Documentation" last />
+        <Row icon="tos" label="Terms of service" onClick={() => nav('/terms')} />
+        <Row icon="privacy" label="Privacy policy" onClick={() => nav('/privacy')} />
+        <Row icon="x" label="Follow us on X" href="https://x.com/eskafun" external />
+        <Row icon="support" label="Support" href="mailto:contact@eska.fun" />
+        <Row icon="docs" label="Documentation" right={<span className="chip">Soon</span>} last />
       </Section>
 
       <div className="card overflow-hidden mb-4">
@@ -53,7 +53,7 @@ function Section({ title, children }) {
   )
 }
 
-function Row({ icon, label, right, last, onClick }) {
+function Row({ icon, label, right, last, onClick, href, external }) {
   const cls = `w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left transition ${last ? '' : 'border-b hairline'}`
   const inner = (
     <>
@@ -62,6 +62,11 @@ function Row({ icon, label, right, last, onClick }) {
       {right ?? <Chevron />}
     </>
   )
+  if (href) {
+    return (
+      <a href={href} className={cls} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>{inner}</a>
+    )
+  }
   return onClick
     ? <button type="button" onClick={onClick} className={cls}>{inner}</button>
     : <div className={cls}>{inner}</div>
