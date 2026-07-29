@@ -644,6 +644,35 @@ export async function POST(request) {
           truncated = discovery.truncated;
         }
 
+        // Always surface the wrapped-native (WETH) balance as a holding. Creator
+        // fees and unwraps land here, and the explorer index sometimes omits it —
+        // so read it directly and add it if it isn't already listed, priced 1:1
+        // with ETH. Without this, WETH the wallet clearly holds went missing.
+        const wethAddr = chain.pons?.weth;
+        if (wethAddr && isAddress(wethAddr)) {
+          const wkey = wethAddr.toLowerCase();
+          if (!holdings.some((h) => (h.token || "").toLowerCase() === wkey)) {
+            try {
+              const raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
+              if (raw > 0n) {
+                const qty = Number(formatUnits(raw, 18));
+                holdings.push({
+                  token: getAddress(wethAddr),
+                  symbol: "WETH",
+                  name: "Wrapped Ether",
+                  qty,
+                  priceInWeth: 1,
+                  valueWeth: qty,
+                  valueUsd: ethUsd ? qty * ethUsd : null,
+                  launch: false,
+                });
+              }
+            } catch {
+              /* WETH read flaked — not fatal, the rest of the portfolio stands */
+            }
+          }
+        }
+
         // Priced first (by USD, then WETH), then the rest by quantity so a
         // holding with no pool still has a stable place in the list.
         holdings.sort(
