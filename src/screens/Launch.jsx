@@ -179,7 +179,7 @@ export default function Launch() {
 
   const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
-  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '' })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false })
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
@@ -196,24 +196,31 @@ export default function Launch() {
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
   const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 5) }))
   const togglePersonality = (p) => setD((s) => ({ ...s, personality: s.personality.includes(p) ? s.personality.filter((x) => x !== p) : [...s.personality, p].slice(0, 3) }))
-  // AI-button state (name suggestions + per-button busy flags).
-  const [nameSug, setNameSug] = useState([])
+  // AI-button state (per-button busy flags).
   const [nameBusy, setNameBusy] = useState(false)
   const [lookBusy, setLookBusy] = useState(false)
   const [soulBusy, setSoulBusy] = useState(false)
   const [aiTraits, setAiTraits] = useState(null)
   const [traitBusy, setTraitBusy] = useState(false)
 
-  const deriveTicker = (name) => name.replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase() || 'TICK'
+  // Ticker derived from the name (letters/digits, up to 5). Empty name → empty.
+  const autoTicker = (name) => (name || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase()
+  const deriveTicker = (name) => autoTicker(name) || 'TICK'
+
+  // Typing the name keeps the ticker in step, unless the user set one by hand.
+  const setName = (v) => setD((s) => ({ ...s, name: v.slice(0, 24), ticker: s.tickerEdited ? s.ticker : autoTicker(v) }))
+  const setTicker = (v) => setD((s) => ({ ...s, ticker: v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6), tickerEdited: true }))
 
   // GPT-4o-mini for the Idea / more buttons; each falls back to a local list.
+  // Name Idea drops ONE original name straight in, and the ticker follows it.
   const nameIdea = useCallback(async () => {
     setNameBusy(true)
     const r = await aiIdea('name', { hint: styleLabel(d.style) })
-    const names = r?.items?.length ? r.items.slice(0, 2) : shuffled(NAME_IDEAS, Date.now() % 99991).slice(0, 2)
-    setNameSug(names); setNameBusy(false)
+    const name = (r?.text || NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)])
+      .replace(/^["'\s]+|["'\s.]+$/g, '').slice(0, 24)
+    setD((s) => ({ ...s, name, ticker: s.tickerEdited ? s.ticker : autoTicker(name) }))
+    setNameBusy(false)
   }, [d.style])
-  const pickName = (n) => { set('name', n); setNameSug([]) }
 
   const lookIdea = useCallback(async () => {
     setLookBusy(true)
@@ -389,7 +396,7 @@ export default function Launch() {
       )}
 
       <div key={step} className="fade-up flex-1 flex flex-col">
-        {step === 0 && <StepName d={d} set={set} onNext={next} nameIdea={nameIdea} nameSug={nameSug} pickName={pickName} nameBusy={nameBusy} />}
+        {step === 0 && <StepName d={d} setName={setName} setTicker={setTicker} onNext={next} nameIdea={nameIdea} nameBusy={nameBusy} />}
         {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} lookBusy={lookBusy} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
@@ -401,30 +408,23 @@ export default function Launch() {
 }
 
 /* ---------- 1 · Name ---------- */
-function StepName({ d, set, onNext, nameIdea, nameSug, pickName, nameBusy }) {
+function StepName({ d, setName, setTicker, onNext, nameIdea, nameBusy }) {
   return (
     <div className="flex-1 flex flex-col justify-center">
       <div className="eyebrow mb-3">Identity</div>
       <h1 className="display text-4xl sm:text-5xl mb-10">Name your agent.</h1>
-      <div className="relative mb-4">
+      <div className="relative mb-8">
         <div className="flex items-end gap-3">
-          <input autoFocus value={d.name} onChange={(e) => set('name', e.target.value.slice(0, 24))} placeholder="Vanta"
+          <input autoFocus value={d.name} onChange={(e) => setName(e.target.value)} placeholder="Vanta"
             className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
           <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : '✦ Idea'}</button>
         </div>
         <span className="absolute left-0 bottom-0 h-[3px] w-full rounded-full" style={{ background: 'var(--holo-line)', opacity: 0.9 }} />
       </div>
-      {nameSug.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-6 fade-up">
-          {nameSug.map((n) => (
-            <button key={n} onClick={() => pickName(n)} className="chip hover:bg-[var(--color-line)]">{n}</button>
-          ))}
-        </div>
-      )}
-      <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
+      <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· follows the name</span></label>
       <div className="flex items-center input !py-2.5 max-w-[220px] mb-10">
         <span className="text-[var(--color-ink-faint)] mr-1">$</span>
-        <input value={d.ticker} onChange={(e) => set('ticker', e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))} placeholder="VNTA"
+        <input value={d.ticker} onChange={(e) => setTicker(e.target.value)} placeholder="VNTA"
           className="w-full bg-transparent outline-none font-mono num text-lg border-0 p-0" />
       </div>
       <button onClick={onNext} disabled={!d.name.trim()} className="btn btn-holo w-full !py-3.5">Next</button>
