@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { parseUnits } from 'ethers'
 import { useStore } from '../lib/store'
 import { XGlyph } from './icons'
 
@@ -49,6 +50,11 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
   const [tokBalance, setTokBalance] = useState(null)
 
   const tradeable = isAddr(tok)
+  // WETH is the pair asset itself — there is no WETH/WETH pool. Selecting it is a
+  // 1:1 wrap (ETH→WETH on "buy") or unwrap (WETH→ETH on "sell"), which is what a
+  // holder of leftover WETH actually wants. Handle it without touching the pool.
+  const wethAddr = meta?.weth
+  const isWeth = tradeable && !!wethAddr && tok.toLowerCase() === String(wethAddr).toLowerCase()
 
   useEffect(() => {
     fetch(`/api/factory?network=${NETWORK}`).then((r) => r.json()).then((j) => !j.error && setMeta(j)).catch(() => {})
@@ -71,6 +77,14 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
   const getQuote = useCallback(async () => {
     setError(null)
     if (!tradeable || !amount || Number(amount) <= 0) { setQuote(null); return }
+    // Wrap/unwrap is 1:1 — no pool, no network quote.
+    if (isWeth) {
+      let raw
+      try { raw = parseUnits(amount, 18).toString() } catch { setQuote(null); return }
+      const outSym = side === 'buy' ? 'WETH' : 'ETH'
+      setQuote({ amountInRaw: raw, amountOutRaw: raw, amountOutLabel: `${amount} ${outSym}`, symbol: outSym })
+      return
+    }
     setQuoting(true)
     try {
       const res = await fetch('/api/quote', {
@@ -80,13 +94,13 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       const j = await res.json()
       if (!res.ok) { setError(friendly(j.error)); setQuote(null) } else setQuote(j)
     } catch { setError('') } finally { setQuoting(false) }
-  }, [tok, tradeable, amount, side, slippage])
+  }, [tok, tradeable, amount, side, slippage, isWeth])
 
   useEffect(() => {
     if (!tradeable || !amount || Number(amount) <= 0) { setQuote(null); return }
-    const id = setTimeout(getQuote, 450)
+    const id = setTimeout(getQuote, isWeth ? 0 : 450)
     return () => clearTimeout(id)
-  }, [amount, side, slippage, tradeable, getQuote])
+  }, [amount, side, slippage, tradeable, isWeth, getQuote])
 
   const sellIsEth = side === 'buy'
   const sellAvail = sellIsEth ? ethBalance : (tokBalance?.formatted != null ? Number(tokBalance.formatted) : null)
@@ -94,7 +108,10 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
     if (sellAvail == null) return
     let v = sellAvail * p
     if (sellIsEth) v = Math.max(0, v - 0.0002) // gas headroom
-    setAmount(v > 0 ? String(+v.toFixed(sellIsEth ? 6 : 4)) : '')
+    // Floor, never round — rounding up produces an amount a hair above the real
+    // balance, which the sell then rejects as "holds less than that".
+    v = Math.floor(v * 1e6) / 1e6
+    setAmount(v > 0 ? String(v) : '')
   }
 
   const doTrade = useCallback(async () => {
@@ -181,19 +198,26 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
         ))}
       </div>
 
-      {/* slippage */}
-      <div className="flex items-center justify-between mt-3">
-        <span className="text-[var(--color-ink-soft)]">Slippage</span>
-        <button onClick={() => setSlippage((s) => SLIPPAGE_OPTIONS[(SLIPPAGE_OPTIONS.indexOf(s) + 1) % SLIPPAGE_OPTIONS.length])}
-          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border hairline text-sm">
-          {slippage}% <span className="text-[var(--color-ink-soft)]">⚙ Adjust</span>
-        </button>
-      </div>
+      {/* slippage — meaningless for a 1:1 wrap/unwrap, so show a note instead */}
+      {isWeth ? (
+        <div className="flex items-center justify-between mt-3 text-sm">
+          <span className="text-[var(--color-ink-soft)]">Rate</span>
+          <span className="text-[var(--color-ink)]">1 : 1 · {side === 'buy' ? 'wrap ETH → WETH' : 'unwrap WETH → ETH'}</span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-[var(--color-ink-soft)]">Slippage</span>
+          <button onClick={() => setSlippage((s) => SLIPPAGE_OPTIONS[(SLIPPAGE_OPTIONS.indexOf(s) + 1) % SLIPPAGE_OPTIONS.length])}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border hairline text-sm">
+            {slippage}% <span className="text-[var(--color-ink-soft)]">⚙ Adjust</span>
+          </button>
+        </div>
+      )}
 
       {/* action */}
       <button onClick={doTrade} disabled={busy || quoting || (user && (!quote || !tradeable))}
         className="btn btn-holo static w-full !py-3 mt-3">
-        {busy ? 'Working…' : !user ? <>Sign in with <XGlyph size={13} color="#0b0a12" /></> : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
+        {busy ? 'Working…' : !user ? <>Sign in with <XGlyph size={13} color="#0b0a12" /></> : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : isWeth ? (side === 'buy' ? 'Wrap to WETH' : 'Unwrap to ETH') : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
       </button>
 
       {error && <div className="chip chip-down w-full mt-3">{error}</div>}

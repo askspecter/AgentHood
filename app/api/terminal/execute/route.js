@@ -196,6 +196,47 @@ export async function POST(request) {
   const isBuy = side === "buy";
   const provider = signer.provider;
 
+  // ---- Special case: the "token" IS WETH. There is no WETH/WETH pool, so the
+  // real trade is a 1:1 wrap (buy: ETH→WETH) or unwrap (sell: WETH→ETH). Do it
+  // directly on WETH9 instead of routing through the pool, which would revert. --
+  if (getAddress(token) === getAddress(weth)) {
+    try {
+      const weth9 = new Contract(weth, WETH9_ABI, signer);
+      if (isBuy) {
+        const bal = await provider.getBalance(owner);
+        if (bal <= amountIn) {
+          return NextResponse.json(
+            {
+              error: `Your X wallet holds ${Number(formatEther(bal)).toFixed(6)} ETH, which does not cover ${Number(formatEther(amountIn)).toFixed(6)} ETH plus gas.`,
+              hint: "Send ETH to the address on the Wallet tab first.",
+            },
+            { status: 400 }
+          );
+        }
+        await weth9.deposit.staticCall({ value: amountIn });
+        const tx = await weth9.deposit({ value: amountIn });
+        const receipt = await tx.wait();
+        return NextResponse.json({ hash: receipt?.hash || tx.hash, wrapped: true });
+      }
+      const bal = await weth9.balanceOf(owner);
+      if (bal < amountIn) {
+        return NextResponse.json(
+          { error: `Your X wallet holds ${Number(formatEther(bal)).toLocaleString("en-US")} WETH, which is less than that.` },
+          { status: 400 }
+        );
+      }
+      await weth9.withdraw.staticCall(amountIn);
+      const tx = await weth9.withdraw(amountIn);
+      const receipt = await tx.wait();
+      return NextResponse.json({ hash: receipt?.hash || tx.hash, unwrapped: true });
+    } catch (error) {
+      return NextResponse.json(
+        { error: `${isBuy ? "Wrapping ETH to WETH" : "Unwrapping WETH to ETH"} failed: ${error.shortMessage || error.reason || error.message}` },
+        { status: 400 }
+      );
+    }
+  }
+
   try {
     const meta = await tokenMeta(provider, token);
     const erc20 = new Contract(token, ERC20_ABI, signer);
