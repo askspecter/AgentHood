@@ -1,17 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStore } from '../lib/store'
-import CharmAvatar from '../components/CharmAvatar'
-import { Back, XLogo, Crown } from '../components/icons'
-import { usd, num } from '../lib/format'
+import { Back, Crown } from '../components/icons'
 
 /**
- * Leaderboard — three boards for the pons world we can see.
+ * Leaderboard — three boards for activity on ESKA.
  *
- * Top creators is real and live: it's built from the launch feed, ranking each
- * deployer by the combined market cap of the coins they launched. Trade volume
- * and referrals need per-account activity recorded server-side, which this build
- * doesn't have yet — so those boards say so honestly instead of inventing names.
+ * All three rank real, ESKA-native activity: trades made here, sign-ups through
+ * your referral, and coins launched here. None of them invent names — each fills
+ * in as that activity is recorded, so they show an honest "warming up" state
+ * until there's real data to rank. (The Discover feed's pons coins are not
+ * counted as ESKA launches; Top creator is only for coins launched on ESKA.)
  */
 
 const TABS = [
@@ -22,22 +20,7 @@ const TABS = [
 
 export default function Leaderboard() {
   const nav = useNavigate()
-  const { agents } = useStore()
-  const [tab, setTab] = useState('creator')
-
-  // Real: group the feed by deployer, rank by total market cap of their coins.
-  const creators = useMemo(() => {
-    const m = new Map()
-    for (const a of agents) {
-      const key = a.creator || 'pons'
-      const e = m.get(key) || { creator: key, mcap: 0, coins: 0, top: a }
-      e.mcap += a.mcap || 0
-      e.coins += 1
-      if ((a.mcap || 0) >= (e.top?.mcap || 0)) e.top = a
-      m.set(key, e)
-    }
-    return [...m.values()].sort((x, y) => y.mcap - x.mcap).slice(0, 25)
-  }, [agents])
+  const [tab, setTab] = useState('volume')
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -52,32 +35,6 @@ export default function Leaderboard() {
         ))}
       </div>
 
-      {tab === 'creator' && (
-        creators.length === 0 ? (
-          <Soon title="No creators yet" body="Once coins are live on pons, their creators rank here by the market cap they've launched." />
-        ) : (
-          <div className="card overflow-hidden">
-            {creators.map((c, i) => (
-              <div key={c.creator} className={`flex items-center gap-3 p-4 ${i ? 'border-t hairline' : ''}`}>
-                <Rank i={i} />
-                <CharmAvatar charm={c.top} size={40} ring />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <XLogo size={11} />
-                    <span className="font-medium truncate">{c.creator}</span>
-                  </div>
-                  <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{c.coins} coin{c.coins === 1 ? '' : 's'} · top ${c.top?.ticker}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-mono num font-semibold">{usd(c.mcap)}</div>
-                  <div className="eyebrow mt-0.5">Market cap</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      )}
-
       {tab === 'volume' && (
         <Soon
           title="Trade volume board is warming up"
@@ -91,20 +48,15 @@ export default function Leaderboard() {
           body="Share your referral code from Settings. Once friends sign in through it, the biggest referrers show up here — ranked by real sign-ups, nothing invented."
         />
       )}
+
+      {tab === 'creator' && (
+        <Soon
+          title="Creator board is warming up"
+          body="This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It stays empty until the first coins are launched on ESKA."
+        />
+      )}
     </div>
   )
-}
-
-function Rank({ i }) {
-  const medal = ['#ffd27d', '#cfd3e0', '#e6a86b'][i]
-  if (i < 3) {
-    return (
-      <span className="w-7 h-7 grid place-items-center rounded-full shrink-0" style={{ background: `${medal}22`, border: `1px solid ${medal}66` }}>
-        <Crown size={14} />
-      </span>
-    )
-  }
-  return <span className="w-7 text-center font-mono text-sm text-[var(--color-ink-faint)] shrink-0">{i + 1}</span>
 }
 
 function Soon({ title, body }) {
