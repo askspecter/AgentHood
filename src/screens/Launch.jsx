@@ -110,6 +110,31 @@ function fileToLogo(file, size = 256) {
   })
 }
 
+/* ---- AI helpers (server-side keys). Both fail soft: on any error they return
+   null and the caller uses its built-in fallback, so the buttons always work. */
+async function aiIdea(kind, context = {}) {
+  try {
+    const res = await fetch('/api/ai/idea', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ kind, context }),
+    })
+    if (!res.ok) return null
+    return await res.json() // { items } for name/personality, { text } otherwise
+  } catch { return null }
+}
+async function aiImage(prompt) {
+  try {
+    const res = await fetch('/api/ai/image', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+    })
+    if (!res.ok) return null
+    const j = await res.json()
+    return j.url || null
+  } catch { return null }
+}
+const styleLabel = (key) => STYLES.find((s) => s.key === key)?.label || ''
+
 /* Map the factory's discovered ABI fields onto the pretty inputs. */
 function hintFor(field) {
   const n = field.name || ''
@@ -156,11 +181,49 @@ export default function Launch() {
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
   const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 5) }))
   const togglePersonality = (p) => setD((s) => ({ ...s, personality: s.personality.includes(p) ? s.personality.filter((x) => x !== p) : [...s.personality, p].slice(0, 3) }))
+  // AI-button state (name suggestions + per-button busy flags).
+  const [nameSug, setNameSug] = useState([])
+  const [nameBusy, setNameBusy] = useState(false)
+  const [lookBusy, setLookBusy] = useState(false)
+  const [soulBusy, setSoulBusy] = useState(false)
+  const [aiTraits, setAiTraits] = useState(null)
+  const [traitBusy, setTraitBusy] = useState(false)
+
   const deriveTicker = (name) => name.replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase() || 'TICK'
-  const idea = () => { const p = IDEAS[Math.floor(Math.random() * IDEAS.length)]; setD((s) => ({ ...s, tagline: p.tagline, lore: p.lore, voice: p.voice })) }
-  const nameIdea = () => set('name', NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)])
-  const lookIdea = () => set('look', LOOK_IDEAS[Math.floor(Math.random() * LOOK_IDEAS.length)])
-  const pickStyle = (st) => setD((s) => ({ ...s, style: st.key, tone: st.tone, vibe: [...new Set([st.vibe, ...s.vibe])].slice(0, 4) }))
+
+  // GPT-4o-mini for the Idea / more buttons; each falls back to a local list.
+  const nameIdea = useCallback(async () => {
+    setNameBusy(true)
+    const r = await aiIdea('name', { hint: styleLabel(d.style) })
+    const names = r?.items?.length ? r.items.slice(0, 2) : shuffled(NAME_IDEAS, Date.now() % 99991).slice(0, 2)
+    setNameSug(names); setNameBusy(false)
+  }, [d.style])
+  const pickName = (n) => { set('name', n); setNameSug([]) }
+
+  const lookIdea = useCallback(async () => {
+    setLookBusy(true)
+    const r = await aiIdea('look', { name: d.name, style: styleLabel(d.style) })
+    set('look', r?.text || LOOK_IDEAS[Math.floor(Math.random() * LOOK_IDEAS.length)])
+    setLookBusy(false)
+  }, [d.name, d.style])
+
+  const idea = useCallback(async () => {
+    setSoulBusy(true)
+    const r = await aiIdea('tagline', { name: d.name, vibe: d.vibe.join(', ') })
+    set('lore', r?.text || IDEAS[Math.floor(Math.random() * IDEAS.length)].lore)
+    setSoulBusy(false)
+  }, [d.name, d.vibe])
+
+  const moreTraits = useCallback(async () => {
+    setTraitBusy(true)
+    const r = await aiIdea('personality', { name: d.name, vibe: d.vibe.join(', ') })
+    const ok = !!(r?.items?.length)
+    setAiTraits(ok ? r.items.slice(0, 6) : null)
+    setTraitBusy(false)
+    return ok
+  }, [d.name, d.vibe])
+
+  const pickStyle = (st) => setD((s) => ({ ...s, style: st.key, tone: st.tone, vibe: [...new Set([st.vibe, ...s.vibe])].slice(0, 5) }))
   const setLogoFromFile = async (file) => { try { set('logo', await fileToLogo(file)) } catch { /* ignore unreadable image */ } }
 
   // Discover the factory ABI + the X wallet up front, so the review step can mint
@@ -243,21 +306,39 @@ export default function Launch() {
     }
   }, [user, canLaunch, meta, fields, d, xWallet])
 
-  // "Generating the look" animation. When it reaches 100% the step shows the
-  // ready card (Continue / Edit) instead of auto-advancing — this is where the
-  // AI image generation will run once its API is wired in.
+  // "Generating the look": kick off FLUX.1 [schnell] on fal.ai and animate the
+  // progress. The bar eases toward ~94% while the image renders, then snaps to
+  // 100% and shows the ready card. If the user already uploaded an image, or no
+  // image key is set, it skips generation and just finishes — the procedural
+  // avatar stands in, so the flow never blocks.
   useEffect(() => {
     if (step !== 2) return
+    let cancelled = false, ready = false
     setPct(0)
-    const t0 = performance.now(), dur = 1700
+    const prompt = [
+      d.name,
+      styleLabel(d.style) && `${styleLabel(d.style)} style`,
+      d.gender && GENDERS.find((g) => g.key === d.gender)?.label,
+      d.look,
+    ].filter(Boolean).join(', ')
+    const needGen = !d.logo && !!prompt
+    const job = needGen ? aiImage(prompt) : Promise.resolve(null)
+    job.then((url) => { if (!cancelled && url) set('logo', url) }).catch(() => {}).finally(() => { ready = true })
+
+    const t0 = performance.now()
     let raf
     const tick = (now) => {
-      const p = Math.min(1, (now - t0) / dur)
-      setPct(Math.round(p * 100))
-      if (p < 1) raf = requestAnimationFrame(tick)
+      if (cancelled) return
+      const t = (now - t0) / 1000
+      let target
+      if (ready) target = t < 0.7 ? Math.min(94, 100 * (1 - Math.exp(-t / 0.5))) : 100
+      else target = Math.min(94, 100 * (1 - Math.exp(-t / 1.0)))
+      setPct(Math.round(target))
+      if (!(ready && target >= 100)) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return () => { cancelled = true; cancelAnimationFrame(raf) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step])
 
   const progress = step === 2 ? 90 : step >= 4 ? 100 : [18, 60, 60, 100][step]
@@ -278,10 +359,10 @@ export default function Launch() {
       )}
 
       <div key={step} className="fade-up flex-1 flex flex-col">
-        {step === 0 && <StepName d={d} set={set} onNext={next} nameIdea={nameIdea} />}
-        {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} setLogoFromFile={setLogoFromFile} />}
+        {step === 0 && <StepName d={d} set={set} onNext={next} nameIdea={nameIdea} nameSug={nameSug} pickName={pickName} nameBusy={nameBusy} />}
+        {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} lookBusy={lookBusy} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
-        {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} onNext={next} canLaunch={canLaunch} />}
+        {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
         {step === 4 && <StepReview d={d} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/trade?token=${result?.token || ''}`)} />}
       </div>
@@ -290,19 +371,26 @@ export default function Launch() {
 }
 
 /* ---------- 1 · Name ---------- */
-function StepName({ d, set, onNext, nameIdea }) {
+function StepName({ d, set, onNext, nameIdea, nameSug, pickName, nameBusy }) {
   return (
     <div className="flex-1 flex flex-col justify-center">
       <div className="eyebrow mb-3">Identity</div>
       <h1 className="display text-4xl sm:text-5xl mb-10">Name your agent.</h1>
-      <div className="relative mb-8">
+      <div className="relative mb-4">
         <div className="flex items-end gap-3">
           <input autoFocus value={d.name} onChange={(e) => set('name', e.target.value.slice(0, 24))} placeholder="Vanta"
             className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-          <button onClick={nameIdea} className="chip chip-brand shrink-0 mb-3 !py-1.5">✦ Idea</button>
+          <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : '✦ Idea'}</button>
         </div>
         <span className="absolute left-0 bottom-0 h-[3px] w-full rounded-full" style={{ background: 'var(--holo-line)', opacity: 0.9 }} />
       </div>
+      {nameSug.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6 fade-up">
+          {nameSug.map((n) => (
+            <button key={n} onClick={() => pickName(n)} className="chip hover:bg-[var(--color-line)]">{n}</button>
+          ))}
+        </div>
+      )}
       <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
       <div className="flex items-center input !py-2.5 max-w-[220px] mb-10">
         <span className="text-[var(--color-ink-faint)] mr-1">$</span>
@@ -326,7 +414,7 @@ function ChipBtn({ active, onClick, children }) {
   )
 }
 
-function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, setLogoFromFile }) {
+function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setLogoFromFile }) {
   const [open, setOpen] = useState(null) // 'gender' | 'style' | 'image' | null
   const fileRef = useRef(null)
   const toggle = (k) => setOpen((o) => (o === k ? null : k))
@@ -400,13 +488,13 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, setLogoFromFil
           <textarea value={d.look} onChange={(e) => set('look', e.target.value.slice(0, 240))} rows={3}
             placeholder={`Pick a style, then describe ${d.name || 'it'}: colors, symbol, mood, details.`}
             className="input resize-none pr-20" />
-          <button onClick={lookIdea} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">✦ Idea</button>
+          <button onClick={lookIdea} disabled={lookBusy} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">{lookBusy ? '…' : '✦ Idea'}</button>
         </div>
       </div>
 
       <button onClick={onNext} className="btn btn-holo w-full !py-3.5 mt-6">Generate {d.name || 'it'}</button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Upload an image to use it directly. AI image generation from your description is coming soon.
+        Upload an image to use it directly, or let AI generate one from your description.
       </p>
     </div>
   )
@@ -446,11 +534,12 @@ function StepForge({ preview, pct, onContinue, onEdit }) {
 }
 
 /* ---------- 4 · Soul ---------- */
-function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, onNext, canLaunch }) {
+function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBusy, aiTraits, moreTraits, traitBusy, onNext, canLaunch }) {
   const [seed, setSeed] = useState(1)
-  // Show a rotating subset of the trait pool; "more" reshuffles it. This is where
-  // AI-suggested, name-aware traits will slot in once the API is wired.
-  const traits = useMemo(() => shuffled(PERSONALITY_POOL, seed).slice(0, 6), [seed])
+  // AI-suggested traits when available (GPT-4o-mini); otherwise a rotating subset
+  // of the local pool. "more" asks the AI first and falls back to a reshuffle.
+  const traits = aiTraits && aiTraits.length ? aiTraits : shuffled(PERSONALITY_POOL, seed).slice(0, 6)
+  const onMore = async () => { const ok = await moreTraits(); if (!ok) setSeed((s) => s + 7) }
 
   return (
     <div className="flex-1 flex flex-col">
@@ -481,7 +570,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, onNext
       {/* Personality — up to three trait cards */}
       <div className="flex items-center justify-between mb-2">
         <label className="eyebrow">Personality <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 3</span></label>
-        <button onClick={() => setSeed((s) => s + 7)} className="chip chip-brand !py-1">✦ more</button>
+        <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : '✦ more'}</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
         {traits.map((p) => {
@@ -499,7 +588,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, onNext
       {/* Extra soul detail */}
       <div className="flex items-center justify-between mb-1.5">
         <label className="eyebrow">Anything else <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
-        <button onClick={idea} className="chip chip-brand !py-1">✦ Idea</button>
+        <button onClick={idea} disabled={soulBusy} className="chip chip-brand !py-1">{soulBusy ? '…' : '✦ Idea'}</button>
       </div>
       <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder={`Add any extra traits, behaviours or details that define ${d.name || 'it'}.`} className="input resize-none mb-5" />
 
