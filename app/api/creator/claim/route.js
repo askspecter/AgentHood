@@ -10,7 +10,7 @@ import {
   erc20Iface,
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
-import { eskaCutEnabled, opsWallet, collectorOverride, COLLECTOR_ID } from "@/lib/fees";
+import { eskaCutEnabled, opsWallet } from "@/lib/fees";
 
 /**
  * POST /api/creator/claim  { token, network }
@@ -26,13 +26,14 @@ import { eskaCutEnabled, opsWallet, collectorOverride, COLLECTOR_ID } from "@/li
  * pons' 30% protocol cut is fixed on-chain; the remaining 70% is the creator's
  * share and lands in the creator's OWN wallet here (recipient is forced to that
  * wallet at both launch and claim). When the split is on, ESKA re-splits that
- * 70% AFTER it has landed: it skims 5/70 to the operations wallet and 5/70 to
- * the buyback reserve, leaving the creator 60/70. Skimming after the claim — out
- * of the creator's own wallet, which the server custodially controls — means the
- * creator's 60% never leaves their control, and if any skim step fails the
- * creator simply keeps that slice (ESKA under-collects; nobody is underpaid or
- * stranded). Native ETH is never skimmed: the claim's gas is paid in ETH, so an
- * ETH balance delta is ambiguous. Only the token and WETH (both ERC-20) are.
+ * 70% AFTER it has landed: it skims 10/70 to the ESKA ops wallet, leaving the
+ * creator 60/70. (Any burn is done manually from the ops wallet, not here.)
+ * Skimming after the claim — out of the creator's own wallet, which the server
+ * custodially controls — means the creator's 60% never leaves their control, and
+ * if the skim fails the creator simply keeps that slice (ESKA under-collects;
+ * nobody is underpaid or stranded). Native ETH is never skimmed: the claim's gas
+ * is paid in ETH, so an ETH balance delta is ambiguous. Only the token and WETH
+ * (both ERC-20) are.
  */
 
 const CLAIM_NAME = /^(claim|collect)/i;
@@ -78,15 +79,14 @@ async function transferSlice({ provider, signer, from, asset, to, amount, label 
 }
 
 /**
- * Skim ESKA's 5% ops + 5% buyback out of the ~70% that just landed in the
- * creator's wallet. `received` is the measured balance delta (raw units) for the
+ * Skim ESKA's 10% out of the ~70% that just landed in the creator's wallet, to
+ * the ops wallet. `received` is the measured balance delta (raw units) for the
  * token and WETH. Sequential (one wallet, one nonce line) and best-effort.
  */
 async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) {
-  let opsTo, buybackTo;
+  let opsTo;
   try {
     opsTo = getAddress(opsWallet());
-    buybackTo = getAddress(collectorOverride() || deriveAddress(COLLECTOR_ID));
   } catch (error) {
     return { error: "split-config", detail: error?.message };
   }
@@ -102,18 +102,14 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
   const transfers = [];
   for (const a of assets) {
     if (a.recv <= 0n) continue;
-    // 70% landed → ops and buyback are each 5/70 of it, creator keeps the rest.
-    const opsShare = (a.recv * 5n) / 70n;
-    const buybackShare = (a.recv * 5n) / 70n;
+    // 70% landed → ESKA's cut is 10/70 of it, the creator keeps the other 60/70.
+    const opsShare = (a.recv * 10n) / 70n;
     transfers.push(
       await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: opsTo, amount: opsShare, label: `ops:${a.key}` })
     );
-    transfers.push(
-      await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: buybackTo, amount: buybackShare, label: `buyback:${a.key}` })
-    );
   }
 
-  return { opsWallet: opsTo, buybackReserve: buybackTo, transfers };
+  return { opsWallet: opsTo, transfers };
 }
 
 export async function POST(request) {
@@ -259,7 +255,7 @@ export async function POST(request) {
     hash,
     block: receipt?.blockNumber ?? null,
     explorer: chain.explorer,
-    split: doSplit ? { creator: 60, protocol: 30, buyback: 5, ops: 5 } : null,
+    split: doSplit ? { creator: 60, protocol: 30, ops: 10 } : null,
     distribution,
   });
 }

@@ -43,7 +43,7 @@ export default function CreatorFees({ token, symbol }) {
   const parts = [
     `${s.creator ?? 70}% you`,
     `${s.protocol ?? 30}% pons`,
-    ...(s.eska ? [`${s.buyback}% $ESKA buyback & burn`, `${s.ops}% ops`] : []),
+    ...(s.eska ? [`${s.ops}% ESKA`] : []),
   ]
 
   const claim = async () => {
