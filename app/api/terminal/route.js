@@ -40,6 +40,38 @@ const SUPPLY_ABI = [
 /** How many launches the resolver may see. Enough to cover the live feed. */
 const RESOLVE_LIMIT = 24;
 
+/**
+ * The wallet's ERC-20 balances straight from the block explorer's index.
+ *
+ * The RPC `getLogs` scan drops a recent buy whenever a chunk rate-limits, so a
+ * coin the wallet plainly holds can go undetected. Blockscout already indexes
+ * every balance, so this returns them directly — fast and complete — and the
+ * portfolio unions it with the log scan so neither gap shows through.
+ */
+async function discoverTokensViaExplorer(explorer, address, timeoutMs = 7000) {
+  if (!explorer || !address) return [];
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const url = `${explorer.replace(/\/+$/, "")}/api/v2/addresses/${address}/token-balances`;
+    const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", signal: controller.signal });
+    if (!res.ok) return [];
+    const json = await res.json();
+    const items = Array.isArray(json) ? json : json.items || [];
+    const out = [];
+    for (const it of items) {
+      const t = it?.token?.address || it?.token?.address_hash || it?.address;
+      const type = it?.token?.type;
+      if (t && (!type || /ERC-?20/i.test(type))) out.push(t);
+    }
+    return out;
+  } catch {
+    return [];
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function line(text, tone = "out") {
   return { tone, text };
 }
@@ -444,16 +476,20 @@ export async function POST(request) {
         // The real discovery step. Failing here (an RPC that refuses getLogs)
         // must not blank the portfolio — the launch scan alone still works.
         let discovery = { tokens: [], truncated: false };
+        let explorerTokens = [];
         try {
-          discovery = await discoverWalletTokens(provider, owner.address, {
-            startBlock: chain.pons?.factoryStartBlock || 0,
-          });
+          [discovery, explorerTokens] = await Promise.all([
+            discoverWalletTokens(provider, owner.address, {
+              startBlock: chain.pons?.factoryStartBlock || 0,
+            }).catch(() => ({ tokens: [], truncated: false })),
+            discoverTokensViaExplorer(chain.explorer, owner.address),
+          ]);
         } catch {
           /* no discovery — fall back to the launch-based list */
         }
 
         const candidates = new Set(launchMap.keys());
-        for (const t of discovery.tokens) {
+        for (const t of [...discovery.tokens, ...explorerTokens]) {
           try {
             candidates.add(getAddress(t));
           } catch {

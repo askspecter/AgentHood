@@ -1,5 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { tokenToAgent, replyFor } from './agents'
+import { SEED_TOKENS } from '../data/seed'
+
+// Bundled placeholders shown the instant the app opens on a cold first visit,
+// replaced by the live feed within a second or two.
+const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
 
 /**
  * The store blends the real X session with the real pons feed and local chat:
@@ -32,7 +37,8 @@ export function StoreProvider({ children }) {
   const [wallet, setWallet] = useState(null)
 
   const initFeed = typeof window === 'undefined' ? null : loadFeed()
-  const [agents, setAgents] = useState(initFeed?.agents ?? [])
+  // Cached feed if we have one, else the bundled seed — so the grid is never blank.
+  const [agents, setAgents] = useState(initFeed?.agents ?? SEED_AGENTS)
   const [ethUsd, setEthUsd] = useState(initFeed?.ethUsd ?? null)
   const [explorer, setExplorer] = useState(initFeed?.explorer ?? null)
   // With a cached feed we show it immediately and refresh quietly — no skeletons.

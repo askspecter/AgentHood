@@ -196,7 +196,16 @@ async function attachHolders(explorer, launches, concurrency = 5) {
       batch.map(async (l) => {
         try {
           const j = await fetchJson(base + l.token);
-          if (j) l.holders = Number(j.holders ?? j.holders_count ?? j.holder_count) || null;
+          if (j) {
+            l.holders = Number(j.holders ?? j.holders_count ?? j.holder_count) || null;
+            // Fallback price + market cap from the explorer's index, used when the
+            // on-chain pool read gave none (common for graduated coins whose
+            // liquidity has moved) — so the card shows a real figure, not a dash.
+            const em = Number(j.circulating_market_cap ?? j.market_cap);
+            if (Number.isFinite(em) && em > 0) l.explorerMcapUsd = em;
+            const ep = Number(j.exchange_rate);
+            if (Number.isFinite(ep) && ep > 0) l.explorerPriceUsd = ep;
+          }
         } catch {
           /* holders are a nice-to-have; never fail the feed over them */
         }
