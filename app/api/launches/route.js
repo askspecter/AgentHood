@@ -229,6 +229,47 @@ const CACHE = new Map();
 const CACHE_TTL_MS = Number(process.env.LAUNCH_CACHE_TTL_MS || 300_000);
 
 /**
+ * Last-good per-token state, so the feed stays stable across rebuilds.
+ *
+ * On-chain reads fail intermittently (RPC rate limits, archive misses), which
+ * would make a coin's 24h %, holders, or even the coin itself blink out and back
+ * on each refresh. This remembers the last successful value per token and fills
+ * any gap from it, and keeps always-shown coins (featured / launched-here) from
+ * vanishing when their read fails one cycle.
+ */
+const LAST_GOOD = new Map(); // network -> Map(tokenLower -> launch)
+
+function stabilize(network, launches, alwaysShow) {
+  const prev = LAST_GOOD.get(network) || new Map();
+  const cur = new Set(launches.map((l) => (l.token || "").toLowerCase()));
+
+  for (const l of launches) {
+    const p = prev.get((l.token || "").toLowerCase());
+    if (!p) continue;
+    if (l.change24 == null && p.change24 != null) l.change24 = p.change24;
+    if (l.holders == null && p.holders != null) l.holders = p.holders;
+    if (!l.symbol && p.symbol) l.symbol = p.symbol;
+    if (!l.name && p.name) l.name = p.name;
+    if (!l.logo && p.logo) l.logo = p.logo;
+    if (!Number.isFinite(l.priceInWeth) && Number.isFinite(p.priceInWeth)) l.priceInWeth = p.priceInWeth;
+    if ((!Number.isFinite(l.marketCapWeth) || l.marketCapWeth <= 0) && Number.isFinite(p.marketCapWeth) && p.marketCapWeth > 0) {
+      l.marketCapWeth = p.marketCapWeth;
+    }
+  }
+
+  // Re-add always-shown coins that dropped out this cycle, from their last good.
+  const out = [...launches];
+  for (const [k, p] of prev) {
+    if (!cur.has(k) && alwaysShow.has(k)) out.push(p);
+  }
+
+  const next = new Map();
+  for (const l of out) next.set((l.token || "").toLowerCase(), l);
+  LAST_GOOD.set(network, next);
+  return out;
+}
+
+/**
  * GET /api/launches?network=robinhood&limit=20
  *
  * The top launches by market cap, read straight off the pons contracts. Public
@@ -338,6 +379,11 @@ export async function GET(request) {
         attachHolders(chain.explorer, shown),
         attachChange24(provider, shown),
       ]);
+
+      // Keep the feed stable: fill gaps from the last good read and don't let an
+      // always-shown coin vanish on a transient miss. Then re-rank.
+      launches = stabilize(network, launches, alwaysShow);
+      launches.sort((a, b) => (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) || ((b.marketCapWeth || 0) - (a.marketCapWeth || 0)));
     }
 
     const value = serialise({

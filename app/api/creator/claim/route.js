@@ -125,7 +125,10 @@ export async function POST(request) {
   } catch (error) {
     const reason = error?.shortMessage || error?.reason || error?.message || "the claim would revert";
     return NextResponse.json(
-      { error: `Nothing to claim right now, or the claim can't run: ${reason}` },
+      {
+        error: "No fees to claim yet — creator fees build up as your coin is traded. Check back once there's some volume.",
+        detail: reason,
+      },
       { status: 400 }
     );
   }
