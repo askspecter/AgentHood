@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, getAddress } from "ethers";
-import { getChain, getEthUsd, enrichLaunch } from "@/lib/engine";
+import { getChain, getEthUsd, enrichLaunch, listLaunched } from "@/lib/engine";
 
 const POOL_SLOT0_ABI = [
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
@@ -246,8 +246,11 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  // `?fresh=1` skips the cache (the Discover refresh button uses it) so a coin
+  // just launched shows without waiting for the cache to expire.
+  const fresh = url.searchParams.has("fresh");
   const cached = CACHE.get(network);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+  if (!fresh && cached && Date.now() - cached.at < CACHE_TTL_MS) {
     return NextResponse.json({ ...cached.value, launches: cached.value.launches.slice(0, limit) });
   }
 
@@ -256,14 +259,18 @@ export async function GET(request) {
     const pons = chain.pons || {};
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
-    const [topTokens, discovered, rate] = await Promise.all([
+    const [topTokens, discovered, launchedHere, rate] = await Promise.all([
       discoverTopTokens(chain.explorer).catch(() => []),
       discoverViaExplorer(chain.explorer, factories).catch(() => []),
+      // Coins launched through ESKA — always show these, even brand-new with no
+      // liquidity yet, so a creator sees their own coin the moment they refresh.
+      listLaunched({ limit: 100 }).then((r) => r.tokens || []).catch(() => []),
       getEthUsd(),
     ]);
 
     const seeds = [
       ...FEATURED_PONS,
+      ...launchedHere,
       process.env.OFFICIAL_TOKEN,
       ...(process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/),
     ].filter(Boolean);
@@ -287,18 +294,24 @@ export async function GET(request) {
     let launches = [];
     if (picked.length) {
       const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 5));
-      const featuredSet = new Set(FEATURED_PONS.map((a) => a.toLowerCase()));
+      // Always show curated featured coins AND anything launched through ESKA —
+      // the latter so a creator's brand-new coin appears even before it has a
+      // priced pool. Everything else must earn its place with real liquidity.
+      const alwaysShow = new Set([
+        ...FEATURED_PONS.map((a) => a.toLowerCase()),
+        ...launchedHere.map((a) => String(a).toLowerCase()),
+      ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
-      // Featured coins always show (even if a price read failed this cycle), as
-      // long as they read as a token at all. Ranked by live market cap.
+      // Featured / launched-here coins always show (even if a price read failed
+      // this cycle), as long as they read as a token at all. Ranked by market cap.
       const featured = enriched
-        .filter((l) => featuredSet.has((l.token || "").toLowerCase()) && (l.symbol || l.name))
+        .filter((l) => alwaysShow.has((l.token || "").toLowerCase()) && (l.symbol || l.name))
         .sort(byMcap);
       // Auto-discovered coins must be real pons launches with a priced pool, so
       // no-liquidity spam and non-pons ERC-20s are dropped.
       const extra = enriched
-        .filter((l) => !featuredSet.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
+        .filter((l) => !alwaysShow.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
         .sort(byMcap);
 
       // Tag the source so the client can keep established (featured) coins ranked

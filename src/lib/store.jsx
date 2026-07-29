@@ -120,9 +120,9 @@ export function StoreProvider({ children }) {
   }, [])
 
   // Real pons feed → agents. No demo fallback; no RPC error surfaced.
-  const loadAgents = useCallback(() => {
+  const loadAgents = useCallback((fresh = false) => {
     setAgentsLoading(true)
-    fetch(`/api/launches?network=${NETWORK}&limit=20`)
+    fetch(`/api/launches?network=${NETWORK}&limit=20${fresh === true ? '&fresh=1' : ''}`)
       .then((r) => r.json())
       .then((json) => {
         if (json.error) return
