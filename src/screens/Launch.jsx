@@ -415,7 +415,7 @@ export default function Launch() {
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
         {step === 4 && <StepReview d={d} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
-        {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/trade?token=${result?.token || ''}`)} />}
+        {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/c/${result?.token || ''}`)} />}
       </div>
     </div>
   )

@@ -27,14 +27,19 @@ export default function CharmDetail() {
     if (feedCharm || fallback) return
     let cancelled = false
     setFetching(true)
+    const isAddr = /^0x[a-fA-F0-9]{40}$/.test(String(id))
     fetch(`/api/registry?network=robinhood`)
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
-        if (cancelled || !j?.launches) return
-        const t = j.launches.find((l) => (l.token || '').toLowerCase() === String(id).toLowerCase())
-        if (t) setFallback(tokenToAgent(t, j.ethUsd ?? null))
+        if (cancelled) return
+        const t = j?.launches?.find((l) => (l.token || '').toLowerCase() === String(id).toLowerCase())
+        if (t) { setFallback(tokenToAgent(t, j.ethUsd ?? null)); return }
+        // Not a launched-here coin — if the id is a valid address, still render a
+        // minimal page so the coin is always tradeable (the swap works off the
+        // address). Only a non-address id is truly "not found".
+        if (isAddr) setFallback(tokenToAgent({ token: id }, null))
       })
-      .catch(() => {})
+      .catch(() => { if (!cancelled && isAddr) setFallback(tokenToAgent({ token: id }, null)) })
       .finally(() => { if (!cancelled) setFetching(false) })
     return () => { cancelled = true }
   }, [id, feedCharm, fallback])

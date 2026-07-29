@@ -6,7 +6,6 @@ import Explore from './screens/Explore'
 import CharmDetail from './screens/CharmDetail'
 import Chats from './screens/Chats'
 import ChatThread from './screens/ChatThread'
-import Trade from './screens/Trade'
 import Launch from './screens/Launch'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
@@ -33,7 +32,6 @@ export default function App() {
             <Route path="c/:id" element={<CharmDetail />} />
             <Route path="chats" element={<Chats />} />
             <Route path="chat/:id" element={<ChatThread />} />
-            <Route path="trade" element={<Trade />} />
             <Route path="launch" element={<Launch />} />
             <Route path="you" element={<Profile />} />
             <Route path="settings" element={<Settings />} />

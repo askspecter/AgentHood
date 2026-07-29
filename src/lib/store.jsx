@@ -119,19 +119,38 @@ export function StoreProvider({ children }) {
     return () => { cancelled = true }
   }, [])
 
-  // Real pons feed → agents. No demo fallback; no RPC error surfaced.
+  // Real pons feed → agents. The discovery feed (/api/launches) plus the
+  // launched-here registry (/api/registry), unioned so a coin launched on ESKA
+  // always shows the moment it's recorded — even if the discovery feed missed it.
   const loadAgents = useCallback((fresh = false) => {
     setAgentsLoading(true)
-    fetch(`/api/launches?network=${NETWORK}&limit=20${fresh === true ? '&fresh=1' : ''}`)
-      .then((r) => r.json())
-      .then((json) => {
-        if (json.error) return
-        const rate = json.ethUsd ?? null
-        setEthUsd(rate)
-        setExplorer(json.explorer ?? null)
-        const mapped = (json.launches || []).map((t) => tokenToAgent(t, rate))
-        setAgents(mapped)
-        try { localStorage.setItem(FEED_KEY, JSON.stringify({ agents: mapped, ethUsd: rate, explorer: json.explorer ?? null, at: Date.now() })) } catch {}
+    Promise.all([
+      fetch(`/api/launches?network=${NETWORK}&limit=20${fresh === true ? '&fresh=1' : ''}`).then((r) => r.json()).catch(() => null),
+      fetch(`/api/registry?network=${NETWORK}`).then((r) => r.json()).catch(() => null),
+    ])
+      .then(([feed, reg]) => {
+        const rate = feed?.ethUsd ?? reg?.ethUsd ?? null
+        if (feed && !feed.error) {
+          setEthUsd(rate)
+          setExplorer(feed.explorer ?? null)
+        }
+        const seen = new Set()
+        const agentsOut = []
+        // Registry (launched-here) first — most reliable for our own coins —
+        // then the discovery feed, de-duplicated by token.
+        for (const t of [...(reg?.launches || []), ...(feed?.launches || [])]) {
+          const key = (t.token || t.id || '').toLowerCase()
+          if (!key || seen.has(key)) continue
+          seen.add(key)
+          agentsOut.push(tokenToAgent(t, rate))
+        }
+        // Rank by market cap so the biggest coins lead (launched-here with no cap
+        // yet still appears, just lower down).
+        agentsOut.sort((a, b) => (b.mcap || 0) - (a.mcap || 0))
+        if (agentsOut.length) {
+          setAgents(agentsOut)
+          try { localStorage.setItem(FEED_KEY, JSON.stringify({ agents: agentsOut, ethUsd: rate, explorer: feed?.explorer ?? null, at: Date.now() })) } catch {}
+        }
       })
       .catch(() => {})
       .finally(() => setAgentsLoading(false))
