@@ -1,26 +1,18 @@
 import { NextResponse } from "next/server";
 import { persistImage } from "@/lib/logostore";
+import { fluxImageUrl } from "@/lib/flux";
 
 /**
  * POST /api/ai/image  { prompt }
  *
  * Generates a coin avatar/logo from a text prompt with FLUX.1 [schnell] on
- * fal.ai (fast, few-step model). The FAL_KEY stays on the server. The generated
- * image is then stored durably in Vercel KV so the coin's on-chain logo points
- * at a stable URL we host — not fal's temporary one — and that URL is returned.
+ * fal.ai. The generated image is then stored durably in Vercel KV so the coin's
+ * on-chain logo points at a stable URL we host — not fal's temporary one.
  *
  * If FAL_KEY isn't set, returns 503 and the client keeps its procedural avatar.
  * If KV isn't set, it falls back to returning fal's URL directly.
  */
-
-const FAL_URL = "https://fal.run/fal-ai/flux/schnell";
-
 export async function POST(request) {
-  const key = process.env.FAL_KEY;
-  if (!key) {
-    return NextResponse.json({ error: "AI images are not configured.", code: "no_fal" }, { status: 503 });
-  }
-
   let body;
   try {
     body = await request.json();
@@ -35,45 +27,26 @@ export async function POST(request) {
   // avatar rather than a full scene.
   const full = `${prompt}. A single centred coin mascot logo, bold, high contrast, crisp, on a simple dark background, no text, no watermark, no border.`;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 30000);
+  let falUrl;
   try {
-    const res = await fetch(FAL_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Key ${key}` },
-      cache: "no-store",
-      signal: controller.signal,
-      body: JSON.stringify({
-        prompt: full,
-        image_size: "square_hd",
-        num_images: 1,
-        num_inference_steps: 4,
-        enable_safety_checker: true,
-      }),
-    });
-    if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 200);
-      return NextResponse.json({ error: "Image generation failed.", detail }, { status: 502 });
+    falUrl = await fluxImageUrl(full);
+  } catch (error) {
+    if (error.code === "no_fal") {
+      return NextResponse.json({ error: "AI images are not configured.", code: "no_fal" }, { status: 503 });
     }
-    const json = await res.json();
-    const falUrl = json?.images?.[0]?.url || null;
-    if (!falUrl) return NextResponse.json({ error: "No image returned." }, { status: 502 });
-
-    // Persist to KV so the on-chain logo is a permanent, self-hosted URL. If KV
-    // isn't configured we fall back to fal's temporary URL rather than failing.
-    let url = falUrl, stored = false;
-    try {
-      const { path } = await persistImage(falUrl);
-      const origin = process.env.PUBLIC_ORIGIN || new URL(request.url).origin;
-      url = `${origin}${path}`;
-      stored = true;
-    } catch {
-      /* keep falUrl — display still works, on-chain persistence just needs KV */
-    }
-    return NextResponse.json({ url, stored });
-  } catch {
     return NextResponse.json({ error: "Image generation failed." }, { status: 502 });
-  } finally {
-    clearTimeout(timer);
   }
+
+  // Persist to KV so the on-chain logo is a permanent, self-hosted URL. If KV
+  // isn't configured we fall back to fal's temporary URL rather than failing.
+  let url = falUrl, stored = false;
+  try {
+    const { path } = await persistImage(falUrl);
+    const origin = process.env.PUBLIC_ORIGIN || new URL(request.url).origin;
+    url = `${origin}${path}`;
+    stored = true;
+  } catch {
+    /* keep falUrl — display still works, on-chain persistence just needs KV */
+  }
+  return NextResponse.json({ url, stored });
 }
