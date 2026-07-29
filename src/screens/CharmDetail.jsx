@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { tokenToAgent } from '../lib/agents'
 import CharmAvatar from '../components/CharmAvatar'
 import PriceChart from '../components/PriceChart'
 import TradePanel from '../components/TradePanel'
@@ -15,12 +16,35 @@ import { Verified, XLogo, Back } from '../components/icons'
 export default function CharmDetail() {
   const { id } = useParams()
   const { getAgent, prices, explorer, agentsLoading } = useStore()
-  const charm = getAgent(id)
+  const feedCharm = getAgent(id)
+
+  // A brand-new coin (or a deep link before the feed loads) may not be in the
+  // in-memory feed yet. Fetch it directly from the launched-here registry so the
+  // page always resolves instead of showing "Agent not found".
+  const [fallback, setFallback] = useState(null)
+  const [fetching, setFetching] = useState(false)
+  useEffect(() => {
+    if (feedCharm || fallback) return
+    let cancelled = false
+    setFetching(true)
+    fetch(`/api/registry?network=robinhood`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (cancelled || !j?.launches) return
+        const t = j.launches.find((l) => (l.token || '').toLowerCase() === String(id).toLowerCase())
+        if (t) setFallback(tokenToAgent(t, j.ethUsd ?? null))
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setFetching(false) })
+    return () => { cancelled = true }
+  }, [id, feedCharm, fallback])
+
+  const charm = feedCharm || fallback
 
   if (!charm) {
     return (
       <div className="text-center py-20 text-[var(--color-ink-soft)]">
-        {agentsLoading ? 'Loading agent…' : <>Agent not found. <Link className="underline" to="/">Back to Discover</Link></>}
+        {agentsLoading || fetching ? 'Loading agent…' : <>Agent not found. <Link className="underline" to="/">Back to Discover</Link></>}
       </div>
     )
   }
