@@ -17,10 +17,18 @@ const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
 const NETWORK = 'robinhood'
 const CHAT_KEY = 'eska.chats.v1'
 const FEED_KEY = 'eska.feed.v1'
+const THEME_KEY = 'eska.theme'
+const PROFILE_KEY = 'eska.profile.v1'
 const StoreCtx = createContext(null)
 
 function loadChats() {
   try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {} } catch { return {} }
+}
+
+// Local profile edits (display name + photo) layered over the X identity. The
+// handle always stays whatever X says; only the name and avatar can be changed.
+function loadProfile() {
+  try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {} } catch { return {} }
 }
 
 // The last feed we successfully loaded. Painting it instantly on the next visit
@@ -45,6 +53,38 @@ export function StoreProvider({ children }) {
   const [agentsLoading, setAgentsLoading] = useState(!initFeed)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
+
+  // Appearance: 'dark' | 'light' | 'auto'. Applied as data-theme on <html> so the
+  // CSS light/dark variables switch; 'auto' follows the OS and updates live.
+  const [theme, setThemeState] = useState(() => (typeof window === 'undefined' ? 'dark' : localStorage.getItem(THEME_KEY) || 'dark'))
+  const setTheme = useCallback((mode) => {
+    setThemeState(mode)
+    try { localStorage.setItem(THEME_KEY, mode) } catch {}
+  }, [])
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mq = window.matchMedia('(prefers-color-scheme: light)')
+    const apply = () => {
+      const resolved = theme === 'auto' ? (mq.matches ? 'light' : 'dark') : theme
+      document.documentElement.setAttribute('data-theme', resolved)
+    }
+    apply()
+    if (theme === 'auto') {
+      mq.addEventListener('change', apply)
+      return () => mq.removeEventListener('change', apply)
+    }
+  }, [theme])
+
+  // Local profile overrides (display name + avatar). Cleared keys fall back to X.
+  const [profile, setProfile] = useState(() => (typeof window === 'undefined' ? {} : loadProfile()))
+  const updateProfile = useCallback((patch) => {
+    setProfile((p) => {
+      const next = { ...p, ...patch }
+      for (const k of Object.keys(next)) if (next[k] == null || next[k] === '') delete next[k]
+      try { localStorage.setItem(PROFILE_KEY, JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
@@ -106,6 +146,20 @@ export function StoreProvider({ children }) {
   }, [agents])
   const getAgent = useCallback((id) => agentsById[id] || null, [agentsById])
 
+  // The identity the app shows: X data with the local name/photo edits on top.
+  // `baseName`/`baseAvatar` keep the untouched X values so Edit profile can show
+  // what X provides and offer a reset.
+  const displayWallet = useMemo(() => {
+    if (!wallet) return null
+    return {
+      ...wallet,
+      name: profile.displayName || wallet.name,
+      avatar: profile.avatar || wallet.avatar,
+      baseName: wallet.name,
+      baseAvatar: wallet.avatar,
+    }
+  }, [wallet, profile])
+
   function connect() { window.location.href = '/api/auth/x/login' }
   async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null) }
 
@@ -121,7 +175,9 @@ export function StoreProvider({ children }) {
   }, [agentsById])
 
   const value = {
-    wallet, connect, disconnect,
+    wallet: displayWallet, connect, disconnect,
+    profile, updateProfile,
+    theme, setTheme,
     agents, agentsLoading, loadAgents, ethUsd, explorer,
     prices, getAgent,
     chats, sendMessage,

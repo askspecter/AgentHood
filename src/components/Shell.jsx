@@ -26,7 +26,7 @@ export default function Shell() {
   return (
     <div className="min-h-full flex flex-col">
       {/* ===== desktop top navbar ===== */}
-      <header className="sticky top-0 z-40 border-b hairline bg-[rgba(7,6,12,.68)] backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b hairline bg-[var(--nav-bg)] backdrop-blur-xl">
         <div className="mx-auto max-w-6xl px-4 lg:px-8 h-16 flex items-center gap-6">
           <Link to="/"><Wordmark /></Link>
 
@@ -68,21 +68,21 @@ export default function Shell() {
       {/* ===== mobile floating pill nav ===== */}
       <div className="md:hidden fixed inset-x-0 z-40 flex justify-center px-4 pointer-events-none"
         style={{ bottom: 'calc(0.7rem + env(safe-area-inset-bottom, 0px))' }}>
-        <div className="pointer-events-auto flex items-center gap-1 rounded-[24px] p-1.5 border border-white/10
-                        bg-[rgba(18,16,26,0.7)] backdrop-blur-2xl shadow-[0_18px_44px_-14px_rgba(0,0,0,0.85)]">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-[24px] p-1.5 border border-[var(--pill-border)]
+                        bg-[var(--pill-bg)] backdrop-blur-2xl shadow-[0_18px_44px_-14px_rgba(0,0,0,0.55)]">
           {TABS.map((t) => {
             const Icon = t.icon
             return (
               <NavLink key={t.to} to={t.to} end={t.end}
                 className={({ isActive }) =>
                   `relative flex flex-col items-center justify-center gap-1 w-[60px] py-2 rounded-[18px] text-[11px] font-medium transition-colors ${
-                    isActive ? 'text-white' : 'text-[var(--color-ink-faint)]'
+                    isActive ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
                   }`}>
                 {({ isActive }) => (
                   <>
                     {isActive && (
                       <span className="absolute inset-0 rounded-[18px] pointer-events-none"
-                        style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.05))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(180,150,255,0.55)' }} />
+                        style={{ background: 'var(--pill-active)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(180,150,255,0.55)' }} />
                     )}
                     <span className="relative h-6 grid place-items-center"><Icon active={isActive} /></span>
                     <span className="relative leading-none">{t.label}</span>

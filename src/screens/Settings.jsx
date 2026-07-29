@@ -1,12 +1,10 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Back, RowIcon, Chevron } from '../components/icons'
 
 export default function Settings() {
   const nav = useNavigate()
-  const { disconnect } = useStore()
-  const [appearance, setAppearance] = useState('dark')
+  const { disconnect, theme, setTheme } = useStore()
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -16,14 +14,14 @@ export default function Settings() {
       </div>
 
       <Section title="Account">
-        <Row icon="editProfile" label="Edit profile" />
-        <Row icon="linkedSocials" label="Linked socials" />
+        <Row icon="editProfile" label="Edit profile" onClick={() => nav('/settings/profile')} />
+        <Row icon="leaderboard" label="Leaderboard" onClick={() => nav('/leaderboard')} />
         <Row icon="appearance" label="Appearance" right={
           <div className="seg">
-            {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setAppearance(k)} className={`capitalize ${appearance === k ? 'on' : ''}`}>{k}</button>)}
+            {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize ${theme === k ? 'on' : ''}`}>{k}</button>)}
           </div>
         } />
-        <Row icon="gift" label="Referral code" last />
+        <Row icon="gift" label="Referral code" onClick={() => nav('/settings/referral')} last />
       </Section>
 
       <Section title="Resources">
@@ -55,12 +53,16 @@ function Section({ title, children }) {
   )
 }
 
-function Row({ icon, label, right, last }) {
-  return (
-    <div className={`w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left transition ${last ? '' : 'border-b hairline'}`}>
+function Row({ icon, label, right, last, onClick }) {
+  const cls = `w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left transition ${last ? '' : 'border-b hairline'}`
+  const inner = (
+    <>
       <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)]"><RowIcon name={icon} size={18} /></span>
       <span className="font-medium flex-1">{label}</span>
       {right ?? <Chevron />}
-    </div>
+    </>
   )
+  return onClick
+    ? <button type="button" onClick={onClick} className={cls}>{inner}</button>
+    : <div className={cls}>{inner}</div>
 }
