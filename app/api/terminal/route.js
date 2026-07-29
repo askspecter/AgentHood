@@ -670,37 +670,42 @@ export async function POST(request) {
         }
 
         // Always surface the wrapped-native (WETH) balance as a holding. Creator
-        // fees and unwraps land here, and the explorer index sometimes omits it —
-        // so read it directly and add it if it isn't already listed, priced 1:1
-        // with ETH. Without this, WETH the wallet clearly holds went missing.
-        const wethAddr = chain.pons?.weth;
-        if (wethAddr && isAddress(wethAddr)) {
+        // fees land here as WETH and the explorer index can omit it, so read it
+        // directly (through the reliable non-batching provider) and add it if it
+        // isn't already listed, priced 1:1 with ETH. This read used to go through
+        // the batching provider and silently drop WETH on a coalesce error — the
+        // reason it kept "not showing" even when the wallet plainly held it.
+        const wethCandidates = [
+          ...new Set(
+            [chain.pons?.weth, chain.wrappedNative]
+              .filter((a) => a && isAddress(a))
+              .map((a) => getAddress(a))
+          ),
+        ];
+        for (const wethAddr of wethCandidates) {
           const wkey = wethAddr.toLowerCase();
-          if (!holdings.some((h) => (h.token || "").toLowerCase() === wkey)) {
-            // Retry once: a single flaky read must not be why WETH goes missing,
-            // but don't let it drag the reload either.
-            let raw = null;
-            for (let i = 0; i < 2 && raw == null; i++) {
-              try {
-                raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
-              } catch {
-                raw = null;
-                await new Promise((r) => setTimeout(r, 150));
-              }
+          if (holdings.some((h) => (h.token || "").toLowerCase() === wkey)) continue;
+          let raw = null;
+          for (let i = 0; i < 3 && raw == null; i++) {
+            try {
+              raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
+            } catch {
+              raw = null;
+              await new Promise((r) => setTimeout(r, 150));
             }
-            if (raw != null && raw > 0n) {
-              const qty = Number(formatUnits(raw, 18));
-              holdings.push({
-                token: getAddress(wethAddr),
-                symbol: "WETH",
-                name: "Wrapped Ether",
-                qty,
-                priceInWeth: 1,
-                valueWeth: qty,
-                valueUsd: ethUsd ? qty * ethUsd : null,
-                launch: false,
-              });
-            }
+          }
+          if (raw != null && raw > 0n) {
+            const qty = Number(formatUnits(raw, 18));
+            holdings.push({
+              token: wethAddr,
+              symbol: "WETH",
+              name: "Wrapped Ether",
+              qty,
+              priceInWeth: 1,
+              valueWeth: qty,
+              valueUsd: ethUsd ? qty * ethUsd : null,
+              launch: false,
+            });
           }
         }
 
