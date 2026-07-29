@@ -66,14 +66,17 @@ async function mapBounded(items, concurrency, fn) {
 }
 
 /**
- * The wallet's ERC-20 balances straight from the block explorer's index.
+ * The wallet's ERC-20 balances straight from the block explorer's index —
+ * address, balance and metadata in one call.
  *
- * The RPC `getLogs` scan drops a recent buy whenever a chunk rate-limits, so a
- * coin the wallet plainly holds can go undetected. Blockscout already indexes
- * every balance, so this returns them directly — fast and complete — and the
- * portfolio unions it with the log scan so neither gap shows through.
+ * The RPC path (a wide `getLogs` transfer scan, then `balanceOf` on every token
+ * it finds) is both slow and lossy: it can hang the whole request on a public
+ * RPC, and a chunk that rate-limits drops a coin the wallet plainly holds.
+ * Blockscout already indexes every balance, so this returns the whole set in one
+ * request — fast, and it never misses a coin the wallet just bought. The
+ * portfolio uses it as the primary source and keeps the RPC scan as a fallback.
  */
-async function discoverTokensViaExplorer(explorer, address, timeoutMs = 7000) {
+async function explorerBalances(explorer, address, timeoutMs = 8000) {
   if (!explorer || !address) return [];
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -85,9 +88,22 @@ async function discoverTokensViaExplorer(explorer, address, timeoutMs = 7000) {
     const items = Array.isArray(json) ? json : json.items || [];
     const out = [];
     for (const it of items) {
-      const t = it?.token?.address || it?.token?.address_hash || it?.address;
-      const type = it?.token?.type;
-      if (t && (!type || /ERC-?20/i.test(type))) out.push(t);
+      const tk = it?.token || {};
+      const addr = tk.address || tk.address_hash || it?.address;
+      const type = tk.type;
+      if (!addr || (type && !/ERC-?20/i.test(type))) continue;
+      let raw = 0n;
+      try { raw = BigInt(it.value ?? "0"); } catch { raw = 0n; }
+      if (raw === 0n) continue;
+      const er = Number(tk.exchange_rate);
+      out.push({
+        token: addr,
+        decimals: Number(tk.decimals ?? 18) || 18,
+        symbol: tk.symbol || null,
+        name: tk.name || null,
+        raw,
+        exchangeRateUsd: Number.isFinite(er) && er > 0 ? er : null,
+      });
     }
     return out;
   } catch {
@@ -506,63 +522,97 @@ export async function POST(request) {
           }
         }
 
-        // The real discovery step. Failing here (an RPC that refuses getLogs)
-        // must not blank the portfolio — the launch scan alone still works.
-        let discovery = { tokens: [], truncated: false };
-        let explorerTokens = [];
-        try {
-          [discovery, explorerTokens] = await Promise.all([
-            discoverWalletTokens(provider, owner.address, {
-              startBlock: chain.pons?.factoryStartBlock || 0,
-            }).catch(() => ({ tokens: [], truncated: false })),
-            discoverTokensViaExplorer(chain.explorer, owner.address),
-          ]);
-        } catch {
-          /* no discovery — fall back to the launch-based list */
-        }
-
-        const candidates = new Set(launchMap.keys());
-        for (const t of [...discovery.tokens, ...explorerTokens]) {
-          try {
-            candidates.add(getAddress(t));
-          } catch {
-            /* ignore a malformed discovered address */
-          }
-        }
-        // A hard cap so a wallet that has touched thousands of tokens still
-        // answers in one request. Launches (which we can price) come first.
-        const MAX_TOKENS = 160;
-        const ordered = [
-          ...launchMap.keys(),
-          ...[...candidates].filter((t) => !launchMap.has(t)),
-        ].slice(0, MAX_TOKENS);
+        // Holdings, resolved the fast way first: the block explorer already
+        // indexes every balance, so one call returns the whole set — no wide
+        // getLogs scan, no balanceOf on hundreds of tokens. That is what keeps
+        // this from hanging on "Reading…" and what makes a coin the wallet just
+        // bought show up. The RPC transfer scan stays only as a fallback.
+        const balances = await explorerBalances(chain.explorer, owner.address);
 
         const holdings = [];
-        await mapBounded(ordered, 10, async (token) => {
+        let scanned = 0;
+        let discovered = 0;
+        let truncated = false;
+
+        if (balances.length) {
+          discovered = balances.length;
+          scanned = balances.length;
+          await mapBounded(balances.slice(0, 120), 8, async (b) => {
+            let token;
+            try { token = getAddress(b.token); } catch { return; }
+            const known = launchMap.get(token);
+            let decimals = b.decimals ?? known?.decimals ?? 18;
+            let symbol = b.symbol ?? known?.symbol ?? null;
+            let name = b.name ?? known?.name ?? null;
+            let priceInWeth = Number.isFinite(known?.priceInWeth) ? known.priceInWeth : null;
+            let priceUsd = b.exchangeRateUsd ?? null;
+
+            // No live price yet and not one of our launches: one bounded spot read
+            // (WETH pair, then the stock/USDG pair). Only the handful of coins the
+            // wallet actually holds hit this, so it stays fast.
+            if (priceInWeth == null && priceUsd == null && !known) {
+              for (const kind of [null, "stock"]) {
+                try {
+                  const sp = await spotPrice(provider, chain, token, { ethUsd, kind });
+                  if (sp.ok) {
+                    priceInWeth = sp.priceInWeth ?? priceInWeth;
+                    priceUsd = sp.priceUsd ?? priceUsd;
+                    symbol = symbol || sp.symbol;
+                    name = name || sp.name;
+                    if (priceUsd != null || priceInWeth != null) break;
+                  }
+                } catch { /* leave it unpriced — the balance still shows */ }
+              }
+            }
+
+            const qty = Number(formatUnits(b.raw, decimals ?? 18));
+            const valueWeth = priceInWeth != null ? qty * priceInWeth : null;
+            const valueUsd =
+              priceUsd != null
+                ? qty * priceUsd
+                : valueWeth != null && ethUsd
+                  ? valueWeth * ethUsd
+                  : null;
+            holdings.push({ token, symbol, name, qty, priceInWeth, valueWeth, valueUsd, launch: Boolean(known) });
+          });
+        } else {
+          // ---- Fallback: RPC transfer scan + balanceOf (explorer unavailable) ----
+          let discovery = { tokens: [], truncated: false };
+          try {
+            discovery = await discoverWalletTokens(provider, owner.address, {
+              startBlock: chain.pons?.factoryStartBlock || 0,
+            });
+          } catch {
+            /* no discovery — fall back to the launch-based list */
+          }
+          const candidates = new Set(launchMap.keys());
+          for (const t of discovery.tokens) {
+            try { candidates.add(getAddress(t)); } catch { /* skip malformed */ }
+          }
+          const MAX_TOKENS = 160;
+          const ordered = [
+            ...launchMap.keys(),
+            ...[...candidates].filter((t) => !launchMap.has(t)),
+          ].slice(0, MAX_TOKENS);
+
+          await mapBounded(ordered, 10, async (token) => {
             try {
               const erc20 = new Contract(token, BALANCE_ABI, provider);
               const raw = await erc20.balanceOf(owner.address);
               if (raw === 0n) return;
-
               const known = launchMap.get(token);
               let decimals = known?.decimals ?? 18;
               let symbol = known?.symbol ?? null;
               let name = known?.name ?? null;
               let priceInWeth = Number.isFinite(known?.priceInWeth) ? known.priceInWeth : null;
               let priceUsd = null;
-
               if (!known) {
-                // A token we did not launch: read its metadata, then ask the
-                // pool what it is worth. Try the WETH pair first (launches and
-                // most tokens), then the USDG pair (Robinhood stock tokens).
                 try {
                   const meta = await tokenMeta(provider, token);
                   decimals = meta.decimals ?? 18;
                   symbol = meta.symbol;
                   name = meta.name;
-                } catch {
-                  /* an unreadable name is fine — the balance is the point */
-                }
+                } catch { /* an unreadable name is fine */ }
                 for (const kind of [null, "stock"]) {
                   try {
                     const sp = await spotPrice(provider, chain, token, { ethUsd, kind });
@@ -573,12 +623,9 @@ export async function POST(request) {
                       name = name || sp.name;
                       if (priceUsd != null || priceInWeth != null) break;
                     }
-                  } catch {
-                    /* try the next pair, then give up and show quantity only */
-                  }
+                  } catch { /* try the next pair */ }
                 }
               }
-
               const qty = Number(formatUnits(raw, decimals ?? 18));
               const valueWeth = priceInWeth != null ? qty * priceInWeth : null;
               const valueUsd =
@@ -587,21 +634,15 @@ export async function POST(request) {
                   : valueWeth != null && ethUsd
                     ? valueWeth * ethUsd
                     : null;
-
-              holdings.push({
-                token,
-                symbol,
-                name,
-                qty,
-                priceInWeth,
-                valueWeth,
-                valueUsd,
-                launch: Boolean(known),
-              });
+              holdings.push({ token, symbol, name, qty, priceInWeth, valueWeth, valueUsd, launch: Boolean(known) });
             } catch {
               /* one unreadable token must not blank the portfolio */
             }
-        });
+          });
+          scanned = ordered.length;
+          discovered = discovery.tokens.length;
+          truncated = discovery.truncated;
+        }
 
         // Priced first (by USD, then WETH), then the rest by quantity so a
         // holding with no pool still has a stable place in the list.
@@ -624,9 +665,9 @@ export async function POST(request) {
             holdings,
             totalWeth:
               eth + holdings.reduce((sum, h) => sum + (h.valueWeth || 0), 0),
-            scanned: ordered.length,
-            discovered: discovery.tokens.length,
-            truncated: discovery.truncated,
+            scanned,
+            discovered,
+            truncated,
           },
         });
         PORTFOLIO_CACHE.set(folioKey, { at: Date.now(), value: folioValue });
