@@ -4,7 +4,7 @@ export const metadata = {
   title: "ESKA",
   description:
     "ESKA — characters worth owning. Discover living characters, trade their coins, shape their story.",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/eska-logo.png", apple: "/eska-logo.png" },
 };
 
 export const viewport = {
