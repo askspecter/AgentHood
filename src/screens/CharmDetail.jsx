@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
@@ -45,10 +46,9 @@ export default function CharmDetail() {
               <span className="font-mono text-sm text-[var(--color-ink-faint)]">${charm.ticker}</span>
               {grad === true && <span className="chip chip-up">Graduated</span>}
             </div>
-            <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-1">
+            <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-1 flex-wrap">
               <XLogo size={10} /><span>{charm.creator}</span>
-              {addr && <><span className="opacity-40">·</span>
-              <span className="font-mono text-xs">{addr.slice(0, 6)}…{addr.slice(-4)}</span></>}
+              {addr && <><span className="opacity-40">·</span><CopyCA addr={addr} /></>}
             </div>
             <div className="flex flex-wrap gap-1.5 mt-3">
               {charm.vibe.map((v) => <span key={v} className="chip">{v}</span>)}
@@ -109,5 +109,29 @@ function Stat({ label, value }) {
       <div className="font-mono num font-semibold">{value}</div>
       <div className="text-xs text-[var(--color-ink-soft)] mt-0.5">{label}</div>
     </div>
+  )
+}
+
+/** Tap to copy the full contract address, with brief "Copied" feedback. */
+function CopyCA({ addr }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async (e) => {
+    e.preventDefault(); e.stopPropagation()
+    try {
+      await navigator.clipboard.writeText(addr)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1400)
+    } catch {}
+  }
+  return (
+    <button onClick={copy} title="Copy contract address"
+      className="inline-flex items-center gap-1 font-mono text-xs px-1.5 py-0.5 -my-0.5 rounded-md hover:bg-[var(--color-paper-2)] hover:text-[var(--color-ink)] transition">
+      <span>{addr.slice(0, 6)}…{addr.slice(-4)}</span>
+      {copied ? (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--color-up)" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+      ) : (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round"><rect x="9" y="9" width="11" height="11" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10" /></svg>
+      )}
+    </button>
   )
 }
