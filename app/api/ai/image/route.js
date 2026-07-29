@@ -23,9 +23,10 @@ export async function POST(request) {
   const prompt = String(body?.prompt || "").slice(0, 500).trim();
   if (!prompt) return NextResponse.json({ error: "Empty prompt." }, { status: 400 });
 
-  // Frame every prompt as a single expressive CHARACTER portrait (an avatar),
-  // not a literal coin — the coin is the token; its logo is a character.
-  const full = `Character portrait of ${prompt}. A single expressive character or mascot, centered, facing forward, head and shoulders, vibrant, highly detailed, sharp focus, clean simple background, no text, no watermark, no border, not a coin, not a medal.`;
+  // Frame every prompt as a single striking CHARACTER portrait (an avatar) with a
+  // rich, cinematic, thematic background — the coin is the token; its logo is a
+  // character, like the reference app. Not a literal coin.
+  const full = `Character portrait of ${prompt}. A single striking character or mascot, head and shoulders, centered, facing forward, expressive, cinematic dramatic lighting, rich atmospheric thematic background that fits the character, depth of field, ultra detailed, sharp focus, high quality digital art, no text, no watermark, not a coin, not a medal.`;
 
   let falUrl;
   try {
