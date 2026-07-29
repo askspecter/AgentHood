@@ -188,7 +188,7 @@ export default function Launch() {
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
 
-  const preview = { ...d, online: true, ticker: d.ticker || 'TICK', name: d.name || 'Untitled' }
+  const preview = { ...d, online: false, ticker: d.ticker || 'TICK', name: d.name || 'Untitled' }
   // A name is the only hard requirement; the ticker is derived and the "soul"
   // fields are all optional flavour that feed the coin's description.
   const canLaunch = !!d.name.trim()
@@ -455,7 +455,7 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
       {/* glowing orb + preview */}
       <div className="relative grid place-items-center mb-7 mt-1">
         <div className="absolute w-52 h-52 rounded-full blur-3xl opacity-60 pointer-events-none" style={{ background: `radial-gradient(circle, ${d.tone[0]}, transparent 62%)` }} />
-        <div className="floaty relative"><CharmAvatar charm={preview} size={150} ring /></div>
+        <div className="floaty relative"><CharmAvatar charm={preview} size={150} ring square /></div>
       </div>
 
       <h1 className="display text-3xl sm:text-4xl text-center mb-6">What does {d.name || 'it'} look like?</h1>
@@ -538,7 +538,7 @@ function StepForge({ preview, pct, onContinue, onEdit }) {
       <div className="relative grid place-items-center mb-8">
         <div className="absolute w-64 h-64 rounded-full blur-3xl opacity-60 pointer-events-none" style={{ background: `radial-gradient(circle, ${preview.tone[0]}, transparent 62%)` }} />
         {!ready && <div className="absolute rounded-full spin-slow pointer-events-none" style={{ width: 220, height: 220, border: '1px solid rgba(255,255,255,0.1)' }} />}
-        <div className="floaty relative"><CharmAvatar charm={preview} size={ready ? 168 : 150} ring /></div>
+        <div className="floaty relative"><CharmAvatar charm={preview} size={ready ? 168 : 150} ring square /></div>
       </div>
 
       {ready ? (
@@ -574,7 +574,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
   return (
     <div className="flex-1 flex flex-col">
       <div className="flex flex-col items-center text-center mb-6">
-        <CharmAvatar charm={preview} size={72} ring />
+        <CharmAvatar charm={preview} size={72} ring square />
         <div className="flex items-center gap-1.5 mt-3">
           <span className="font-serif text-2xl">{preview.name}</span><Verified size={15} />
           <span className="font-mono text-xs text-[var(--color-ink-faint)]">${preview.ticker}</span>
@@ -640,7 +640,7 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
       <div className="glass card-glow rounded-3xl p-6 text-center relative overflow-hidden mb-6">
         <span className="pointer-events-none absolute inset-0 opacity-[0.06] font-serif text-[7rem] leading-none grid place-items-center select-none">{preview.ticker}</span>
         <div className="relative">
-          <div className="flex justify-center mb-3"><CharmAvatar charm={preview} size={92} ring /></div>
+          <div className="flex justify-center mb-3"><CharmAvatar charm={preview} size={92} ring square /></div>
           <div className="flex items-center justify-center gap-1.5">
             <span className="font-serif text-3xl">{preview.name}</span><Verified size={16} />
           </div>
@@ -693,7 +693,7 @@ function StepDone({ charm, result, meta, onTrade }) {
         <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">ESKA</span>
         <div className="relative flex flex-col items-center">
           <div className="absolute w-48 h-48 rounded-full blur-3xl opacity-50 pointer-events-none" style={{ background: `radial-gradient(circle, ${charm.tone?.[0] ?? '#8b7bff'}, transparent 65%)` }} />
-          <div className="floaty relative"><CharmAvatar charm={{ ...charm, online: true }} size={128} ring /></div>
+          <div className="floaty relative"><CharmAvatar charm={{ ...charm, online: false }} size={128} ring square /></div>
           <div className="flex items-center gap-1.5 mt-5">
             <span className="font-serif text-3xl">{charm.name}</span><Verified size={16} />
           </div>

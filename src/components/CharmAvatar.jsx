@@ -28,10 +28,11 @@ export default function CharmAvatar({ charm, size = 48, ring = false, square = f
   // A real token logo — a round image inside the sphere's footprint. If it fails
   // to load we fall through to the procedural sphere below (never a blank).
   if (charm.logo && !broken) {
+    const radius = square ? Math.round(s * 0.26) : '50%'
     return (
       <div className="relative shrink-0" style={{ width: s, height: s }}>
         <img src={charm.logo} alt="" loading="lazy"
-          style={{ width: s, height: s, borderRadius: '50%', objectFit: 'cover', background: `radial-gradient(120% 120% at 32% 24%, ${c1}, ${c2} 60%, #0b0a14 120%)`, boxShadow: ring ? '0 0 0 1px rgba(255,255,255,.14)' : undefined }}
+          style={{ width: s, height: s, borderRadius: radius, objectFit: 'cover', background: `radial-gradient(120% 120% at 32% 24%, ${c1}, ${c2} 60%, #0b0a14 120%)`, boxShadow: ring ? '0 0 0 1px rgba(255,255,255,.14)' : undefined }}
           onError={() => setBroken(true)} />
         {charm.online && (
           <span className="absolute rounded-full" style={{ width: s * 0.16, height: s * 0.16, right: s * 0.04, bottom: s * 0.04, background: 'var(--color-up)', boxShadow: '0 0 0 2px #0a0912, 0 0 8px var(--color-up)' }} />
