@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, getAddress } from "ethers";
-import { getChain, getEthUsd, enrichLaunch, listLaunched } from "@/lib/engine";
+import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken } from "@/lib/engine";
 
 const POOL_SLOT0_ABI = [
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
@@ -326,16 +326,17 @@ export async function GET(request) {
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
     // market cap so the feed shows the biggest pons coins — not just the newest.
     const cap = Number(process.env.PONS_ENRICH_CAP || 50);
+    const hidden = hiddenTokenSet();
     const seen = new Set();
     const candidates = [];
     // Seeds and top-tokens first (most likely to be the big coins), then the
-    // newest launches.
+    // newest launches. Hidden tokens (test launches) are dropped everywhere.
     for (const a of [...seeds, ...topTokens, ...discovered]) {
       let addr;
       try { addr = getAddress(a); }
       catch { try { addr = getAddress(String(a).toLowerCase()); } catch { continue; } }
       const k = addr.toLowerCase();
-      if (!seen.has(k)) { seen.add(k); candidates.push(addr); }
+      if (!seen.has(k) && !isHiddenToken(addr, hidden)) { seen.add(k); candidates.push(addr); }
     }
     const picked = candidates.slice(0, cap);
 

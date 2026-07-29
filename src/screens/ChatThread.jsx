@@ -45,7 +45,7 @@ export default function ChatThread() {
             Online · <span className="font-mono">${charm.ticker} {charm.priceUsd != null ? usd(price) : ''}</span>
           </div>
         </div>
-        <button onClick={() => nav(`/trade?token=${charm.token}`)} className="btn btn-secondary !py-1.5 text-xs">Trade</button>
+        <button onClick={() => nav(`/c/${charm.token}`)} className="btn btn-secondary !py-1.5 text-xs">Trade</button>
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto">

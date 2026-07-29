@@ -191,7 +191,7 @@ export default function Profile() {
         <Empty
           title={loading ? 'Reading your wallet…' : 'No coins held'}
           subtitle={loading ? 'Scanning balances on Robinhood Chain.' : 'Coins you buy or launch will show up here, priced live.'}
-          action={!loading && <Link to="/trade" className="btn btn-primary">Trade a coin</Link>}
+          action={!loading && <Link to="/" className="btn btn-primary">Discover coins</Link>}
         />
       ) : (
         <div className="card overflow-hidden">
@@ -201,7 +201,7 @@ export default function Profile() {
             const ch = feed && Number.isFinite(feed.change24) ? feed.change24 : null
             const sym = (h.symbol || 'TOKEN').replace(/^\$/, '')
             return (
-              <Link key={h.token} to={`/trade?token=${h.token}`} className={`flex items-center gap-3 p-3.5 sm:p-4 hover:bg-[var(--color-paper-2)] transition ${i ? 'border-t hairline' : ''}`}>
+              <Link key={h.token} to={`/c/${h.token}`} className={`flex items-center gap-3 p-3.5 sm:p-4 hover:bg-[var(--color-paper-2)] transition ${i ? 'border-t hairline' : ''}`}>
                 {feed
                   ? <CharmAvatar charm={feed} size={38} />
                   : <span className="w-[38px] h-[38px] grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)] shrink-0"><Coin size={18} /></span>}

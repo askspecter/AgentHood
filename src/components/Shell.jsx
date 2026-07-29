@@ -33,7 +33,7 @@ export default function Shell() {
           <Link to="/"><Wordmark /></Link>
 
           <nav className="hidden md:flex items-center gap-1 ml-2">
-            {[...TABS, { to: '/trade', label: 'Trade' }, { to: '/launch', label: 'Launch' }].map((t) => (
+            {[...TABS, { to: '/launch', label: 'Launch' }].map((t) => (
               <NavLink key={t.to} to={t.to} end={t.end}
                 className={({ isActive }) =>
                   `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
