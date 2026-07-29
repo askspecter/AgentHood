@@ -40,6 +40,31 @@ const SUPPLY_ABI = [
 /** How many launches the resolver may see. Enough to cover the live feed. */
 const RESOLVE_LIMIT = 24;
 
+/**
+ * Short-lived portfolio cache, keyed by network:address.
+ *
+ * Building a portfolio is the heaviest read this app does — a wide log scan plus
+ * a balanceOf on every token the wallet ever touched — so re-running it on every
+ * Profile visit or Refresh tap is what makes holdings feel slow. Caching the
+ * result for a short window makes the second read instant; the TTL is short
+ * enough that a fresh trade shows up on the next refresh.
+ */
+const PORTFOLIO_CACHE = new Map();
+const PORTFOLIO_TTL_MS = Number(process.env.PORTFOLIO_TTL_MS || 45_000);
+
+/**
+ * Run an async mapper over items a few at a time.
+ *
+ * Firing 160 balanceOf calls at once as one Promise.all makes a public RPC
+ * rate-limit and stall them all; a small concurrency window is actually faster
+ * because every call stays under the limit and returns instead of retrying.
+ */
+async function mapBounded(items, concurrency, fn) {
+  for (let i = 0; i < items.length; i += concurrency) {
+    await Promise.all(items.slice(i, i + concurrency).map(fn));
+  }
+}
+
 function line(text, tone = "out") {
   return { tone, text };
 }
@@ -409,6 +434,14 @@ export async function POST(request) {
           });
         }
 
+        // Serve a recent build instantly — the heavy scan below only reruns once
+        // the cache has expired.
+        const folioKey = `${network}:${owner.address.toLowerCase()}`;
+        const cachedFolio = PORTFOLIO_CACHE.get(folioKey);
+        if (cachedFolio && Date.now() - cachedFolio.at < PORTFOLIO_TTL_MS) {
+          return NextResponse.json(cachedFolio.value);
+        }
+
         // Two independent ways to know what a wallet holds, unioned so neither
         // gap shows through:
         //
@@ -469,8 +502,7 @@ export async function POST(request) {
         ].slice(0, MAX_TOKENS);
 
         const holdings = [];
-        await Promise.all(
-          ordered.map(async (token) => {
+        await mapBounded(ordered, 10, async (token) => {
             try {
               const erc20 = new Contract(token, BALANCE_ABI, provider);
               const raw = await erc20.balanceOf(owner.address);
@@ -533,8 +565,7 @@ export async function POST(request) {
             } catch {
               /* one unreadable token must not blank the portfolio */
             }
-          })
-        );
+        });
 
         // Priced first (by USD, then WETH), then the rest by quantity so a
         // holding with no pool still has a stable place in the list.
@@ -547,23 +578,23 @@ export async function POST(request) {
         const native = await provider.getBalance(owner.address);
         const eth = Number(formatUnits(native, 18));
 
-        return NextResponse.json(
-          serialise({
-            kind: "portfolio",
-            ethUsd,
-            data: {
-              address: owner.address,
-              source: owner.source,
-              eth,
-              holdings,
-              totalWeth:
-                eth + holdings.reduce((sum, h) => sum + (h.valueWeth || 0), 0),
-              scanned: ordered.length,
-              discovered: discovery.tokens.length,
-              truncated: discovery.truncated,
-            },
-          })
-        );
+        const folioValue = serialise({
+          kind: "portfolio",
+          ethUsd,
+          data: {
+            address: owner.address,
+            source: owner.source,
+            eth,
+            holdings,
+            totalWeth:
+              eth + holdings.reduce((sum, h) => sum + (h.valueWeth || 0), 0),
+            scanned: ordered.length,
+            discovered: discovery.tokens.length,
+            truncated: discovery.truncated,
+          },
+        });
+        PORTFOLIO_CACHE.set(folioKey, { at: Date.now(), value: folioValue });
+        return NextResponse.json(folioValue);
       }
 
       case "price":

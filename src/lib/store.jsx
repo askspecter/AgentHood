@@ -36,18 +36,25 @@ export function StoreProvider({ children }) {
     let cancelled = false
     fetch('/api/auth/me')
       .then((r) => r.json())
-      .then(async (data) => {
+      .then((data) => {
         if (cancelled) return
         const user = data?.user
         if (!user) { setWallet(null); return }
-        let address = ''
-        let ethBalance = null
-        try {
-          const w = await fetch('/api/wallet').then((r) => (r.ok ? r.json() : null))
-          if (w?.address) address = w.address
-          if (w?.balance?.formatted != null) ethBalance = Number(w.balance.formatted)
-        } catch {}
-        if (!cancelled) setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address, ethBalance, kind: 'x' })
+        // Show the signed-in identity immediately — don't make it wait behind the
+        // (slower) balance read. The address and ETH balance fill in a moment
+        // later without blocking the avatar/handle from appearing.
+        setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address: '', ethBalance: null, kind: 'x' })
+        fetch('/api/wallet')
+          .then((r) => (r.ok ? r.json() : null))
+          .then((w) => {
+            if (cancelled || !w) return
+            setWallet((prev) => prev && prev.id === user.id ? {
+              ...prev,
+              address: w.address || prev.address,
+              ethBalance: w?.balance?.formatted != null ? Number(w.balance.formatted) : prev.ethBalance,
+            } : prev)
+          })
+          .catch(() => {})
       })
       .catch(() => {})
     return () => { cancelled = true }
