@@ -3,6 +3,7 @@ import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import PriceChart from '../components/PriceChart'
 import TradePanel from '../components/TradePanel'
+import CreatorFees from '../components/CreatorFees'
 import { usd, num, pct } from '../lib/format'
 import { Verified, XLogo, Back } from '../components/icons'
 
@@ -58,6 +59,9 @@ export default function CharmDetail() {
           <Link to={`/chat/${charm.id}`} className="btn btn-primary w-full">Chat with {charm.name}</Link>
         </div>
       </div>
+
+      {/* creator fees — only shown to the wallet that launched this coin */}
+      {addr && <CreatorFees token={addr} symbol={charm.ticker} />}
 
       {/* about */}
       <div className="card p-6">
