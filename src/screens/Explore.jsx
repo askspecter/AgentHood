@@ -71,7 +71,7 @@ export default function Explore() {
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
           ))}
-          <button onClick={loadAgents} disabled={agentsLoading} className="shrink-0 ml-auto">{agentsLoading ? '…' : '↻'}</button>
+          <button onClick={() => loadAgents(true)} disabled={agentsLoading} className="shrink-0 ml-auto">{agentsLoading ? '…' : '↻'}</button>
         </div>
 
         {agentsLoading && agents.length === 0 ? (
