@@ -44,16 +44,29 @@ const LOOK_IDEAS = [
 
 /* Visual styles for the look step. Each sets the coin's tone (its aura/glow) and
    a matching vibe. Deliberately ESKA's own set, not a copy of anyone else's. */
-const STYLES = [
-  { key: 'holo', label: 'Holo', tone: TONES[0], vibe: 'ethereal' },
-  { key: 'mascot', label: 'Mascot', tone: TONES[3], vibe: 'playful' },
-  { key: 'pixel', label: 'Pixel', tone: TONES[1], vibe: 'retro' },
-  { key: 'noir', label: 'Noir', tone: TONES[6], vibe: 'dry' },
-  { key: 'cyber', label: 'Cyber', tone: TONES[2], vibe: 'hype' },
-  { key: 'dreamy', label: 'Dreamy', tone: TONES[5], vibe: 'dreamy' },
-  { key: 'feral', label: 'Feral', tone: TONES[7], vibe: 'feral' },
-  { key: 'cosmic', label: 'Cosmic', tone: TONES[4], vibe: 'poetic' },
+/* The style gallery — each tile shows an AI preview (via /api/ai/style-preview)
+   and its prompt fragment (p) steers the coin's own logo generation. Keys must
+   match STYLE_PROMPTS in the style-preview endpoint. */
+const STYLE_DEFS = [
+  { key: 'realistic', label: 'Realistic', p: 'photorealistic, ultra detailed', vibe: 'blue-chip' },
+  { key: 'anime', label: 'Anime', p: 'anime style, clean cel shading', vibe: 'playful' },
+  { key: 'pixel', label: 'Pixel Art', p: '16-bit pixel art, retro sprite', vibe: 'retro' },
+  { key: 'ps2', label: 'PS2', p: 'PS2-era low-poly 3D render', vibe: 'retro' },
+  { key: 'lineart', label: 'Line Art', p: 'clean black and white line art', vibe: 'dry' },
+  { key: 'cyberpunk', label: 'Cyberpunk', p: 'cyberpunk, neon, futuristic', vibe: 'hype' },
+  { key: 'mascot', label: 'Mascot', p: 'cute glossy 3D mascot', vibe: 'playful' },
+  { key: 'film', label: 'Film', p: 'cinematic film still, dramatic lighting', vibe: 'poetic' },
+  { key: 'comic', label: 'Comic Book', p: 'comic book art, bold ink, halftone', vibe: 'chaotic' },
+  { key: 'ethereal', label: 'Ethereal', p: 'ethereal, dreamy, soft glow', vibe: 'ethereal' },
+  { key: 'fantasy', label: 'Fantasy', p: 'epic fantasy, glowing runes, ornate', vibe: 'dreamy' },
+  { key: 'dark', label: 'Dark', p: 'dark moody, dramatic shadows', vibe: 'spooky' },
+  { key: 'cartoon', label: 'Cartoon', p: '3D cartoon, Pixar-like, colorful', vibe: 'cozy' },
+  { key: 'manhwa', label: 'Manhwa', p: 'korean manhwa webtoon style', vibe: 'loyal' },
+  { key: 'vaporwave', label: 'Vaporwave', p: 'vaporwave, pastel neon, retro 80s', vibe: 'dreamy' },
+  { key: 'chibi', label: 'Chibi', p: 'chibi, super deformed, cute', vibe: 'playful' },
+  { key: 'ghibli', label: 'Ghibli', p: 'studio ghibli inspired, soft watercolor', vibe: 'cozy' },
 ]
+const STYLES = STYLE_DEFS.map((s, i) => ({ ...s, tone: TONES[i % TONES.length] }))
 
 const GENDERS = [
   { key: 'masc', label: 'He', glyph: '♂' },
@@ -134,6 +147,7 @@ async function aiImage(prompt) {
   } catch { return null }
 }
 const styleLabel = (key) => STYLES.find((s) => s.key === key)?.label || ''
+const stylePrompt = (key) => STYLES.find((s) => s.key === key)?.p || ''
 
 /* Store an image (data URL or remote URL) durably and get back a stable URL for
    on-chain metadata. Returns null if storage isn't configured — callers keep the
@@ -354,7 +368,7 @@ export default function Launch() {
     setPct(0)
     const prompt = [
       d.name,
-      styleLabel(d.style) && `${styleLabel(d.style)} style`,
+      stylePrompt(d.style),
       d.gender && GENDERS.find((g) => g.key === d.gender)?.label,
       d.look,
     ].filter(Boolean).join(', ')
@@ -444,6 +458,27 @@ function ChipBtn({ active, onClick, children }) {
   )
 }
 
+/* A style tile: an AI-generated preview over a tinted gradient. If the preview
+   can't load (no image key / not generated yet) the gradient stands in. */
+function StyleTile({ st, on, onClick }) {
+  const [broken, setBroken] = useState(false)
+  return (
+    <button onClick={onClick} className="shrink-0 text-center">
+      <span className="block w-16 h-16 rounded-2xl mb-1.5 overflow-hidden relative transition-transform" style={{
+        background: `radial-gradient(120% 120% at 32% 22%, ${st.tone[0]}, ${st.tone[1]} 58%, #0b0a14 130%)`,
+        boxShadow: on ? `0 0 0 2px var(--color-paper), 0 0 0 4px #fff, 0 0 22px -4px ${st.tone[0]}` : 'inset 0 1px 2px rgba(255,255,255,.3)',
+        transform: on ? 'scale(1.06)' : 'none',
+      }}>
+        {!broken && (
+          <img src={`/api/ai/style-preview?style=${st.key}`} alt="" loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover" onError={() => setBroken(true)} />
+        )}
+      </span>
+      <span className={`block text-[11px] ${on ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}>{st.label}</span>
+    </button>
+  )
+}
+
 function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setLogoFromFile }) {
   const [open, setOpen] = useState(null) // 'gender' | 'style' | 'image' | null
   const fileRef = useRef(null)
@@ -488,19 +523,9 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
         {open === 'style' && (
           <div className="-mx-4 sm:-mx-5 px-4 sm:px-5 mb-3 fade-up">
             <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-              {STYLES.map((st) => {
-                const on = d.style === st.key
-                return (
-                  <button key={st.key} onClick={() => pickStyle(st)} className="shrink-0 text-center">
-                    <span className="block w-16 h-16 rounded-2xl mb-1.5 transition-transform" style={{
-                      background: `radial-gradient(120% 120% at 32% 22%, ${st.tone[0]}, ${st.tone[1]} 58%, #0b0a14 130%)`,
-                      boxShadow: on ? `0 0 0 2px var(--color-paper), 0 0 0 4px #fff, 0 0 22px -4px ${st.tone[0]}` : 'inset 0 1px 2px rgba(255,255,255,.3)',
-                      transform: on ? 'scale(1.06)' : 'none',
-                    }} />
-                    <span className={`text-[11px] ${on ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}>{st.label}</span>
-                  </button>
-                )
-              })}
+              {STYLES.map((st) => (
+                <StyleTile key={st.key} st={st} on={d.style === st.key} onClick={() => pickStyle(st)} />
+              ))}
             </div>
           </div>
         )}
