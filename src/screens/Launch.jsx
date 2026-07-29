@@ -61,6 +61,33 @@ const GENDERS = [
   { key: 'neutral', label: 'They', glyph: '⬦' },
 ]
 
+/* Personality traits offered on the Soul step. The "more" button reshuffles which
+   ones are shown; when the AI API lands it can suggest tailored traits instead. */
+const PERSONALITY_POOL = [
+  'Observes from the shadows before it acts',
+  'Calm on the inside, chaos on the outside',
+  'Deeply loyal once you earn it',
+  'Speaks in one-liners and riddles',
+  'Values independence above all',
+  'Runs hot, forgives fast',
+  'Overthinks everything, admits nothing',
+  'Treats every trade like a story',
+  'Secretly sentimental about its holders',
+  'Allergic to being ignored',
+  'Keeps score, never says so',
+  'Believes it is destined to graduate',
+]
+function shuffled(arr, seed) {
+  const a = [...arr]
+  let h = seed || 1
+  for (let i = a.length - 1; i > 0; i--) {
+    h = (h * 1103515245 + 12345) & 0x7fffffff
+    const j = h % (i + 1)
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 /* Shrink a picked image to a small square data URL — the real logo shown on pons. */
 function fileToLogo(file, size = 256) {
   return new Promise((resolve, reject) => {
@@ -112,7 +139,7 @@ export default function Launch() {
 
   const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
-  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], gender: '', style: '', look: '' })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '' })
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
@@ -122,10 +149,13 @@ export default function Launch() {
   const [result, setResult] = useState(null)
 
   const preview = { ...d, online: true, ticker: d.ticker || 'TICK', name: d.name || 'Untitled' }
-  const canLaunch = d.name.trim() && d.tagline.trim()
+  // A name is the only hard requirement; the ticker is derived and the "soul"
+  // fields are all optional flavour that feed the coin's description.
+  const canLaunch = !!d.name.trim()
 
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
-  const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 4) }))
+  const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 5) }))
+  const togglePersonality = (p) => setD((s) => ({ ...s, personality: s.personality.includes(p) ? s.personality.filter((x) => x !== p) : [...s.personality, p].slice(0, 3) }))
   const deriveTicker = (name) => name.replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase() || 'TICK'
   const idea = () => { const p = IDEAS[Math.floor(Math.random() * IDEAS.length)]; setD((s) => ({ ...s, tagline: p.tagline, lore: p.lore, voice: p.voice })) }
   const nameIdea = () => set('name', NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)])
@@ -160,8 +190,12 @@ export default function Launch() {
     else setStep((s) => Math.max(0, s - 1))
   }
 
-  const describe = () => [d.tagline, d.vibe.length ? `Vibe: ${d.vibe.join(', ')}` : '', d.lore, d.look]
-    .filter(Boolean).join(' · ').slice(0, 280)
+  const describe = () => [
+    d.tagline,
+    d.vibe.length ? `Vibe: ${d.vibe.join(', ')}` : '',
+    d.personality.length ? d.personality.join('. ') : '',
+    d.lore, d.look,
+  ].filter(Boolean).join(' · ').slice(0, 280)
 
   const doLaunch = useCallback(async () => {
     if (!user) return connect()
@@ -247,7 +281,7 @@ export default function Launch() {
         {step === 0 && <StepName d={d} set={set} onNext={next} nameIdea={nameIdea} />}
         {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
-        {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} idea={idea} onNext={next} canLaunch={canLaunch} />}
+        {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} onNext={next} canLaunch={canLaunch} />}
         {step === 4 && <StepReview d={d} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/trade?token=${result?.token || ''}`)} />}
       </div>
@@ -412,10 +446,15 @@ function StepForge({ preview, pct, onContinue, onEdit }) {
 }
 
 /* ---------- 4 · Soul ---------- */
-function StepSoul({ d, preview, set, toggleVibe, idea, onNext, canLaunch }) {
+function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, onNext, canLaunch }) {
+  const [seed, setSeed] = useState(1)
+  // Show a rotating subset of the trait pool; "more" reshuffles it. This is where
+  // AI-suggested, name-aware traits will slot in once the API is wired.
+  const traits = useMemo(() => shuffled(PERSONALITY_POOL, seed).slice(0, 6), [seed])
+
   return (
     <div className="flex-1 flex flex-col">
-      <div className="flex flex-col items-center text-center mb-7">
+      <div className="flex flex-col items-center text-center mb-6">
         <CharmAvatar charm={preview} size={72} ring />
         <div className="flex items-center gap-1.5 mt-3">
           <span className="font-serif text-2xl">{preview.name}</span><Verified size={15} />
@@ -423,20 +462,51 @@ function StepSoul({ d, preview, set, toggleVibe, idea, onNext, canLaunch }) {
         </div>
         <h1 className="display text-3xl mt-4">Give {d.name || 'it'} a soul.</h1>
       </div>
+
+      {/* Vibe — up to five */}
+      <div className="flex items-center justify-between mb-2">
+        <label className="eyebrow">Vibe <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 5</span></label>
+      </div>
+      <div className="flex flex-wrap gap-2 mb-6">
+        {VIBES.map((v) => {
+          const on = d.vibe.includes(v)
+          const full = d.vibe.length >= 5
+          return (
+            <button key={v} onClick={() => toggleVibe(v)} disabled={!on && full}
+              className={`chip ${on ? 'chip-brand' : 'hover:bg-[var(--color-line)]'} ${!on && full ? 'opacity-40' : ''}`}>{v}</button>
+          )
+        })}
+      </div>
+
+      {/* Personality — up to three trait cards */}
+      <div className="flex items-center justify-between mb-2">
+        <label className="eyebrow">Personality <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 3</span></label>
+        <button onClick={() => setSeed((s) => s + 7)} className="chip chip-brand !py-1">✦ more</button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
+        {traits.map((p) => {
+          const on = d.personality.includes(p)
+          const full = d.personality.length >= 3
+          return (
+            <button key={p} onClick={() => togglePersonality(p)} disabled={!on && full}
+              className={`text-left text-sm leading-snug p-3 rounded-2xl border transition ${
+                on ? 'chip-brand border-transparent' : `panel-soft border-[var(--color-line)] ${full ? 'opacity-45' : 'hover:border-[var(--color-line-2)]'}`
+              }`}>{p}</button>
+          )
+        })}
+      </div>
+
+      {/* Extra soul detail */}
       <div className="flex items-center justify-between mb-1.5">
-        <label className="eyebrow">Tagline · becomes the coin description</label>
+        <label className="eyebrow">Anything else <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
         <button onClick={idea} className="chip chip-brand !py-1">✦ Idea</button>
       </div>
-      <input value={d.tagline} onChange={(e) => set('tagline', e.target.value.slice(0, 80))} placeholder="A one-line hook people remember" className="input mb-5" />
-      <label className="eyebrow block mb-2">Vibe · up to four</label>
-      <div className="flex flex-wrap gap-2 mb-5">
-        {VIBES.map((v) => <button key={v} onClick={() => toggleVibe(v)} className={`chip ${d.vibe.includes(v) ? 'chip-brand' : 'hover:bg-[var(--color-line)]'}`}>{v}</button>)}
-      </div>
-      <label className="eyebrow block mb-1.5">Story <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
-      <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder="Where did it come from? What does it want?" className="input resize-none mb-5" />
+      <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder={`Add any extra traits, behaviours or details that define ${d.name || 'it'}.`} className="input resize-none mb-5" />
+
       <label className="eyebrow block mb-1.5">Your first buy (ETH) <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
       <input value={d.firstBuy} onChange={(e) => set('firstBuy', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" inputMode="decimal" className="input mb-6" />
-      <button onClick={onNext} disabled={!canLaunch} className="btn btn-holo w-full !py-3.5">{canLaunch ? 'Review & launch' : 'Add a tagline to continue'}</button>
+
+      <button onClick={onNext} disabled={!canLaunch} className="btn btn-holo w-full !py-3.5">Continue</button>
     </div>
   )
 }
@@ -456,7 +526,8 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
             <span className="font-serif text-3xl">{preview.name}</span><Verified size={16} />
           </div>
           <div className="flex flex-wrap justify-center gap-1.5 mt-3">
-            {d.vibe.slice(0, 4).map((v) => <span key={v} className="chip chip-brand">{v}</span>)}
+            {d.vibe.slice(0, 5).map((v) => <span key={v} className="chip chip-brand">{v}</span>)}
+            {d.personality.slice(0, 3).map((p) => <span key={p} className="chip max-w-[150px] truncate">{p}</span>)}
             {d.tagline && <span className="chip max-w-[200px] truncate">{d.tagline}</span>}
           </div>
           <button onClick={onEdit} className="mt-5 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition">
