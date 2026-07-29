@@ -4,6 +4,18 @@ import { deriveAddress, getChain, nativeBalance, tokenBalance, tokenMeta } from 
 import { getSession } from "@/lib/session";
 
 /**
+ * Short-lived native-balance cache, keyed by network:address.
+ *
+ * The balance is the first thing the app reads on every load and every Profile
+ * refresh, and a public RPC's getBalance is slow. A few seconds of caching makes
+ * the second read instant without ever showing a stale figure for long — the
+ * balance only moves when the user trades or sends, both of which take longer
+ * than this TTL to confirm anyway.
+ */
+const BALANCE_CACHE = new Map();
+const BALANCE_TTL_MS = Number(process.env.WALLET_BALANCE_TTL_MS || 12_000);
+
+/**
  * GET /api/wallet?network=robinhood[&token=0x…]
  *
  * The signed-in user's X-derived wallet: address and native balance. Pass a
@@ -55,10 +67,17 @@ export async function GET(request) {
 
   let balance = null;
   let balanceError = null;
-  try {
-    balance = await nativeBalance(address, chain);
-  } catch (error) {
-    balanceError = `Could not read the balance: ${error.message}`;
+  const balanceKey = `${network}:${address.toLowerCase()}`;
+  const cachedBalance = BALANCE_CACHE.get(balanceKey);
+  if (cachedBalance && Date.now() - cachedBalance.at < BALANCE_TTL_MS) {
+    balance = cachedBalance.value;
+  } else {
+    try {
+      balance = await nativeBalance(address, chain);
+      BALANCE_CACHE.set(balanceKey, { at: Date.now(), value: balance });
+    } catch (error) {
+      balanceError = `Could not read the balance: ${error.message}`;
+    }
   }
 
   // Optional: the balance of one specific token, for the Trade panel.
