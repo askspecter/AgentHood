@@ -10,6 +10,9 @@ import Trade from './screens/Trade'
 import Launch from './screens/Launch'
 import Profile from './screens/Profile'
 import Settings from './screens/Settings'
+import EditProfile from './screens/EditProfile'
+import Leaderboard from './screens/Leaderboard'
+import Referral from './screens/Referral'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -32,6 +35,9 @@ export default function App() {
             <Route path="launch" element={<Launch />} />
             <Route path="you" element={<Profile />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="settings/profile" element={<EditProfile />} />
+            <Route path="settings/referral" element={<Referral />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
           </Route>
         </Routes>
       </BrowserRouter>
