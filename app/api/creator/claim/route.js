@@ -62,7 +62,7 @@ function findClaim(abi) {
  * Dry-run first, then send. Never throws: a failure is reported and the slice
  * stays with the creator. Zero (or negative) amounts are a no-op.
  */
-async function transferSlice({ provider, signer, from, asset, to, amount, label }) {
+async function transferSlice({ provider, signer, from, asset, to, amount, label, nonce }) {
   if (amount <= 0n) return { label, to, amount: "0", status: "skipped:zero" };
   const data = erc20Iface.encodeFunctionData("transfer", [to, amount]);
   // Dry-run: a revert here (no balance, no gas) is the only real "won't send".
@@ -71,25 +71,17 @@ async function transferSlice({ provider, signer, from, asset, to, amount, label 
   } catch (error) {
     return { label, to, amount: amount.toString(), status: "failed", detail: error?.shortMessage || error?.message };
   }
-  // Broadcast it.
-  let tx;
+  // Broadcast with an explicit nonce and return the moment it's accepted. The
+  // dry-run already proved it succeeds and this L2 confirms in a fraction of a
+  // second, so we do NOT block the claim response waiting for the receipt —
+  // that receipt wait was the whole delay. A flaky confirmation read can't
+  // false-fail it either, because we never read the receipt here.
   try {
-    tx = await signer.sendTransaction({ to: asset, data });
+    const tx = await signer.sendTransaction({ to: asset, data, nonce });
+    return { label, to, amount: amount.toString(), status: "sent", hash: tx.hash };
   } catch (error) {
     return { label, to, amount: amount.toString(), status: "failed", detail: error?.shortMessage || error?.message };
   }
-  // Once broadcast returns a hash the transfer is on its way, and the dry-run
-  // already proved it succeeds — this L2 confirms in a fraction of a second. A
-  // confirmation READ that flakes must NOT be reported as a failure: that false
-  // negative is exactly what made a successful 10% skim show as "didn't send".
-  // Wait briefly for the receipt, but treat it as sent regardless.
-  let confirmed = false;
-  try {
-    await Promise.race([tx.wait().then(() => { confirmed = true; }), sleep(6000)]);
-  } catch {
-    /* confirmation read flaked; the broadcast still stands */
-  }
-  return { label, to, amount: amount.toString(), status: "sent", confirmed, hash: tx.hash };
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -115,12 +107,14 @@ async function readBalRetry(provider, asset, owner, tries = 4) {
  * the credit appears rather than reading once and giving up (which used to make
  * the skim see "nothing received" and quietly skip).
  */
-async function waitForCredit(provider, { token, weth, wallet, before }, tries = 6) {
+async function waitForCredit(provider, { token, weth, wallet, before }, tries = 5) {
   let received = { token: 0n, weth: 0n };
   for (let i = 0; i < tries; i++) {
     try {
-      const at = await readBalRetry(provider, token, wallet);
-      const aw = await readBalRetry(provider, weth, wallet);
+      const [at, aw] = await Promise.all([
+        readBalRetry(provider, token, wallet, 2),
+        readBalRetry(provider, weth, wallet, 2),
+      ]);
       received = {
         token: at > before.token ? at - before.token : 0n,
         weth: aw > before.weth ? aw - before.weth : 0n,
@@ -129,7 +123,7 @@ async function waitForCredit(provider, { token, weth, wallet, before }, tries = 
     } catch {
       /* keep polling */
     }
-    await sleep(700);
+    if (i < tries - 1) await sleep(400);
   }
   return received;
 }
@@ -155,17 +149,28 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
     { addr: weth, key: "weth", recv: received.weth },
   ];
 
+  // Hand out nonces from one line so the two transfers broadcast back-to-back
+  // without waiting for each to mine — advance only when a broadcast succeeds so
+  // a failed slice never leaves a nonce gap that strands the next one.
+  let nonce;
+  try {
+    nonce = await signer.getNonce("pending");
+  } catch (error) {
+    return { status: "nonce-error", detail: error?.shortMessage || error?.message, opsWallet: opsTo };
+  }
+
   const transfers = [];
   for (const a of assets) {
     if (a.recv <= 0n) continue;
     // 70% landed → ESKA's cut is 10/70 of it, the creator keeps the other 60/70.
     const opsShare = (a.recv * 10n) / 70n;
-    transfers.push(
-      await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: opsTo, amount: opsShare, label: `ops:${a.key}` })
-    );
+    if (opsShare <= 0n) continue;
+    const res = await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: opsTo, amount: opsShare, label: `ops:${a.key}`, nonce });
+    transfers.push(res);
+    if (res.status === "sent") nonce++;
   }
 
-  // "sent" only if every non-zero slice actually went through.
+  // "sent" only if every non-zero slice actually broadcast.
   const attempted = transfers.filter((t) => t.status !== "skipped:zero");
   const ok = attempted.length > 0 && attempted.every((t) => t.status === "sent");
   return { status: ok ? "sent" : attempted.length ? "partial" : "nothing", opsWallet: opsTo, transfers };

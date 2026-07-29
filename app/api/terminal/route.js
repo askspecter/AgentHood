@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Contract, JsonRpcProvider, formatEther, formatUnits, getAddress, isAddress } from "ethers";
+import { Contract, formatEther, formatUnits, getAddress, isAddress } from "ethers";
 import {
   buildSendPlan,
   buildTradePlan,
@@ -14,6 +14,7 @@ import {
   looksLikeTicker,
   parseCommand,
   resolveToken,
+  rpcProvider,
   spotPrice,
   tokenMeta,
   usdToEth,
@@ -241,8 +242,9 @@ export async function POST(request) {
     });
   }
 
-  // Everything below reads the chain.
-  const provider = new JsonRpcProvider(chain.rpc, chain.chainId);
+  // Everything below reads the chain. Use the shared provider (no request
+  // batching) so the public node's batch mishandling can't drop a balance read.
+  const provider = rpcProvider(chain);
 
   let session = null;
   try {
@@ -652,23 +654,28 @@ export async function POST(request) {
         if (wethAddr && isAddress(wethAddr)) {
           const wkey = wethAddr.toLowerCase();
           if (!holdings.some((h) => (h.token || "").toLowerCase() === wkey)) {
-            try {
-              const raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
-              if (raw > 0n) {
-                const qty = Number(formatUnits(raw, 18));
-                holdings.push({
-                  token: getAddress(wethAddr),
-                  symbol: "WETH",
-                  name: "Wrapped Ether",
-                  qty,
-                  priceInWeth: 1,
-                  valueWeth: qty,
-                  valueUsd: ethUsd ? qty * ethUsd : null,
-                  launch: false,
-                });
+            // Retry: a single flaky read must not be why WETH goes missing.
+            let raw = null;
+            for (let i = 0; i < 3 && raw == null; i++) {
+              try {
+                raw = await new Contract(wethAddr, BALANCE_ABI, provider).balanceOf(owner.address);
+              } catch {
+                raw = null;
+                await new Promise((r) => setTimeout(r, 250));
               }
-            } catch {
-              /* WETH read flaked — not fatal, the rest of the portfolio stands */
+            }
+            if (raw != null && raw > 0n) {
+              const qty = Number(formatUnits(raw, 18));
+              holdings.push({
+                token: getAddress(wethAddr),
+                symbol: "WETH",
+                name: "Wrapped Ether",
+                qty,
+                priceInWeth: 1,
+                valueWeth: qty,
+                valueUsd: ethUsd ? qty * ethUsd : null,
+                launch: false,
+              });
             }
           }
         }
