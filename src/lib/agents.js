@@ -63,8 +63,10 @@ function history(seed, base = 1, changePct = 0) {
 export function tokenToAgent(t, ethUsd = null) {
   const symbol = (t.symbol || 'TOKEN').replace(/^\$/, '')
   const name = t.name || `$${symbol}`
-  const priceUsd = t.priceInWeth != null && ethUsd ? t.priceInWeth * ethUsd : null
-  const mcapUsd = t.marketCapWeth != null && ethUsd ? t.marketCapWeth * ethUsd : null
+  // Prefer the on-chain pool price; fall back to the explorer's figure when the
+  // pool read gave none (e.g. graduated coins whose liquidity has migrated).
+  const priceUsd = t.priceInWeth != null && ethUsd ? t.priceInWeth * ethUsd : (t.explorerPriceUsd ?? null)
+  const mcapUsd = t.marketCapWeth != null && ethUsd ? t.marketCapWeth * ethUsd : (t.explorerMcapUsd ?? null)
   return {
     id: t.token,
     token: t.token,
@@ -77,6 +79,7 @@ export function tokenToAgent(t, ethUsd = null) {
     mcap: mcapUsd ?? 0,
     marketCapWeth: t.marketCapWeth ?? null,
     change24: Number.isFinite(t.change24) ? t.change24 : null,
+    featured: t.featured ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
     creator: t.deployer ? short(t.deployer) : 'pons',

@@ -159,7 +159,7 @@ export default function Profile() {
       ) : (
         <div className="card overflow-hidden">
           {holdings.map((h, i) => {
-            const valueUsd = h.valueUsd ?? (h.valueWeth != null && ethUsd ? h.valueWeth * ethUsd : null)
+            const valueUsd = h.valueUsd ?? (h.valueWeth != null && rate ? h.valueWeth * rate : null)
             return (
               <Link key={h.token} to={`/trade?token=${h.token}`} className={`flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] ${i ? 'border-t hairline' : ''}`}>
                 <span className="w-9 h-9 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)]"><Coin size={18} /></span>
