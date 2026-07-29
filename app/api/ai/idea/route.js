@@ -14,7 +14,25 @@ import { NextResponse } from "next/server";
  * built-in suggestions, so the buttons always work.
  */
 
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+/**
+ * Text model config. Works with OpenAI directly or any OpenAI-compatible gateway
+ * (e.g. Bankr LLM Gateway at https://llm.bankr.bot/v1). Switch entirely via env:
+ *   AI_TEXT_BASE_URL   base, default https://api.openai.com/v1
+ *   AI_TEXT_API_KEY    the key (falls back to OPENAI_API_KEY)
+ *   AI_TEXT_MODEL      model id, default gpt-4o-mini
+ * Auth header is chosen automatically: Bankr keys (bk_…) use X-API-Key, OpenAI
+ * uses Authorization: Bearer. Force it with AI_TEXT_AUTH=x-api-key|bearer.
+ */
+function textConfig() {
+  const key = process.env.AI_TEXT_API_KEY || process.env.OPENAI_API_KEY || "";
+  const base = (process.env.AI_TEXT_BASE_URL || "https://api.openai.com/v1").replace(/\/+$/, "");
+  const model = process.env.AI_TEXT_MODEL || "gpt-4o-mini";
+  const headers = { "Content-Type": "application/json" };
+  const style = process.env.AI_TEXT_AUTH || (/^bk_/.test(key) ? "x-api-key" : "bearer");
+  if (style === "x-api-key") headers["X-API-Key"] = key;
+  else headers["Authorization"] = `Bearer ${key}`;
+  return { key, url: `${base}/chat/completions`, model, headers };
+}
 
 const SPECS = {
   name: (c) => ({
@@ -66,8 +84,8 @@ function parseList(text) {
 }
 
 export async function POST(request) {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) {
+  const cfg = textConfig();
+  if (!cfg.key) {
     return NextResponse.json({ error: "AI text is not configured.", code: "no_openai" }, { status: 503 });
   }
 
@@ -86,13 +104,13 @@ export async function POST(request) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const res = await fetch(OPENAI_URL, {
+    const res = await fetch(cfg.url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      headers: cfg.headers,
       cache: "no-store",
       signal: controller.signal,
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: cfg.model,
         temperature: 1,
         max_tokens: spec.max_tokens,
         messages: [
