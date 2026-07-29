@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { parseEther, parseUnits, isAddress } from 'ethers'
 import { useStore } from '../lib/store'
@@ -93,20 +93,45 @@ function DepositModal({ wallet, receive, onClose }) {
   )
 }
 
+const fmtQty = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 6 })
+
 function SendModal({ wallet, onClose }) {
   const [asset, setAsset] = useState('native') // 'native' | 'token'
   const [tokenAddr, setTokenAddr] = useState('')
+  const [maxQty, setMaxQty] = useState(null)
   const [to, setTo] = useState('')
   const [amount, setAmount] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [done, setDone] = useState(null)
+  const [holdings, setHoldings] = useState(null) // null = loading, [] = none
+
+  // Load the wallet's held tokens once the Token tab is opened, so the sender
+  // can pick from a list instead of pasting an address.
+  useEffect(() => {
+    if (asset !== 'token' || holdings !== null) return
+    let cancelled = false
+    fetch('/api/terminal', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ input: 'portfolio', network: 'robinhood' }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled) setHoldings(j?.data?.holdings || []) })
+      .catch(() => { if (!cancelled) setHoldings([]) })
+    return () => { cancelled = true }
+  }, [asset, holdings])
+
+  const pickToken = (h) => {
+    setTokenAddr(h.token)
+    setMaxQty(Number.isFinite(h.qty) ? h.qty : null)
+    setError(null)
+  }
 
   const submit = useCallback(async () => {
     setError(null); setDone(null)
     if (!isAddress(to)) { setError('Enter a valid recipient address.'); return }
     if (!amount || Number(amount) <= 0) { setError('Enter an amount.'); return }
-    if (asset === 'token' && !isAddress(tokenAddr)) { setError('Enter a valid token address.'); return }
+    if (asset === 'token' && !isAddress(tokenAddr)) { setError('Pick a token or paste a valid token address.'); return }
     setBusy(true)
     try {
       const amountRaw = (asset === 'native' ? parseEther(amount) : parseUnits(amount, 18)).toString()
@@ -130,18 +155,50 @@ function SendModal({ wallet, onClose }) {
             <button className={`flex-1 ${asset === 'native' ? 'on' : ''}`} onClick={() => setAsset('native')}>ETH</button>
             <button className={`flex-1 ${asset === 'token' ? 'on' : ''}`} onClick={() => setAsset('token')}>Token</button>
           </div>
+
           {asset === 'token' && (
-            <label className="block mb-3">
-              <span className="text-xs text-[var(--color-ink-soft)]">Token address</span>
-              <input value={tokenAddr} onChange={(e) => setTokenAddr(e.target.value)} placeholder="0x…" spellCheck={false} className="input mt-1" />
-            </label>
+            <div className="mb-3">
+              <span className="text-xs text-[var(--color-ink-soft)]">Your tokens</span>
+              {holdings === null ? (
+                <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">Reading your wallet…</div>
+              ) : holdings.length === 0 ? (
+                <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">No coins held — paste a token address below.</div>
+              ) : (
+                <div className="mt-1 max-h-40 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
+                  {holdings.map((h) => {
+                    const sym = (h.symbol || 'TOKEN').replace(/^\$/, '')
+                    const on = tokenAddr.toLowerCase() === String(h.token).toLowerCase()
+                    return (
+                      <button key={h.token} onClick={() => pickToken(h)}
+                        className={`w-full flex items-center justify-between gap-2 p-3 text-left transition ${on ? 'bg-[var(--color-paper-2)]' : 'hover:bg-[var(--color-paper-2)]'}`}>
+                        <span className="min-w-0">
+                          <span className="font-medium truncate">{h.name || `$${sym}`}</span>
+                          <span className="block text-xs text-[var(--color-ink-faint)] font-mono num">{fmtQty(h.qty)} ${sym}</span>
+                        </span>
+                        {on && <span className="text-[var(--color-up)] shrink-0">✓</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <label className="block mt-2">
+                <span className="text-[11px] text-[var(--color-ink-faint)]">or paste a token address</span>
+                <input value={tokenAddr} onChange={(e) => { setTokenAddr(e.target.value); setMaxQty(null) }} placeholder="0x…" spellCheck={false} className="input mt-1" />
+              </label>
+            </div>
           )}
+
           <label className="block mb-3">
             <span className="text-xs text-[var(--color-ink-soft)]">Recipient</span>
             <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="0x… address" spellCheck={false} className="input mt-1" />
           </label>
           <label className="block mb-4">
-            <span className="text-xs text-[var(--color-ink-soft)]">Amount {asset === 'native' ? '(ETH)' : ''}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-[var(--color-ink-soft)]">Amount {asset === 'native' ? '(ETH)' : ''}</span>
+              {asset === 'token' && maxQty != null && (
+                <button type="button" onClick={() => setAmount(String(maxQty))} className="text-[11px] text-[var(--color-accent)] hover:underline">Max {fmtQty(maxQty)}</button>
+              )}
+            </div>
             <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" inputMode="decimal" className="input mt-1" />
           </label>
           {error && <div className="chip chip-down w-full mb-3">{error}</div>}
