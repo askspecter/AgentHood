@@ -13,6 +13,8 @@ import Settings from './screens/Settings'
 import EditProfile from './screens/EditProfile'
 import Leaderboard from './screens/Leaderboard'
 import Referral from './screens/Referral'
+import Terms from './screens/Terms'
+import Privacy from './screens/Privacy'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -38,6 +40,8 @@ export default function App() {
             <Route path="settings/profile" element={<EditProfile />} />
             <Route path="settings/referral" element={<Referral />} />
             <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="privacy" element={<Privacy />} />
           </Route>
         </Routes>
       </BrowserRouter>
