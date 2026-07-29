@@ -16,13 +16,11 @@ export default function Settings() {
       <Section title="Account">
         <Row icon="editProfile" label="Edit profile" onClick={() => nav('/settings/profile')} />
         <Row icon="leaderboard" label="Leaderboard" onClick={() => nav('/leaderboard')} />
-        <div className="w-full flex items-center gap-3 p-4 border-b hairline flex-wrap">
-          <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)]"><RowIcon name="appearance" size={18} /></span>
-          <span className="font-medium flex-1 min-w-0">Appearance</span>
-          <div className="seg w-full sm:w-auto order-last sm:order-none grid grid-cols-3 sm:inline-flex">
-            {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize ${theme === k ? 'on' : ''}`}>{k}</button>)}
+        <Row icon="appearance" label="Appearance" right={
+          <div className="seg shrink-0">
+            {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize !px-2.5 !text-[13px] ${theme === k ? 'on' : ''}`}>{k}</button>)}
           </div>
-        </div>
+        } />
         <Row icon="gift" label="Referral code" onClick={() => nav('/settings/referral')} last />
       </Section>
 
@@ -59,8 +57,8 @@ function Row({ icon, label, right, last, onClick, href, external }) {
   const cls = `w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)] text-left transition ${last ? '' : 'border-b hairline'}`
   const inner = (
     <>
-      <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)]"><RowIcon name={icon} size={18} /></span>
-      <span className="font-medium flex-1">{label}</span>
+      <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-paper-2)] shrink-0"><RowIcon name={icon} size={18} /></span>
+      <span className="font-medium flex-1 min-w-0 truncate">{label}</span>
       {right ?? <Chevron />}
     </>
   )
