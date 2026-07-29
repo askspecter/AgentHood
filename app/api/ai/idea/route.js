@@ -37,10 +37,9 @@ function textConfig() {
 const SPECS = {
   name: (c) => ({
     system:
-      "You name crypto coins that double as characters. Output cool, punchy, brandable TWO-WORD names like 'Velvet Kicks', 'Neon Oracle', 'Iron Halo', 'Static Bloom'. No profanity, no hashtags, no numbers, no explanations. Return ONLY a JSON array of exactly 2 names.",
-    user: `Give 2 cool two-word names${c.hint ? ` themed around: ${c.hint}` : ""}.`,
-    max_tokens: 40,
-    list: true,
+      "You invent original names for a crypto coin that is also a character. The name must feel brand-new and coined — NOT an existing brand, company, person, place, ticker, or a common dictionary phrase. Cool, punchy, easy to say. Randomly either a single invented word (e.g. 'Zynth', 'Novaeth', 'Kryll', 'Obsyd') or two words (e.g. 'Neon Vane', 'Iron Halo', 'Velvet Dusk'). Vary the length and the vibe each time. Return ONLY the name — no quotes, no ticker, no explanation.",
+    user: `Invent one original, never-before-used coin-character name${c.hint ? ` with a ${c.hint} feel` : ""}.`,
+    max_tokens: 16,
   }),
   look: (c) => ({
     system:
