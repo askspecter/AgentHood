@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import { Gear, XGlyph, Coin, Verified } from '../components/icons'
 import CharmAvatar from '../components/CharmAvatar'
 import WalletActions from '../components/WalletActions'
+import { primeHoldings } from '../lib/holdings'
 
 /**
  * Portfolio — real, on-chain.
@@ -82,6 +83,7 @@ export default function Profile() {
         setFolio(json.data)
         setFolioEthUsd(json.ethUsd ?? null)
         if (json.data.address) setAddress(json.data.address)
+        primeHoldings(json.data.holdings || []) // warm the Send/Trade pickers
       }
     } catch {
       /* the balance above still shows; holdings just stay empty */

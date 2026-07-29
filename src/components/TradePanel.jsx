@@ -26,7 +26,7 @@ function EthMark({ size = 22 }) {
   )
 }
 
-export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false, bare = false }) {
+export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false, bare = false, onDone }) {
   const { wallet, connect, ethUsd } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, '') } : null
 
@@ -108,7 +108,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       })
       const j = await res.json()
       if (!res.ok) setError(friendly(j.hint ? `${j.error} ${j.hint}` : j.error) || 'The trade failed.')
-      else setDone({ hash: j.hash })
+      else { setDone({ hash: j.hash }); onDone?.() }
       setStatus(null)
     } catch { setError('The trade failed.'); setStatus(null) } finally { setBusy(false) }
   }, [user, quote, tradeable, tok, side, slippage])

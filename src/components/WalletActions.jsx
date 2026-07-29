@@ -2,14 +2,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { parseEther, parseUnits, isAddress } from 'ethers'
 import { useStore } from '../lib/store'
+import { cachedHoldings, loadHoldings, invalidateHoldings } from '../lib/holdings'
 import TradePanel from './TradePanel'
+import CharmAvatar from './CharmAvatar'
+import { Coin } from './icons'
 
 /**
  * Portfolio quick actions — Receive · Send · Trade.
  *
  * Real, on the X-derived wallet: Receive shows the deposit address, Send moves
  * ETH or a token out via /api/terminal/send (signed server-side), and Trade
- * opens the pons-style swap sheet for any coin.
+ * opens the pons-style swap sheet — with a picker of every coin you hold so you
+ * can trade one in a tap, or paste any Robinhood Chain address to trade it.
  */
 export default function WalletActions() {
   const { wallet } = useStore()
@@ -38,11 +42,7 @@ export default function WalletActions() {
 
       {modal === 'receive' && <DepositModal wallet={wallet} receive onClose={() => setModal(null)} />}
       {modal === 'send' && <SendModal wallet={wallet} onClose={() => setModal(null)} />}
-      {modal === 'trade' && (
-        <Overlay onClose={() => setModal(null)} title="Trade">
-          <TradePanel editableToken bare />
-        </Overlay>
-      )}
+      {modal === 'trade' && <TradeModal wallet={wallet} onClose={() => setModal(null)} />}
     </>
   )
 }
@@ -95,6 +95,83 @@ function DepositModal({ wallet, receive, onClose }) {
 
 const fmtQty = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 6 })
 
+/**
+ * A tappable list of every coin the wallet holds, loaded fast from the shared
+ * cache (instant on a second open) with a background rescan. Reused by Send and
+ * Trade so both feel the same and neither pays for the scan twice.
+ */
+function HeldTokenPicker({ selected, onPick }) {
+  const [holdings, setHoldings] = useState(() => cachedHoldings()) // instant if warm
+  useEffect(() => loadHoldings(setHoldings), [])
+
+  const sel = String(selected || '').toLowerCase()
+  return (
+    <div>
+      <span className="text-xs text-[var(--color-ink-soft)]">Your coins</span>
+      {holdings === null ? (
+        <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">Reading your wallet…</div>
+      ) : holdings.length === 0 ? (
+        <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">No coins held — paste an address below.</div>
+      ) : (
+        <div className="mt-1 max-h-44 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
+          {holdings.map((h) => {
+            const sym = (h.symbol || 'TOKEN').replace(/^\$/, '')
+            const on = sel === String(h.token).toLowerCase()
+            return (
+              <button key={h.token} onClick={() => onPick(h)}
+                className={`w-full flex items-center justify-between gap-2 p-3 text-left transition ${on ? 'bg-[var(--color-paper-2)]' : 'hover:bg-[var(--color-paper-2)]'}`}>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-8 h-8 grid place-items-center rounded-full panel-soft text-[var(--color-ink-soft)] shrink-0"><Coin size={15} /></span>
+                  <span className="min-w-0">
+                    <span className="block font-medium truncate">{h.name || `$${sym}`}</span>
+                    <span className="block text-xs text-[var(--color-ink-faint)] font-mono num truncate">{fmtQty(h.qty)} ${sym}</span>
+                  </span>
+                </span>
+                {on && <span className="text-[var(--color-up)] shrink-0">✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * Trade sheet — pick a held coin (or paste any Robinhood Chain address) and the
+ * pons-style swap opens right under it. This is the whole "tap a coin, trade it"
+ * flow the portfolio wanted, without leaving the wallet.
+ */
+function TradeModal({ wallet, onClose }) {
+  const [sel, setSel] = useState(null) // { token, symbol, name } | null
+  const [paste, setPaste] = useState('')
+  const token = sel?.token || (isAddress(paste.trim()) ? paste.trim() : '')
+
+  return (
+    <Overlay onClose={onClose} title="Trade">
+      {!wallet ? (
+        <p className="text-sm text-[var(--color-ink-soft)]">Sign in with X first.</p>
+      ) : (
+        <>
+          <HeldTokenPicker selected={token} onPick={(h) => { setSel(h); setPaste('') }} />
+          <label className="block mt-2">
+            <span className="text-[11px] text-[var(--color-ink-faint)]">or paste any coin address to trade</span>
+            <input value={paste} onChange={(e) => { setPaste(e.target.value); setSel(null) }} placeholder="0x…" spellCheck={false} className="input mt-1" />
+          </label>
+
+          {isAddress(token) ? (
+            <div className="mt-4 pt-4 border-t hairline">
+              <TradePanel token={token} symbol={sel?.symbol} name={sel?.name} bare onDone={invalidateHoldings} />
+            </div>
+          ) : (
+            <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-4">Pick a coin above, or paste an address — you can trade any token on Robinhood Chain.</p>
+          )}
+        </>
+      )}
+    </Overlay>
+  )
+}
+
 function SendModal({ wallet, onClose }) {
   const [asset, setAsset] = useState('native') // 'native' | 'token'
   const [tokenAddr, setTokenAddr] = useState('')
@@ -104,22 +181,6 @@ function SendModal({ wallet, onClose }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [done, setDone] = useState(null)
-  const [holdings, setHoldings] = useState(null) // null = loading, [] = none
-
-  // Load the wallet's held tokens once the Token tab is opened, so the sender
-  // can pick from a list instead of pasting an address.
-  useEffect(() => {
-    if (asset !== 'token' || holdings !== null) return
-    let cancelled = false
-    fetch('/api/terminal', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: 'portfolio', network: 'robinhood' }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled) setHoldings(j?.data?.holdings || []) })
-      .catch(() => { if (!cancelled) setHoldings([]) })
-    return () => { cancelled = true }
-  }, [asset, holdings])
 
   const pickToken = (h) => {
     setTokenAddr(h.token)
@@ -139,7 +200,7 @@ function SendModal({ wallet, onClose }) {
       const res = await fetch('/api/terminal/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const j = await res.json()
       if (!res.ok) setError(j.error || 'The send failed.')
-      else setDone({ hash: j.hash })
+      else { invalidateHoldings(); setDone({ hash: j.hash }) }
     } catch { setError('The send failed.') } finally { setBusy(false) }
   }, [asset, tokenAddr, to, amount])
 
@@ -158,29 +219,7 @@ function SendModal({ wallet, onClose }) {
 
           {asset === 'token' && (
             <div className="mb-3">
-              <span className="text-xs text-[var(--color-ink-soft)]">Your tokens</span>
-              {holdings === null ? (
-                <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">Reading your wallet…</div>
-              ) : holdings.length === 0 ? (
-                <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">No coins held — paste a token address below.</div>
-              ) : (
-                <div className="mt-1 max-h-40 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
-                  {holdings.map((h) => {
-                    const sym = (h.symbol || 'TOKEN').replace(/^\$/, '')
-                    const on = tokenAddr.toLowerCase() === String(h.token).toLowerCase()
-                    return (
-                      <button key={h.token} onClick={() => pickToken(h)}
-                        className={`w-full flex items-center justify-between gap-2 p-3 text-left transition ${on ? 'bg-[var(--color-paper-2)]' : 'hover:bg-[var(--color-paper-2)]'}`}>
-                        <span className="min-w-0">
-                          <span className="font-medium truncate">{h.name || `$${sym}`}</span>
-                          <span className="block text-xs text-[var(--color-ink-faint)] font-mono num">{fmtQty(h.qty)} ${sym}</span>
-                        </span>
-                        {on && <span className="text-[var(--color-up)] shrink-0">✓</span>}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              <HeldTokenPicker selected={tokenAddr} onPick={pickToken} />
               <label className="block mt-2">
                 <span className="text-[11px] text-[var(--color-ink-faint)]">or paste a token address</span>
                 <input value={tokenAddr} onChange={(e) => { setTokenAddr(e.target.value); setMaxQty(null) }} placeholder="0x…" spellCheck={false} className="input mt-1" />
@@ -210,7 +249,6 @@ function SendModal({ wallet, onClose }) {
   )
 }
 
-function PlusIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg> }
 function ReceiveIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v12M6 11l6 6 6-6" /><path d="M5 20h14" /></svg> }
 function SendIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 3L10 14M21 3l-7 18-4-7-7-4z" /></svg> }
 function TradeIcon() { return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8h13l-3-3M20 16H7l3 3" /></svg> }

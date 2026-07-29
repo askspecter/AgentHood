@@ -95,6 +95,7 @@ export async function GET(request) {
         raw: raw.toString(),
         formatted: formatUnits(raw, meta.decimals),
         symbol: meta.symbol,
+        name: meta.name || null,
         decimals: meta.decimals,
       };
     } catch {
