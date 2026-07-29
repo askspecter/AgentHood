@@ -46,6 +46,17 @@ export default function CreatorFees({ token, symbol }) {
     ...(s.eska ? [`${s.ops}% ESKA`] : []),
   ]
 
+  // Always show what's claimable — the token and the WETH side — even when it's
+  // zero, so the creator sees the two amounts rather than a blank panel. Real
+  // figures overlay these once the live read lands.
+  const rows =
+    Array.isArray(fees?.accrued) && fees.accrued.length > 0
+      ? fees.accrued
+      : [
+          { symbol: (symbol || 'TOKEN').replace(/^\$/, ''), amount: 0, usd: null },
+          { symbol: 'WETH', amount: 0, usd: null },
+        ]
+
   const claim = async () => {
     setBusy(true); setMsg(null); setTxHash(null)
     try {
@@ -77,20 +88,18 @@ export default function CreatorFees({ token, symbol }) {
         </div>
       </div>
 
-      {/* accrued fees — read live, pons-style */}
-      {Array.isArray(fees?.accrued) && fees.accrued.length > 0 && (
-        <div className="mt-4 space-y-2">
-          {fees.accrued.map((a) => (
-            <div key={a.symbol} className="flex items-center justify-between p-3 rounded-xl panel-soft">
-              <div>
-                <div className="eyebrow">Accrued {a.symbol}</div>
-                <div className="font-mono num text-lg mt-0.5">{fmtAmt(a.amount)}</div>
-              </div>
-              {a.usd != null && <div className="font-mono num text-sm text-[var(--color-ink-soft)]">{fmtUsd(a.usd)}</div>}
+      {/* accrued fees — read live, pons-style. Shown even at zero. */}
+      <div className="mt-4 space-y-2">
+        {rows.map((a) => (
+          <div key={a.symbol} className="flex items-center justify-between p-3 rounded-xl panel-soft">
+            <div>
+              <div className="eyebrow">Accrued {a.symbol}</div>
+              <div className="font-mono num text-lg mt-0.5">{fmtAmt(a.amount)}</div>
             </div>
-          ))}
-        </div>
-      )}
+            {a.usd != null && <div className="font-mono num text-sm text-[var(--color-ink-soft)]">{fmtUsd(a.usd)}</div>}
+          </div>
+        ))}
+      </div>
 
       <div className="mt-4 text-sm text-[var(--color-ink-soft)] font-mono num">{parts.join(' · ')}</div>
 

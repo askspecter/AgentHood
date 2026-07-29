@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Interface, JsonRpcProvider, formatUnits, getAddress, isAddress } from "ethers";
+import { Interface, formatUnits, getAddress, isAddress } from "ethers";
 import {
   deriveSigner,
   deriveAddress,
@@ -8,6 +8,7 @@ import {
   fetchFactoryAbi,
   tokenBalance,
   erc20Iface,
+  rpcProvider,
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { eskaCutEnabled, opsWallet } from "@/lib/fees";
@@ -184,7 +185,7 @@ export async function POST(request) {
   const args = (claimFn.inputs || []).map((i) => (i.type === "address" ? (i === claimFn.inputs[0] ? token : wallet) : 0));
   const data = iface.encodeFunctionData(claimFn.name, args);
 
-  const provider = new JsonRpcProvider(chain.rpc, chain.chainId, { staticNetwork: true });
+  const provider = rpcProvider(chain);
 
   // The ESKA split re-splits what the claim pays, so measure the balances before
   // claiming. If we can't read them we don't skim — the creator keeps everything.

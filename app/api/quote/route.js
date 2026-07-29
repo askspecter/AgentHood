@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
-import { Contract, JsonRpcProvider, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
-import { getChain, quote as quoteSwap } from "@/lib/engine";
+import { Contract, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
+import { getChain, quote as quoteSwap, rpcProvider } from "@/lib/engine";
+
+/** An RPC hiccup (rate-limit, batch coalesce, timeout) — not a real revert. */
+const RPC_NOISE = /coalesce|UNKNOWN_ERROR|rate.?limit|429|503|timeout|ETIMEDOUT|ECONN|fetch failed|server response|SERVER_ERROR/i;
 
 /**
  * POST /api/quote  { token, side: "buy"|"sell", amount, network }
@@ -40,7 +43,7 @@ export async function POST(request) {
   }
 
   try {
-    const provider = new JsonRpcProvider(chain.rpc, chain.chainId);
+    const provider = rpcProvider(chain);
 
     let decimals = 18;
     let symbol = "TOKEN";
@@ -65,6 +68,19 @@ export async function POST(request) {
     });
 
     if (!result.ok) {
+      // Tell an RPC hiccup apart from a real "the pool refuses this trade". The
+      // public node rate-limits, and ethers reports that as "could not coalesce
+      // error" — which is retryable, not a honeypot. Don't cry wolf on a sell.
+      if (RPC_NOISE.test(result.reason || "")) {
+        return NextResponse.json(
+          {
+            error: "The network node is busy right now — try again in a moment.",
+            hint: "This is a temporary RPC hiccup, not a problem with the token.",
+            retryable: true,
+          },
+          { status: 503 }
+        );
+      }
       return NextResponse.json(
         {
           error: `The pool could not quote this trade: ${result.reason}`,

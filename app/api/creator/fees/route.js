@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { Contract, Interface, JsonRpcProvider, formatUnits, getAddress, isAddress } from "ethers";
-import { deriveAddress, getChain, listLaunched, fetchFactoryAbi, getEthUsd, spotPrice } from "@/lib/engine";
+import { Contract, Interface, formatUnits, getAddress, isAddress } from "ethers";
+import { deriveAddress, getChain, listLaunched, fetchFactoryAbi, getEthUsd, spotPrice, rpcProvider } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 
 /**
@@ -75,7 +75,7 @@ export async function GET(request) {
     const claimFn = findClaim(abi);
     if (!claimFn) return NextResponse.json({ accrued: null });
 
-    const provider = new JsonRpcProvider(chain.rpc, chain.chainId, { staticNetwork: true });
+    const provider = rpcProvider(chain);
     const iface = new Interface([claimFn]);
     const args = (claimFn.inputs || []).map((i, idx) => (i.type === "address" ? (idx === 0 ? token : wallet) : 0));
     const data = iface.encodeFunctionData(claimFn.name, args);
