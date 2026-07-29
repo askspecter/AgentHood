@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
+import { persistImage } from "@/lib/logostore";
 
 /**
  * POST /api/ai/image  { prompt }
  *
  * Generates a coin avatar/logo from a text prompt with FLUX.1 [schnell] on
- * fal.ai (fast, few-step model). The FAL_KEY stays on the server. Returns the
- * generated image URL, which the Launch flow uses as the coin's logo.
+ * fal.ai (fast, few-step model). The FAL_KEY stays on the server. The generated
+ * image is then stored durably in Vercel KV so the coin's on-chain logo points
+ * at a stable URL we host — not fal's temporary one — and that URL is returned.
  *
- * If FAL_KEY isn't set, returns 503 and the client keeps its procedural avatar,
- * so the flow never breaks.
+ * If FAL_KEY isn't set, returns 503 and the client keeps its procedural avatar.
+ * If KV isn't set, it falls back to returning fal's URL directly.
  */
 
 const FAL_URL = "https://fal.run/fal-ai/flux/schnell";
@@ -54,9 +56,21 @@ export async function POST(request) {
       return NextResponse.json({ error: "Image generation failed.", detail }, { status: 502 });
     }
     const json = await res.json();
-    const url = json?.images?.[0]?.url || null;
-    if (!url) return NextResponse.json({ error: "No image returned." }, { status: 502 });
-    return NextResponse.json({ url });
+    const falUrl = json?.images?.[0]?.url || null;
+    if (!falUrl) return NextResponse.json({ error: "No image returned." }, { status: 502 });
+
+    // Persist to KV so the on-chain logo is a permanent, self-hosted URL. If KV
+    // isn't configured we fall back to fal's temporary URL rather than failing.
+    let url = falUrl, stored = false;
+    try {
+      const { path } = await persistImage(falUrl);
+      const origin = process.env.PUBLIC_ORIGIN || new URL(request.url).origin;
+      url = `${origin}${path}`;
+      stored = true;
+    } catch {
+      /* keep falUrl — display still works, on-chain persistence just needs KV */
+    }
+    return NextResponse.json({ url, stored });
   } catch {
     return NextResponse.json({ error: "Image generation failed." }, { status: 502 });
   } finally {
