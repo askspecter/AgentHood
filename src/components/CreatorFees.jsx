@@ -65,7 +65,18 @@ export default function CreatorFees({ token, symbol }) {
         body: JSON.stringify({ token, network: NETWORK }),
       })
       const j = await res.json()
-      if (res.ok && j.ok) { setTxHash(j.hash); setMsg({ ok: true, text: 'Fees claimed to your wallet.' }); loadFees() }
+      if (res.ok && j.ok) {
+        setTxHash(j.hash)
+        let text = 'Fees claimed to your wallet.'
+        let good = true
+        if (j.split) {
+          const st = j.distribution?.status
+          if (st === 'sent') text = `Fees claimed — ESKA's ${j.split.ops}% was sent to the ops wallet.`
+          else { good = false; text = `Fees claimed to your wallet, but ESKA's ${j.split.ops}% didn't send: ${j.distribution?.note || 'try again in a moment.'}` }
+        }
+        setMsg({ ok: good, text })
+        loadFees()
+      }
       else setMsg({ ok: false, text: j.error || 'Could not claim right now.' })
     } catch {
       setMsg({ ok: false, text: 'Could not reach the claim service.' })

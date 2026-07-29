@@ -79,6 +79,48 @@ async function transferSlice({ provider, signer, from, asset, to, amount, label 
   }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Read an ERC-20 balance, retrying a flaky RPC rather than throwing on the first blip. */
+async function readBalRetry(provider, asset, owner, tries = 4) {
+  let last;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await tokenBalance(provider, asset, owner);
+    } catch (error) {
+      last = error;
+      await sleep(300);
+    }
+  }
+  throw last;
+}
+
+/**
+ * How much the claim actually credited the creator's wallet (token + WETH),
+ * measured against the pre-claim baseline. After tx.wait() a load-balanced RPC
+ * can still serve a stale balance from a lagging node, so poll a few times until
+ * the credit appears rather than reading once and giving up (which used to make
+ * the skim see "nothing received" and quietly skip).
+ */
+async function waitForCredit(provider, { token, weth, wallet, before }, tries = 6) {
+  let received = { token: 0n, weth: 0n };
+  for (let i = 0; i < tries; i++) {
+    try {
+      const at = await readBalRetry(provider, token, wallet);
+      const aw = await readBalRetry(provider, weth, wallet);
+      received = {
+        token: at > before.token ? at - before.token : 0n,
+        weth: aw > before.weth ? aw - before.weth : 0n,
+      };
+      if (received.token > 0n || received.weth > 0n) return received;
+    } catch {
+      /* keep polling */
+    }
+    await sleep(700);
+  }
+  return received;
+}
+
 /**
  * Skim ESKA's 10% out of the ~70% that just landed in the creator's wallet, to
  * the ops wallet. `received` is the measured balance delta (raw units) for the
@@ -89,7 +131,7 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
   try {
     opsTo = getAddress(opsWallet());
   } catch (error) {
-    return { error: "split-config", detail: error?.message };
+    return { status: "config-error", detail: error?.message };
   }
 
   const signer = deriveSigner(xUserId, chain);
@@ -110,7 +152,10 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
     );
   }
 
-  return { opsWallet: opsTo, transfers };
+  // "sent" only if every non-zero slice actually went through.
+  const attempted = transfers.filter((t) => t.status !== "skipped:zero");
+  const ok = attempted.length > 0 && attempted.every((t) => t.status === "sent");
+  return { status: ok ? "sent" : attempted.length ? "partial" : "nothing", opsWallet: opsTo, transfers };
 }
 
 export async function POST(request) {
@@ -187,20 +232,28 @@ export async function POST(request) {
 
   const provider = rpcProvider(chain);
 
-  // The ESKA split re-splits what the claim pays, so measure the balances before
-  // claiming. If we can't read them we don't skim — the creator keeps everything.
+  // The ESKA split skims a slice of what the claim credits the creator's wallet,
+  // so read the baseline BEFORE claiming — with retries, so a transient RPC blip
+  // can't silently disable the split. If it genuinely can't be read, refuse to
+  // claim yet (fail closed) rather than pay the creator their full 70% and leave
+  // ESKA's slice stranded with no way to recover it.
   const weth = chain.pons?.weth;
   const doSplit = eskaCutEnabled() && weth && isAddress(weth);
   let before = null;
   if (doSplit) {
     try {
-      const [bt, bw] = await Promise.all([
-        tokenBalance(provider, token, wallet),
-        tokenBalance(provider, weth, wallet),
-      ]);
-      before = { token: bt, weth: bw };
+      before = {
+        token: await readBalRetry(provider, token, wallet),
+        weth: await readBalRetry(provider, weth, wallet),
+      };
     } catch {
-      before = null;
+      return NextResponse.json(
+        {
+          error: "The network is busy, so the ESKA split couldn't be prepared. Nothing was claimed — try again in a moment.",
+          retryable: true,
+        },
+        { status: 503 }
+      );
     }
   }
 
@@ -229,25 +282,31 @@ export async function POST(request) {
     return NextResponse.json({ error: error?.shortMessage || error?.message || "The claim failed to send." }, { status: 502 });
   }
 
-  // Re-split the creator share once it has landed (ESKA_FEE_SPLIT=on only).
+  // Skim ESKA's 10% once the fees have landed (ESKA_FEE_SPLIT=on only). Poll for
+  // the credited amount first to beat read-after-write lag. Best effort: the
+  // claim already paid the creator, so a skim problem never fails it — it's
+  // reported as pending so the UI can show it plainly instead of hiding it.
   let distribution = null;
   if (doSplit && before) {
     try {
-      const [at, aw] = await Promise.all([
-        tokenBalance(provider, token, wallet),
-        tokenBalance(provider, weth, wallet),
-      ]);
-      const received = {
-        token: at > before.token ? at - before.token : 0n,
-        weth: aw > before.weth ? aw - before.weth : 0n,
-      };
+      const received = await waitForCredit(provider, { token, weth, wallet, before });
       if (received.token > 0n || received.weth > 0n) {
         distribution = await skimEskaSplit({ chain, xUserId: session.id, wallet, token, weth, received });
         distribution.received = { token: received.token.toString(), weth: formatUnits(received.weth, 18) };
+      } else {
+        distribution = {
+          status: "pending",
+          note: "Couldn't confirm the claimed amount in time, so ESKA's 10% wasn't sent.",
+          opsWallet: opsWallet(),
+        };
       }
     } catch (error) {
-      // The claim already succeeded and paid the creator — never fail it on skim.
-      distribution = { error: "split-skim", detail: error?.shortMessage || error?.message };
+      distribution = {
+        status: "pending",
+        note: "ESKA's 10% couldn't be sent.",
+        detail: error?.shortMessage || error?.message,
+        opsWallet: opsWallet(),
+      };
     }
   }
 
