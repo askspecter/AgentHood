@@ -83,7 +83,7 @@ export default function CharmDetail() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="font-serif text-3xl">{charm.name}</h1>
-              <Verified size={16} />
+              <Verified size={16} gold={charm.official} />
               <span className="font-mono text-sm text-[var(--color-ink-faint)]">${charm.ticker}</span>
               {grad === true && <span className="chip chip-up">Graduated</span>}
             </div>

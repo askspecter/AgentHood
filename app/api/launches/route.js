@@ -315,6 +315,10 @@ export async function GET(request) {
     for (const e of registry.entries || []) {
       if (e?.token && e?.xUsername) handleByToken.set(String(e.token).toLowerCase(), e.xUsername);
     }
+    // The official ($ESKA) token, so the client can gold-check it.
+    const officialSet = new Set(
+      (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
+    );
 
     const seeds = [
       ...FEATURED_PONS,
@@ -370,10 +374,12 @@ export async function GET(request) {
       for (const l of extra) l.featured = false;
 
       launches = [...featured, ...extra];
-      // Credit the launcher's X handle where we know it.
+      // Credit the launcher's X handle where we know it; flag the official token.
       for (const l of launches) {
-        const h = handleByToken.get((l.token || "").toLowerCase());
+        const k = (l.token || "").toLowerCase();
+        const h = handleByToken.get(k);
         if (h) l.xUsername = h;
+        if (officialSet.has(k)) l.official = true;
       }
       const shown = launches.slice(0, 24);
       await Promise.all([

@@ -111,7 +111,7 @@ function GridCard({ charm, price }) {
 
       <div className="flex items-center gap-1.5 min-w-0 max-w-full">
         <span className="font-semibold truncate">{charm.name}</span>
-        <Verified size={13} />
+        <Verified size={13} gold={charm.official} />
       </div>
       <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
 
