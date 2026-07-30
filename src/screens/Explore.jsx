@@ -24,7 +24,10 @@ const TABS = [
 // Rank by the real on-chain market cap (in WETH), which — unlike the USD `mcap`
 // — is present even when the ETH/USD rate is missing, so the order never
 // collapses to "newest coin with any non-zero number first".
-const capOf = (c) => (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0)
+// Rank by USD market cap — it carries the explorer fallback, so a big coin like
+// PONS keeps its real $40M rank even when the on-chain WETH cap failed to read
+// and would otherwise sink below fresh launches.
+const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
 // Top: the official token ($ESKA) is the hero, then established (featured) coins,
 // then by cap — so the pin always leads and known coins never get demoted below
 // a fresh launch that read a stray cap.

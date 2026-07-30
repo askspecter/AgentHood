@@ -56,9 +56,14 @@ async function attachChange24(provider, launches, concurrency = 5) {
  * nothing gets a name or price. Running a few at a time keeps every read under
  * the limit, so they actually return.
  */
-async function enrichBounded(provider, chain, addresses, concurrency = 4) {
+async function enrichBounded(provider, chain, addresses, concurrency = 4, deadlineMs = 0) {
   const out = [];
+  const start = Date.now();
   for (let i = 0; i < addresses.length; i += concurrency) {
+    // Stop enriching once the budget is spent — a slow/rate-limited node must not
+    // drag the whole feed. Curated coins missing from `out` get a stub + explorer
+    // price below, so the feed stays complete and fast.
+    if (deadlineMs && Date.now() - start > deadlineMs) break;
     const batch = addresses.slice(i, i + concurrency);
     const results = await Promise.all(
       batch.map((token) => enrichLaunch(provider, chain, { token }).catch(() => null))
@@ -359,7 +364,13 @@ export async function GET(request) {
 
     let launches = [];
     if (picked.length) {
-      const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 5));
+      const enriched = await enrichBounded(
+        provider,
+        chain,
+        picked,
+        Number(process.env.PONS_ENRICH_CONCURRENCY || 5),
+        Number(process.env.PONS_ENRICH_DEADLINE_MS || 4000)
+      );
       // Always show curated featured coins AND anything launched through ESKA —
       // the latter so a creator's brand-new coin appears even before it has a
       // priced pool. Everything else must earn its place with real liquidity.
@@ -422,13 +433,20 @@ export async function GET(request) {
       ]);
 
       // Keep the feed stable: fill gaps from the last good read and don't let an
-      // always-shown coin vanish on a transient miss. Then re-rank.
+      // always-shown coin vanish on a transient miss. Then re-rank by USD market
+      // cap, falling back to the explorer's figure — so a big coin like PONS
+      // still ranks by its real $40M even when the on-chain price read failed and
+      // it would otherwise sink below fresh ESKA launches.
       launches = stabilize(network, launches, alwaysShow);
+      const mcapUsd = (l) => {
+        const onchain = Number.isFinite(l.marketCapWeth) && rate?.usd ? l.marketCapWeth * rate.usd : 0;
+        return onchain > 0 ? onchain : Number(l.explorerMcapUsd) || 0;
+      };
       launches.sort(
         (a, b) =>
           (Number(Boolean(b.official)) - Number(Boolean(a.official))) ||
           (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) ||
-          ((b.marketCapWeth || 0) - (a.marketCapWeth || 0))
+          (mcapUsd(b) - mcapUsd(a))
       );
     }
 
