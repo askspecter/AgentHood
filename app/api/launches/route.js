@@ -103,6 +103,19 @@ const FEATURED_PONS = [
   "0xC9E7C34fa156a235e8B8601171a543bc9c84a1B9", // TAMPONS
 ];
 
+// Known symbols for the curated coins, paired to the list above by order. Used
+// as a fallback so a featured coin still shows when the RPC is too rate-limited
+// to read its symbol on-chain — otherwise the whole featured row thins out to
+// almost nothing whenever the public node is busy.
+const FEATURED_SYMBOL_LIST = [
+  "PONS", "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
+  "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS",
+];
+const KNOWN_SYMBOLS = Object.fromEntries(
+  FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
+);
+KNOWN_SYMBOLS["0x0eb9960654d3661d551a4536d7d425184ec81756"] = "ESKA"; // official $ESKA
+
 /**
  * Discover launch token addresses from the block explorer's own index.
  *
@@ -356,11 +369,32 @@ export async function GET(request) {
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
-      // Featured / launched-here coins always show (even if a price read failed
-      // this cycle), as long as they read as a token at all. Ranked by market cap.
+      // Featured / launched-here coins always show — even if BOTH the price and
+      // the symbol read failed this cycle (a rate-limited node). A missing symbol
+      // is backfilled from the known list so the coin never silently drops out.
       const featured = enriched
-        .filter((l) => alwaysShow.has((l.token || "").toLowerCase()) && (l.symbol || l.name))
+        .filter((l) => alwaysShow.has((l.token || "").toLowerCase()))
+        .map((l) => {
+          if (!l.symbol && !l.name) {
+            const s = KNOWN_SYMBOLS[(l.token || "").toLowerCase()];
+            if (s) { l.symbol = s; l.name = s; }
+          }
+          return l;
+        })
         .sort(byMcap);
+      // A curated coin whose enrich threw ENTIRELY (rate-limited node) is missing
+      // from `enriched` — add a minimal stub so it still shows. stabilize() then
+      // fills its price/mcap from the last good read, and the final sort places it.
+      const have = new Set(featured.map((l) => (l.token || "").toLowerCase()));
+      for (const addr of alwaysShow) {
+        if (have.has(addr)) continue;
+        const sym = KNOWN_SYMBOLS[addr] || null;
+        try {
+          featured.push({ token: getAddress(addr), symbol: sym, name: sym, marketCapWeth: null });
+        } catch {
+          /* skip a malformed curated address */
+        }
+      }
       // Auto-discovered coins must be real pons launches with a priced pool, so
       // no-liquidity spam and non-pons ERC-20s are dropped.
       const extra = enriched
