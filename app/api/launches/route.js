@@ -390,7 +390,12 @@ export async function GET(request) {
       // Keep the feed stable: fill gaps from the last good read and don't let an
       // always-shown coin vanish on a transient miss. Then re-rank.
       launches = stabilize(network, launches, alwaysShow);
-      launches.sort((a, b) => (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) || ((b.marketCapWeth || 0) - (a.marketCapWeth || 0)));
+      launches.sort(
+        (a, b) =>
+          (Number(Boolean(b.official)) - Number(Boolean(a.official))) ||
+          (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) ||
+          ((b.marketCapWeth || 0) - (a.marketCapWeth || 0))
+      );
     }
 
     const value = serialise({

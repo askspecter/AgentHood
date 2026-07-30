@@ -25,9 +25,13 @@ const TABS = [
 // — is present even when the ETH/USD rate is missing, so the order never
 // collapses to "newest coin with any non-zero number first".
 const capOf = (c) => (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0)
-// Top: established (featured) coins first, then by cap — so PONS and the other
-// known coins never get demoted below a fresh launch that read a stray cap.
-const byTop = (a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || capOf(b) - capOf(a)
+// Top: the official token ($ESKA) is the hero, then established (featured) coins,
+// then by cap — so the pin always leads and known coins never get demoted below
+// a fresh launch that read a stray cap.
+const byTop = (a, b) =>
+  (b.official ? 1 : 0) - (a.official ? 1 : 0) ||
+  (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+  capOf(b) - capOf(a)
 // New: freshly-discovered (non-featured) launches first, then by cap.
 const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
 
