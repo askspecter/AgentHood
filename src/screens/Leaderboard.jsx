@@ -44,18 +44,26 @@ export default function Leaderboard() {
   const [tab, setTab] = useState('creator')
   const [data, setData] = useState({}) // board -> { loading, rows }
 
+  // Fetch the active board. Depends on `tab` ONLY — not `data`: with `data` in
+  // the deps, setData(loading) re-triggered the effect, whose cleanup cancelled
+  // the in-flight fetch, so the result was always discarded and the board hung
+  // on skeletons forever. Now the fetch runs to completion.
   useEffect(() => {
-    if (data[tab]) return
     let cancelled = false
-    setData((d) => ({ ...d, [tab]: { loading: true, rows: [] } }))
-    fetch(`/api/leaderboard?board=${tab}&network=${NETWORK}`)
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), 14000) // never hang on skeletons
+    // Keep any prior rows visible while refreshing; only show skeletons first time.
+    setData((d) => (d[tab] ? d : { ...d, [tab]: { loading: true, rows: [] } }))
+    fetch(`/api/leaderboard?board=${tab}&network=${NETWORK}`, { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: Array.isArray(j?.rows) ? j.rows : [], kv: j?.kv } })) })
-      .catch(() => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: [] } })) })
-    return () => { cancelled = true }
-  }, [tab, data])
+      .then((j) => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: Array.isArray(j?.rows) ? j.rows : [], kv: j?.kv, error: !j } })) })
+      .catch(() => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: [], error: true } })) })
+      .finally(() => clearTimeout(timer))
+    return () => { cancelled = true; clearTimeout(timer); ctrl.abort() }
+  }, [tab])
 
   const cur = data[tab]
+  const retry = () => setData((d) => { const n = { ...d }; delete n[tab]; return n })
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -78,6 +86,12 @@ export default function Leaderboard() {
         <div className="space-y-2">
           {cur.rows.map((r) => <Row key={r.rank} board={tab} row={r} />)}
           <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">{FOOTNOTE[tab]}</p>
+        </div>
+      ) : cur.error ? (
+        <div className="card text-center py-14 px-6">
+          <h3 className="font-serif text-2xl mb-1">Couldn’t load the board</h3>
+          <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-5">The network was slow just now. Give it another try.</p>
+          <button onClick={retry} className="btn btn-primary mx-auto">Try again</button>
         </div>
       ) : cur.kv === false ? (
         <Soon
