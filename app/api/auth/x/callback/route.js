@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { setSession, takeOAuthState } from "@/lib/session";
 import { publicOrigin, xConfig } from "@/lib/xauth";
+import { bumpReferral } from "@/lib/leaderboard";
 
 /** Step 2: X redirects here with a code. Exchange it, then load the profile. */
 export async function GET(request) {
@@ -100,6 +101,16 @@ export async function GET(request) {
       name: data.name,
       avatar: data.profile_image_url || null,
     });
+
+    // Credit the referrer, if this user arrived through a ?ref= code. De-duped
+    // by user id server-side, so re-signing never inflates the count.
+    if (saved.ref) {
+      await bumpReferral({
+        referrerCode: saved.ref,
+        referredId: data.id,
+        referredHandle: data.username,
+      });
+    }
 
     return NextResponse.redirect(home);
   } catch (error) {

@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Back, Crown } from '../components/icons'
 
 /**
- * Leaderboard — three boards for activity on ESKA.
+ * Leaderboard — three real boards for ESKA activity.
  *
- * All three rank real, ESKA-native activity: trades made here, sign-ups through
- * your referral, and coins launched here. None of them invent names — each fills
- * in as that activity is recorded, so they show an honest "warming up" state
- * until there's real data to rank. (The Discover feed's pons coins are not
- * counted as ESKA launches; Top creator is only for coins launched on ESKA.)
+ *   • Trade volume — USD swapped per trader, summed on every fill (/api/leaderboard)
+ *   • Top referral — friends who signed in through your code, de-duped
+ *   • Top creator  — coins launched ON ESKA, ranked by the market cap created here
+ *
+ * All three read real data from /api/leaderboard. Nothing is invented: a board
+ * with no activity yet shows an honest "warming up" state and fills in the
+ * moment real trades, referrals or launches are recorded.
  */
 
 const TABS = [
@@ -18,9 +20,47 @@ const TABS = [
   { key: 'creator', label: 'Top creator' },
 ]
 
+const usd = (n) =>
+  '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 0 : 2 })
+
+const EMPTY = {
+  volume: {
+    title: 'Trade volume board is warming up',
+    body: 'This ranks the wallets trading the most on ESKA, by real USD swapped. It fills in as trades settle — no placeholder names.',
+  },
+  referral: {
+    title: 'Referral board is warming up',
+    body: 'Share your code from Settings. Once friends sign in through your link, the biggest referrers show up here — ranked by real sign-ups.',
+  },
+  creator: {
+    title: 'Creator board is warming up',
+    body: 'This ranks people by the coins they launch on ESKA — measured by the market cap created here. It fills in with the first ESKA launches.',
+  },
+}
+
 export default function Leaderboard() {
   const nav = useNavigate()
   const [tab, setTab] = useState('volume')
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    fetch('/api/leaderboard?network=robinhood')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled) { setData(j); setError(!j) } })
+      .catch(() => { if (!cancelled) setError(true) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [])
+
+  const rows = data?.[tab] ?? []
+  const fmtValue = (r) =>
+    tab === 'volume' ? usd(r.score)
+      : tab === 'referral' ? `${r.score} ${r.score === 1 ? 'referral' : 'referrals'}`
+        : usd(r.score)
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -35,27 +75,51 @@ export default function Leaderboard() {
         ))}
       </div>
 
-      {tab === 'volume' && (
-        <Soon
-          title="Trade volume board is warming up"
-          body="This ranks the wallets trading the most on ESKA. It counts real swaps as they settle on-chain — no placeholder names — so it fills in as trading picks up here."
-        />
+      {loading ? (
+        <div className="card p-2">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <div key={i} className={`flex items-center gap-3 p-3.5 ${i ? 'border-t hairline' : ''}`}>
+              <div className="w-7 h-7 rounded-full panel-soft animate-pulse" />
+              <div className="flex-1 h-4 rounded panel-soft animate-pulse" />
+              <div className="w-16 h-4 rounded panel-soft animate-pulse" />
+            </div>
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <Soon title={EMPTY[tab].title} body={EMPTY[tab].body} />
+      ) : (
+        <div className="card overflow-hidden">
+          {rows.map((r, i) => (
+            <div key={r.member || r.display || i} className={`flex items-center gap-3 p-3.5 sm:p-4 ${i ? 'border-t hairline' : ''}`}>
+              <Rank n={r.rank} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{r.display}</div>
+                {tab === 'creator' && r.coins != null && (
+                  <div className="text-xs text-[var(--color-ink-faint)]">{r.coins} {r.coins === 1 ? 'coin' : 'coins'} launched</div>
+                )}
+              </div>
+              <div className="font-mono num font-semibold shrink-0">{fmtValue(r)}</div>
+            </div>
+          ))}
+        </div>
       )}
 
-      {tab === 'referral' && (
-        <Soon
-          title="Referral board is warming up"
-          body="Share your referral code from Settings. Once friends sign in through it, the biggest referrers show up here — ranked by real sign-ups, nothing invented."
-        />
-      )}
-
-      {tab === 'creator' && (
-        <Soon
-          title="Creator board is warming up"
-          body="This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It stays empty until the first coins are launched on ESKA."
-        />
+      {error && !loading && (
+        <p className="text-[11px] text-[var(--color-ink-faint)] mt-3 text-center">Couldn’t reach the leaderboard just now — pull to refresh in a moment.</p>
       )}
     </div>
+  )
+}
+
+function Rank({ n }) {
+  const medal = n === 1 ? '#f6c66b' : n === 2 ? '#cfd3dc' : n === 3 ? '#d9a06b' : null
+  return (
+    <span
+      className="shrink-0 w-7 h-7 grid place-items-center rounded-full font-mono text-xs font-semibold"
+      style={medal
+        ? { background: medal, color: '#0b0a12' }
+        : { background: 'var(--surface-soft)', color: 'var(--color-ink-soft)' }}
+    >{n}</span>
   )
 }
 
