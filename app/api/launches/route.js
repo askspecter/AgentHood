@@ -106,6 +106,7 @@ const FEATURED_PONS = [
   "0x7FE995a80075dF3Dc8Ae11A9b82c7FE4202CD87f", // HMM
   "0x859ead0EE2fd39a2804bB27713742577f7bE79c1", // CC
   "0xC9E7C34fa156a235e8B8601171a543bc9c84a1B9", // TAMPONS
+  "0x6245e67affA44a23077f0Ea7f981a8DC743a0c47", // FRONG
 ];
 
 // Known symbols for the curated coins, paired to the list above by order. Used
@@ -114,7 +115,7 @@ const FEATURED_PONS = [
 // almost nothing whenever the public node is busy.
 const FEATURED_SYMBOL_LIST = [
   "PONS", "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
-  "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS",
+  "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS", "FRONG",
 ];
 const KNOWN_SYMBOLS = Object.fromEntries(
   FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
