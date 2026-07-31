@@ -12,13 +12,14 @@ import { Back } from '../components/icons'
 export default function ChatThread() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { getAgent, chats, sendMessage, prices, agentsLoading } = useStore()
+  const { getAgent, chats, sendMessage, prices, agentsLoading, chatTyping } = useStore()
   const charm = getAgent(id)
   const [text, setText] = useState('')
   const endRef = useRef(null)
   const msgs = chats[id] ?? []
+  const typing = Boolean(chatTyping?.[id])
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs.length])
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs.length, typing])
 
   if (!charm) {
     return <div className="text-center py-20 text-[var(--color-ink-soft)]">{agentsLoading ? 'Loading agent…' : <>Agent not found. <Link className="underline" to="/chats">Back to chats</Link></>}</div>
@@ -66,6 +67,14 @@ export default function ChatThread() {
               style={m.role === 'user' ? { background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' } : undefined}>{m.text}</div>
           </div>
         ))}
+        {typing && (
+          <div className="flex items-end gap-2 justify-start">
+            <CharmAvatar charm={charm} size={28} />
+            <div className="card rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+              <span className="typing-dot" /><span className="typing-dot" style={{ animationDelay: '0.18s' }} /><span className="typing-dot" style={{ animationDelay: '0.36s' }} />
+            </div>
+          </div>
+        )}
         <div ref={endRef} />
       </div>
 
@@ -74,7 +83,7 @@ export default function ChatThread() {
         <button className="btn btn-primary" disabled={!text.trim()}>Send</button>
       </form>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-2 mb-4">
-        Replies are local flavour from ${charm.ticker}, not a live model. The coin is real — trade it anytime.
+        ${charm.ticker} speaks for itself — playful, not financial advice. The coin is real; trade it anytime.
       </p>
     </div>
   )

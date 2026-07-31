@@ -54,6 +54,8 @@ export function StoreProvider({ children }) {
   const [agentsLoading, setAgentsLoading] = useState(!initFeed)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
+  // Which chat threads are waiting on the agent's reply (for the typing bubble).
+  const [chatTyping, setChatTyping] = useState({})
 
   // Appearance: 'dark' | 'light' | 'auto'. Applied as data-theme on <html> so the
   // CSS light/dark variables switch; 'auto' follows the OS and updates live.
@@ -200,13 +202,33 @@ export function StoreProvider({ children }) {
   const sendMessage = useCallback((id, text) => {
     const agent = agentsById[id]
     const now = Date.now()
+    // The turns the model should see — before this new user line is added.
+    const priorHistory = chats[id] ?? []
     setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'user', text, ts: now }] }))
     if (!agent) return
-    const reply = replyFor(agent, text)
-    setTimeout(() => {
-      setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
-    }, 500 + Math.random() * 600)
-  }, [agentsById])
+
+    const pushReply = (reply) => setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
+
+    // Talk to the live agent — a real model that speaks as the coin and knows its
+    // numbers. Fall back to the built-in local flavour if AI isn't configured or
+    // the request fails, so chat always answers.
+    setChatTyping((t) => ({ ...t, [id]: true }))
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 16000)
+    const facts = {
+      ticker: agent.ticker, name: agent.name, mcap: agent.mcap, priceUsd: agent.priceUsd,
+      change24: agent.change24, holders: agent.holders, graduated: agent.graduated,
+      graduationProgress: agent.graduationProgress, creator: agent.creator, official: agent.official, vibe: agent.vibe,
+    }
+    fetch('/api/agent/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      body: JSON.stringify({ agent: facts, history: priorHistory.slice(-8), message: text }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { pushReply(j?.reply || replyFor(agent, text)) })
+      .catch(() => { pushReply(replyFor(agent, text)) })
+      .finally(() => { clearTimeout(timer); setChatTyping((t) => { const n = { ...t }; delete n[id]; return n }) })
+  }, [agentsById, chats])
 
   const value = {
     wallet: displayWallet, connect, disconnect,
@@ -214,7 +236,7 @@ export function StoreProvider({ children }) {
     theme, setTheme,
     agents, agentsLoading, loadAgents, ethUsd, explorer,
     prices, getAgent,
-    chats, sendMessage,
+    chats, sendMessage, chatTyping,
   }
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>
 }
