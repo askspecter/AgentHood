@@ -10,6 +10,7 @@ import {
 import { NextResponse } from "next/server";
 import { DEADLINE_SECONDS, deriveSigner, getChain, quote, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
+import { recordTrade } from "@/lib/stats";
 
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
@@ -414,6 +415,19 @@ export async function POST(request) {
         { error: "The swap was mined but reverted. Nothing changed hands.", hash: tx.hash },
         { status: 400 }
       );
+    }
+
+    // Record ESKA-native trade volume for the leaderboard — WETH-settled trades
+    // only (a launch pair), sized by the WETH leg: the WETH spent on a buy or the
+    // WETH received on a sell. Best-effort and awaited so it commits before the
+    // function returns; a stats failure never affects the trade result.
+    if (quoteIsNative) {
+      try {
+        const wethValue = Number(formatEther(isBuy ? amountIn : fresh.amountOut));
+        await recordTrade({ network, handle: session.username, wethValue });
+      } catch {
+        /* stats are non-critical */
+      }
     }
 
     // A sell's proceeds are left as WETH — deliberately NOT auto-unwrapped.

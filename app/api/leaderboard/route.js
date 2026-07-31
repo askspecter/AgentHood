@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
 import { JsonRpcProvider, getAddress } from "ethers";
 import { getChain, getEthUsd, enrichLaunch, listLaunched } from "@/lib/engine";
+import { topTraders, topReferrers } from "@/lib/stats";
 
 /**
- * GET /api/leaderboard?network=robinhood&board=creator
+ * GET /api/leaderboard?network=robinhood&board=creator|volume|referral
  *
- * The Top Creator board, built from real data: every coin launched through ESKA
- * is priced live, then grouped by the X account that launched it, and the
- * creators are ranked by the total market cap they've created here. No invented
- * names — a creator only appears once their coin exists on-chain.
- *
- * The trade-volume and referral boards need swap/referral records we don't index
- * yet, so they return `{ rows: [] }` and the UI keeps its "warming up" state.
+ * All three boards are built from real, ESKA-native activity — nothing invented:
+ *  • creator  — every coin launched through ESKA is priced live and grouped by
+ *               the X account that launched it, ranked by total market cap.
+ *  • volume   — cumulative WETH-denominated trade size per trader, recorded at
+ *               the trade endpoint as swaps settle.
+ *  • referral — sign-ins through a ?ref= link, credited to the referrer once per
+ *               new account.
+ * A board simply stays empty (the UI shows "warming up") until it has data.
  */
 
 const CACHE = new Map();
@@ -123,11 +125,6 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Volume and referral boards need indexed swap/referral data we don't keep yet.
-  if (board !== "creator") {
-    return NextResponse.json({ board, rows: [], ethUsd: null });
-  }
-
   const key = `${network}:${board}`;
   const cached = CACHE.get(key);
   if (cached && Date.now() - cached.at < TTL && !url.searchParams.has("fresh")) {
@@ -135,9 +132,26 @@ export async function GET(request) {
   }
 
   try {
-    const { rows, coins, creators } = await creatorBoard(chain, network);
-    const value = { board, rows, coins, creators, network };
-    if (rows.length) CACHE.set(key, { at: Date.now(), value });
+    let value;
+    if (board === "volume") {
+      const rate = await getEthUsd().catch(() => null);
+      const raw = await topTraders({ network, limit: 25 });
+      const rows = raw.map((r, i) => ({
+        rank: i + 1,
+        handle: r.handle,
+        volumeWeth: r.volumeWeth,
+        volumeUsd: rate?.usd ? Math.round(r.volumeWeth * rate.usd) : null,
+      }));
+      value = { board, rows, network };
+    } else if (board === "referral") {
+      const raw = await topReferrers({ limit: 25 });
+      const rows = raw.map((r, i) => ({ rank: i + 1, code: r.code, count: r.count }));
+      value = { board, rows, network };
+    } else {
+      const { rows, coins, creators } = await creatorBoard(chain, network);
+      value = { board, rows, coins, creators, network };
+    }
+    if (value.rows.length) CACHE.set(key, { at: Date.now(), value });
     return NextResponse.json(value);
   } catch (error) {
     return NextResponse.json({ board, rows: [], error: error.message || "Could not build the leaderboard." }, { status: 200 });

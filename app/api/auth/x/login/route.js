@@ -33,11 +33,16 @@ export async function GET(request) {
   // CSRF token — the callback refuses any state it did not issue.
   const state = crypto.randomBytes(16).toString("base64url");
 
+  // A referral code (?ref=HANDLE) rides along in the OAuth state cookie so it
+  // survives the round-trip to X and can credit the referrer on the callback.
+  const refRaw = new URL(request.url).searchParams.get("ref");
+  const ref = refRaw ? String(refRaw).replace(/[^a-zA-Z0-9_]/g, "").slice(0, 40) : null;
+
   try {
     // The redirect URI is pinned into the cookie: the token exchange must send
     // back the exact string X saw here, and deriving it twice from two different
     // requests is how that quietly stops matching.
-    await setOAuthState({ codeVerifier, state, redirectUri: config.redirectUri });
+    await setOAuthState({ codeVerifier, state, redirectUri: config.redirectUri, ref });
   } catch (error) {
     console.error("Could not start X sign-in:", error);
     home.searchParams.set("auth_error", "not_configured");

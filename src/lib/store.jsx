@@ -19,6 +19,7 @@ const CHAT_KEY = 'eska.chats.v1'
 const FEED_KEY = 'eska.feed.v1'
 const THEME_KEY = 'eska.theme'
 const PROFILE_KEY = 'eska.profile.v1'
+const REF_KEY = 'eska.ref.v1'
 const StoreCtx = createContext(null)
 
 function loadChats() {
@@ -89,6 +90,16 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
   }, [chats])
+
+  // Capture a referral code from ?ref= the moment someone lands, and keep it
+  // until they sign in — connect() then forwards it so the referrer is credited.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref')
+      if (ref) localStorage.setItem(REF_KEY, ref.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40))
+    } catch {}
+  }, [])
 
   // Real X session.
   useEffect(() => {
@@ -179,7 +190,11 @@ export function StoreProvider({ children }) {
     }
   }, [wallet, profile])
 
-  function connect() { window.location.href = '/api/auth/x/login' }
+  function connect() {
+    let ref = ''
+    try { ref = localStorage.getItem(REF_KEY) || '' } catch {}
+    window.location.href = '/api/auth/x/login' + (ref ? `?ref=${encodeURIComponent(ref)}` : '')
+  }
   async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null) }
 
   const sendMessage = useCallback((id, text) => {

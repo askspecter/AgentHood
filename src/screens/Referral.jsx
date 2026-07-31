@@ -7,9 +7,9 @@ import { Back, XLogo, Gift, Share } from '../components/icons'
  * Referral code — your personal invite.
  *
  * The code is your X handle, so it's memorable and unique to you, and the link
- * carries it as ?ref= for whoever you share it with. Who actually signed up
- * through it is counted server-side once that's wired; this screen is the share
- * surface for it.
+ * carries it as ?ref= for whoever you share it with. When they sign in through
+ * it, the referrer is credited server-side (once per new account), and the
+ * counts rank the Top Referral leaderboard.
  */
 export default function Referral() {
   const nav = useNavigate()
