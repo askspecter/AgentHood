@@ -50,7 +50,7 @@ export default function Leaderboard() {
     setData((d) => ({ ...d, [tab]: { loading: true, rows: [] } }))
     fetch(`/api/leaderboard?board=${tab}&network=${NETWORK}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: Array.isArray(j?.rows) ? j.rows : [] } })) })
+      .then((j) => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: Array.isArray(j?.rows) ? j.rows : [], kv: j?.kv } })) })
       .catch(() => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: [] } })) })
     return () => { cancelled = true }
   }, [tab, data])
@@ -79,6 +79,11 @@ export default function Leaderboard() {
           {cur.rows.map((r) => <Row key={r.rank} board={tab} row={r} />)}
           <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">{FOOTNOTE[tab]}</p>
         </div>
+      ) : cur.kv === false ? (
+        <Soon
+          title="Leaderboard storage isn’t connected"
+          body="The boards record real activity in Vercel KV. Connect a KV (Upstash Redis) store to this project in Vercel → Storage, and the volume, referral and creator boards start filling in immediately."
+        />
       ) : (
         <Soon title={EMPTY[tab].title} body={EMPTY[tab].body} />
       )}
