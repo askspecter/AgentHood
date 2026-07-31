@@ -310,6 +310,10 @@ body::after {
 @keyframes spinSlow { to { transform: rotate(360deg) } }
 .spin-slow { animation: spinSlow 40s linear infinite; }
 
+/* chat typing indicator — three dots the agent shows while it's thinking */
+@keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-4px); opacity: 1 } }
+.typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-ink-soft); display: inline-block; animation: typingBounce 1.1s ease-in-out infinite; }
+
 /* 3D tilt helpers */
 .tilt-scene { perspective: 1000px; }
 .tilt { transform-style: preserve-3d; transition: transform .18s ease; will-change: transform; }

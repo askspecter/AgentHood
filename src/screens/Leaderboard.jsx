@@ -1,66 +1,61 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Back, Crown } from '../components/icons'
+import { Back, Crown, Verified } from '../components/icons'
+import { usd, num } from '../lib/format'
 
 /**
- * Leaderboard — three real boards for ESKA activity.
+ * Leaderboard — three boards, all live and all real.
  *
- *   • Trade volume — USD swapped per trader, summed on every fill (/api/leaderboard)
- *   • Top referral — friends who signed in through your code, de-duped
- *   • Top creator  — coins launched ON ESKA, ranked by the market cap created here
- *
- * All three read real data from /api/leaderboard. Nothing is invented: a board
- * with no activity yet shows an honest "warming up" state and fills in the
- * moment real trades, referrals or launches are recorded.
+ * Every board ranks actual ESKA-native activity, recorded as it happens:
+ *  • Top creator — coins launched here, ranked by the market cap they've created.
+ *  • Trade volume — cumulative WETH traded per account.
+ *  • Top referral — friends brought in through your ?ref= link.
+ * None invent names: a board simply shows a "warming up" state until there's
+ * something real to rank.
  */
 
+const NETWORK = 'robinhood'
+
 const TABS = [
+  { key: 'creator', label: 'Top creator' },
   { key: 'volume', label: 'Trade volume' },
   { key: 'referral', label: 'Top referral' },
-  { key: 'creator', label: 'Top creator' },
 ]
 
-const usd = (n) =>
-  '$' + Number(n || 0).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 0 : 2 })
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
 
 const EMPTY = {
+  creator: {
+    title: 'Creator board is warming up',
+    body: "This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
+  },
   volume: {
     title: 'Trade volume board is warming up',
-    body: 'This ranks the wallets trading the most on ESKA, by real USD swapped. It fills in as trades settle — no placeholder names.',
+    body: 'This ranks the accounts trading the most on ESKA, by real WETH volume as swaps settle on-chain — no placeholder names. It fills in as trading picks up here.',
   },
   referral: {
     title: 'Referral board is warming up',
-    body: 'Share your code from Settings. Once friends sign in through your link, the biggest referrers show up here — ranked by real sign-ups.',
-  },
-  creator: {
-    title: 'Creator board is warming up',
-    body: 'This ranks people by the coins they launch on ESKA — measured by the market cap created here. It fills in with the first ESKA launches.',
+    body: 'Share your referral link from the Referral page. Once friends sign in through it, the biggest referrers show up here — ranked by real sign-ups, nothing invented.',
   },
 }
 
 export default function Leaderboard() {
   const nav = useNavigate()
-  const [tab, setTab] = useState('volume')
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [tab, setTab] = useState('creator')
+  const [data, setData] = useState({}) // board -> { loading, rows }
 
   useEffect(() => {
+    if (data[tab]) return
     let cancelled = false
-    setLoading(true)
-    fetch('/api/leaderboard?network=robinhood')
+    setData((d) => ({ ...d, [tab]: { loading: true, rows: [] } }))
+    fetch(`/api/leaderboard?board=${tab}&network=${NETWORK}`)
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { if (!cancelled) { setData(j); setError(!j) } })
-      .catch(() => { if (!cancelled) setError(true) })
-      .finally(() => { if (!cancelled) setLoading(false) })
+      .then((j) => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: Array.isArray(j?.rows) ? j.rows : [] } })) })
+      .catch(() => { if (!cancelled) setData((d) => ({ ...d, [tab]: { loading: false, rows: [] } })) })
     return () => { cancelled = true }
-  }, [])
+  }, [tab, data])
 
-  const rows = data?.[tab] ?? []
-  const fmtValue = (r) =>
-    tab === 'volume' ? usd(r.score)
-      : tab === 'referral' ? `${r.score} ${r.score === 1 ? 'referral' : 'referrals'}`
-        : usd(r.score)
+  const cur = data[tab]
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -75,51 +70,82 @@ export default function Leaderboard() {
         ))}
       </div>
 
-      {loading ? (
-        <div className="card p-2">
-          {[0, 1, 2, 3, 4].map((i) => (
-            <div key={i} className={`flex items-center gap-3 p-3.5 ${i ? 'border-t hairline' : ''}`}>
-              <div className="w-7 h-7 rounded-full panel-soft animate-pulse" />
-              <div className="flex-1 h-4 rounded panel-soft animate-pulse" />
-              <div className="w-16 h-4 rounded panel-soft animate-pulse" />
-            </div>
-          ))}
+      {!cur || cur.loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => <div key={i} className="card h-16 animate-pulse opacity-40" />)}
         </div>
-      ) : rows.length === 0 ? (
-        <Soon title={EMPTY[tab].title} body={EMPTY[tab].body} />
+      ) : cur.rows.length > 0 ? (
+        <div className="space-y-2">
+          {cur.rows.map((r) => <Row key={r.rank} board={tab} row={r} />)}
+          <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">{FOOTNOTE[tab]}</p>
+        </div>
       ) : (
-        <div className="card overflow-hidden">
-          {rows.map((r, i) => (
-            <div key={r.member || r.display || i} className={`flex items-center gap-3 p-3.5 sm:p-4 ${i ? 'border-t hairline' : ''}`}>
-              <Rank n={r.rank} />
-              <div className="flex-1 min-w-0">
-                <div className="font-medium truncate">{r.display}</div>
-                {tab === 'creator' && r.coins != null && (
-                  <div className="text-xs text-[var(--color-ink-faint)]">{r.coins} {r.coins === 1 ? 'coin' : 'coins'} launched</div>
-                )}
-              </div>
-              <div className="font-mono num font-semibold shrink-0">{fmtValue(r)}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {error && !loading && (
-        <p className="text-[11px] text-[var(--color-ink-faint)] mt-3 text-center">Couldn’t reach the leaderboard just now — pull to refresh in a moment.</p>
+        <Soon title={EMPTY[tab].title} body={EMPTY[tab].body} />
       )}
     </div>
   )
 }
 
-function Rank({ n }) {
-  const medal = n === 1 ? '#f6c66b' : n === 2 ? '#cfd3dc' : n === 3 ? '#d9a06b' : null
+const FOOTNOTE = {
+  creator: 'Ranked by total market cap of coins launched on ESKA · priced live on-chain',
+  volume: 'Ranked by cumulative WETH traded on ESKA · updates as swaps settle',
+  referral: 'Ranked by friends who signed in through your referral link',
+}
+
+function Row({ board, row }) {
+  const medal = row.rank <= 3
+  const rank = (
+    <span className={`grid place-items-center w-8 h-8 rounded-lg shrink-0 font-mono text-sm ${medal ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
+      style={medal ? { background: 'var(--holo)' } : { background: 'var(--color-paper-2)' }}>
+      {row.rank}
+    </span>
+  )
+
+  if (board === 'volume') {
+    return (
+      <div className="card flex items-center gap-3 p-3.5">
+        {rank}
+        <div className="flex-1 min-w-0"><span className="font-semibold truncate">@{row.handle}</span></div>
+        <div className="text-right shrink-0">
+          <div className="font-mono num">{row.volumeUsd != null ? usd(row.volumeUsd) : `${num(row.volumeWeth)} WETH`}</div>
+          <div className="eyebrow">volume traded</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (board === 'referral') {
+    return (
+      <div className="card flex items-center gap-3 p-3.5">
+        {rank}
+        <div className="flex-1 min-w-0"><span className="font-semibold truncate">@{row.code}</span></div>
+        <div className="text-right shrink-0">
+          <div className="font-mono num">{num(row.count)}</div>
+          <div className="eyebrow">friend{row.count === 1 ? '' : 's'} joined</div>
+        </div>
+      </div>
+    )
+  }
+
+  // creator
+  const name = row.handle ? `@${row.handle}` : short(row.deployer)
   return (
-    <span
-      className="shrink-0 w-7 h-7 grid place-items-center rounded-full font-mono text-xs font-semibold"
-      style={medal
-        ? { background: medal, color: '#0b0a12' }
-        : { background: 'var(--surface-soft)', color: 'var(--color-ink-soft)' }}
-    >{n}</span>
+    <div className="card flex items-center gap-3 p-3.5">
+      {rank}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-semibold truncate">{name}</span>
+          {row.official && <Verified size={13} gold />}
+        </div>
+        <div className="text-xs text-[var(--color-ink-faint)] font-mono truncate">
+          {row.coins} coin{row.coins === 1 ? '' : 's'}{row.topSymbol ? ` · top $${String(row.topSymbol).replace(/^\$/, '')}` : ''}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="font-mono num">{row.mcapUsd > 0 ? usd(row.mcapUsd) : '—'}</div>
+        <div className="eyebrow">mcap created</div>
+      </div>
+    </div>
   )
 }
 

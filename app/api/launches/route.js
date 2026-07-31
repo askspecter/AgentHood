@@ -56,9 +56,14 @@ async function attachChange24(provider, launches, concurrency = 5) {
  * nothing gets a name or price. Running a few at a time keeps every read under
  * the limit, so they actually return.
  */
-async function enrichBounded(provider, chain, addresses, concurrency = 4) {
+async function enrichBounded(provider, chain, addresses, concurrency = 4, deadlineMs = 0) {
   const out = [];
+  const start = Date.now();
   for (let i = 0; i < addresses.length; i += concurrency) {
+    // Stop enriching once the budget is spent — a slow/rate-limited node must not
+    // drag the whole feed. Curated coins missing from `out` get a stub + explorer
+    // price below, so the feed stays complete and fast.
+    if (deadlineMs && Date.now() - start > deadlineMs) break;
     const batch = addresses.slice(i, i + concurrency);
     const results = await Promise.all(
       batch.map((token) => enrichLaunch(provider, chain, { token }).catch(() => null))
@@ -101,7 +106,21 @@ const FEATURED_PONS = [
   "0x7FE995a80075dF3Dc8Ae11A9b82c7FE4202CD87f", // HMM
   "0x859ead0EE2fd39a2804bB27713742577f7bE79c1", // CC
   "0xC9E7C34fa156a235e8B8601171a543bc9c84a1B9", // TAMPONS
+  "0x6245e67affA44a23077f0Ea7f981a8DC743a0c47", // FRONG
 ];
+
+// Known symbols for the curated coins, paired to the list above by order. Used
+// as a fallback so a featured coin still shows when the RPC is too rate-limited
+// to read its symbol on-chain — otherwise the whole featured row thins out to
+// almost nothing whenever the public node is busy.
+const FEATURED_SYMBOL_LIST = [
+  "PONS", "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
+  "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS", "FRONG",
+];
+const KNOWN_SYMBOLS = Object.fromEntries(
+  FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
+);
+KNOWN_SYMBOLS["0x0eb9960654d3661d551a4536d7d425184ec81756"] = "ESKA"; // official $ESKA
 
 /**
  * Discover launch token addresses from the block explorer's own index.
@@ -315,6 +334,10 @@ export async function GET(request) {
     for (const e of registry.entries || []) {
       if (e?.token && e?.xUsername) handleByToken.set(String(e.token).toLowerCase(), e.xUsername);
     }
+    // The official ($ESKA) token, so the client can gold-check it.
+    const officialSet = new Set(
+      (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
+    );
 
     const seeds = [
       ...FEATURED_PONS,
@@ -342,7 +365,13 @@ export async function GET(request) {
 
     let launches = [];
     if (picked.length) {
-      const enriched = await enrichBounded(provider, chain, picked, Number(process.env.PONS_ENRICH_CONCURRENCY || 5));
+      const enriched = await enrichBounded(
+        provider,
+        chain,
+        picked,
+        Number(process.env.PONS_ENRICH_CONCURRENCY || 5),
+        Number(process.env.PONS_ENRICH_DEADLINE_MS || 4000)
+      );
       // Always show curated featured coins AND anything launched through ESKA —
       // the latter so a creator's brand-new coin appears even before it has a
       // priced pool. Everything else must earn its place with real liquidity.
@@ -352,11 +381,32 @@ export async function GET(request) {
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
-      // Featured / launched-here coins always show (even if a price read failed
-      // this cycle), as long as they read as a token at all. Ranked by market cap.
+      // Featured / launched-here coins always show — even if BOTH the price and
+      // the symbol read failed this cycle (a rate-limited node). A missing symbol
+      // is backfilled from the known list so the coin never silently drops out.
       const featured = enriched
-        .filter((l) => alwaysShow.has((l.token || "").toLowerCase()) && (l.symbol || l.name))
+        .filter((l) => alwaysShow.has((l.token || "").toLowerCase()))
+        .map((l) => {
+          if (!l.symbol && !l.name) {
+            const s = KNOWN_SYMBOLS[(l.token || "").toLowerCase()];
+            if (s) { l.symbol = s; l.name = s; }
+          }
+          return l;
+        })
         .sort(byMcap);
+      // A curated coin whose enrich threw ENTIRELY (rate-limited node) is missing
+      // from `enriched` — add a minimal stub so it still shows. stabilize() then
+      // fills its price/mcap from the last good read, and the final sort places it.
+      const have = new Set(featured.map((l) => (l.token || "").toLowerCase()));
+      for (const addr of alwaysShow) {
+        if (have.has(addr)) continue;
+        const sym = KNOWN_SYMBOLS[addr] || null;
+        try {
+          featured.push({ token: getAddress(addr), symbol: sym, name: sym, marketCapWeth: null });
+        } catch {
+          /* skip a malformed curated address */
+        }
+      }
       // Auto-discovered coins must be real pons launches with a priced pool, so
       // no-liquidity spam and non-pons ERC-20s are dropped.
       const extra = enriched
@@ -370,10 +420,12 @@ export async function GET(request) {
       for (const l of extra) l.featured = false;
 
       launches = [...featured, ...extra];
-      // Credit the launcher's X handle where we know it.
+      // Credit the launcher's X handle where we know it; flag the official token.
       for (const l of launches) {
-        const h = handleByToken.get((l.token || "").toLowerCase());
+        const k = (l.token || "").toLowerCase();
+        const h = handleByToken.get(k);
         if (h) l.xUsername = h;
+        if (officialSet.has(k)) l.official = true;
       }
       const shown = launches.slice(0, 24);
       await Promise.all([
@@ -382,9 +434,21 @@ export async function GET(request) {
       ]);
 
       // Keep the feed stable: fill gaps from the last good read and don't let an
-      // always-shown coin vanish on a transient miss. Then re-rank.
+      // always-shown coin vanish on a transient miss. Then re-rank by USD market
+      // cap, falling back to the explorer's figure — so a big coin like PONS
+      // still ranks by its real $40M even when the on-chain price read failed and
+      // it would otherwise sink below fresh ESKA launches.
       launches = stabilize(network, launches, alwaysShow);
-      launches.sort((a, b) => (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) || ((b.marketCapWeth || 0) - (a.marketCapWeth || 0)));
+      const mcapUsd = (l) => {
+        const onchain = Number.isFinite(l.marketCapWeth) && rate?.usd ? l.marketCapWeth * rate.usd : 0;
+        return onchain > 0 ? onchain : Number(l.explorerMcapUsd) || 0;
+      };
+      launches.sort(
+        (a, b) =>
+          (Number(Boolean(b.official)) - Number(Boolean(a.official))) ||
+          (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) ||
+          (mcapUsd(b) - mcapUsd(a))
+      );
     }
 
     const value = serialise({

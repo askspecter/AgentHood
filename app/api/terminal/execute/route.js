@@ -8,9 +8,9 @@ import {
   isAddress,
 } from "ethers";
 import { NextResponse } from "next/server";
-import { DEADLINE_SECONDS, deriveSigner, getChain, getEthUsd, quote, tokenMeta } from "@/lib/engine";
+import { DEADLINE_SECONDS, deriveSigner, getChain, quote, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
-import { bumpVolume } from "@/lib/leaderboard";
+import { recordTrade } from "@/lib/stats";
 
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
@@ -417,6 +417,19 @@ export async function POST(request) {
       );
     }
 
+    // Record ESKA-native trade volume for the leaderboard — WETH-settled trades
+    // only (a launch pair), sized by the WETH leg: the WETH spent on a buy or the
+    // WETH received on a sell. Best-effort and awaited so it commits before the
+    // function returns; a stats failure never affects the trade result.
+    if (quoteIsNative) {
+      try {
+        const wethValue = Number(formatEther(isBuy ? amountIn : fresh.amountOut));
+        await recordTrade({ network, handle: session.username, wethValue });
+      } catch {
+        /* stats are non-critical */
+      }
+    }
+
     // A sell's proceeds are left as WETH — deliberately NOT auto-unwrapped.
     //
     // Unwrapping (WETH.withdraw) burns the WETH to the zero address, and every
@@ -426,20 +439,6 @@ export async function POST(request) {
     // demand, with the explicit "Unwrap to ETH" action — no silent burn on any
     // trade. A stock sell already settles in USDG, which is likewise just held.
     const unwrapHash = null;
-
-    // Record this fill's USD volume on the leaderboard (native pairs only — the
-    // ETH leg × the live rate is the trade's dollar size). Best-effort: a KV
-    // miss must never fail a settled trade.
-    if (quoteIsNative) {
-      try {
-        const ethLeg = isBuy ? amountIn : fresh.amountOut; // wei
-        const rate = (await getEthUsd().catch(() => null))?.usd ?? null;
-        if (rate) {
-          const usd = Number(formatEther(ethLeg)) * rate;
-          await bumpVolume({ handle: session.username, wallet: owner, usd });
-        }
-      } catch { /* leaderboard is cosmetic */ }
-    }
 
     return NextResponse.json({
       ok: true,

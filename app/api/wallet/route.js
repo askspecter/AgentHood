@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { JsonRpcProvider, formatUnits, getAddress, isAddress } from "ethers";
-import { deriveAddress, getChain, nativeBalance, tokenBalance, tokenMeta } from "@/lib/engine";
+import { formatUnits, getAddress, isAddress } from "ethers";
+import { deriveAddress, getChain, nativeBalance, tokenBalance, tokenMeta, rpcProvider } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 
 /**
@@ -14,6 +14,23 @@ import { getSession } from "@/lib/session";
  */
 const BALANCE_CACHE = new Map();
 const BALANCE_TTL_MS = Number(process.env.WALLET_BALANCE_TTL_MS || 12_000);
+
+/**
+ * Hard cap on any single RPC read. The public Robinhood RPC rate-limits and can
+ * hang; without a cap the whole function waits until Vercel's timeout and
+ * returns a 5xx (the "/api/wallet function timeouts" anomaly). With it, a slow
+ * RPC becomes a fast, graceful response — the last known balance, or a clean
+ * note — never a crash.
+ */
+const RPC_TIMEOUT_MS = Number(process.env.WALLET_RPC_TIMEOUT_MS || 6000);
+
+function raceTimeout(promise, ms) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("the RPC did not respond in time")), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
 
 /**
  * GET /api/wallet?network=robinhood[&token=0x…]
@@ -65,43 +82,52 @@ export async function GET(request) {
     );
   }
 
-  let balance = null;
-  let balanceError = null;
   const balanceKey = `${network}:${address.toLowerCase()}`;
-  const cachedBalance = BALANCE_CACHE.get(balanceKey);
-  if (cachedBalance && Date.now() - cachedBalance.at < BALANCE_TTL_MS) {
-    balance = cachedBalance.value;
-  } else {
-    try {
-      balance = await nativeBalance(address, chain);
-      BALANCE_CACHE.set(balanceKey, { at: Date.now(), value: balance });
-    } catch (error) {
-      balanceError = `Could not read the balance: ${error.message}`;
-    }
-  }
-
-  // Optional: the balance of one specific token, for the Trade panel.
-  let token = null;
   const tokenParam = url.searchParams.get("token");
-  if (tokenParam && isAddress(tokenParam)) {
+  const wantToken = tokenParam && isAddress(tokenParam);
+
+  // Read the native balance and (optionally) the token balance IN PARALLEL, each
+  // time-boxed. A slow RPC then costs one ~6s wait, not two, and never a 5xx.
+  const balanceJob = (async () => {
+    const cached = BALANCE_CACHE.get(balanceKey);
+    if (cached && Date.now() - cached.at < BALANCE_TTL_MS) return { value: cached.value };
     try {
-      const provider = new JsonRpcProvider(chain.rpc, chain.chainId);
-      const [raw, meta] = await Promise.all([
-        tokenBalance(provider, tokenParam, address),
-        tokenMeta(provider, tokenParam),
-      ]);
-      token = {
-        token: getAddress(tokenParam),
-        raw: raw.toString(),
-        formatted: formatUnits(raw, meta.decimals),
-        symbol: meta.symbol,
-        name: meta.name || null,
-        decimals: meta.decimals,
+      const value = await raceTimeout(nativeBalance(address, chain), RPC_TIMEOUT_MS);
+      BALANCE_CACHE.set(balanceKey, { at: Date.now(), value });
+      return { value };
+    } catch (error) {
+      // Serve the last known balance if we have one, rather than nothing.
+      return {
+        value: cached ? cached.value : null,
+        error: `Could not read the balance right now — the network node is busy. ${error.message}`,
       };
-    } catch {
-      /* a token balance is a nice-to-have; never fail the wallet read over it */
     }
-  }
+  })();
+
+  const tokenJob = wantToken
+    ? (async () => {
+        try {
+          const provider = rpcProvider(chain);
+          const [raw, meta] = await raceTimeout(
+            Promise.all([tokenBalance(provider, tokenParam, address), tokenMeta(provider, tokenParam)]),
+            RPC_TIMEOUT_MS
+          );
+          return {
+            token: getAddress(tokenParam),
+            raw: raw.toString(),
+            formatted: formatUnits(raw, meta.decimals),
+            symbol: meta.symbol,
+            name: meta.name || null,
+            decimals: meta.decimals,
+          };
+        } catch {
+          /* a token balance is a nice-to-have; never fail the wallet read over it */
+          return null;
+        }
+      })()
+    : Promise.resolve(null);
+
+  const [balanceResult, token] = await Promise.all([balanceJob, tokenJob]);
 
   return NextResponse.json({
     address,
@@ -112,8 +138,8 @@ export async function GET(request) {
     chainId: chain.chainId,
     explorer: chain.explorer,
     gasSymbol: chain.gasSymbol,
-    balance,
-    balanceError,
+    balance: balanceResult.value,
+    balanceError: balanceResult.error || null,
     token,
   });
 }

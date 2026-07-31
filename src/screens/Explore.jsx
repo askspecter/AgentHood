@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import Ticker from '../components/Ticker'
 import CharmCarousel from '../components/CharmCarousel'
+import BurnCounter from '../components/BurnCounter'
 import { usd, num, pct } from '../lib/format'
 import { Verified, ArrowStat, Mentions } from '../components/icons'
 
@@ -24,10 +25,17 @@ const TABS = [
 // Rank by the real on-chain market cap (in WETH), which — unlike the USD `mcap`
 // — is present even when the ETH/USD rate is missing, so the order never
 // collapses to "newest coin with any non-zero number first".
-const capOf = (c) => (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0)
-// Top: established (featured) coins first, then by cap — so PONS and the other
-// known coins never get demoted below a fresh launch that read a stray cap.
-const byTop = (a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || capOf(b) - capOf(a)
+// Rank by USD market cap — it carries the explorer fallback, so a big coin like
+// PONS keeps its real $40M rank even when the on-chain WETH cap failed to read
+// and would otherwise sink below fresh launches.
+const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
+// Top: the official token ($ESKA) is the hero, then established (featured) coins,
+// then by cap — so the pin always leads and known coins never get demoted below
+// a fresh launch that read a stray cap.
+const byTop = (a, b) =>
+  (b.official ? 1 : 0) - (a.official ? 1 : 0) ||
+  (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
+  capOf(b) - capOf(a)
 // New: freshly-discovered (non-featured) launches first, then by cap.
 const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
 
@@ -57,6 +65,7 @@ export default function Explore() {
       {agents.length > 0 && <Ticker charms={agents} prices={prices} />}
 
       <Section id="index">
+        <BurnCounter />
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
             <h2 className="display text-3xl">Discover</h2>
@@ -111,7 +120,7 @@ function GridCard({ charm, price }) {
 
       <div className="flex items-center gap-1.5 min-w-0 max-w-full">
         <span className="font-semibold truncate">{charm.name}</span>
-        <Verified size={13} />
+        <Verified size={13} gold={charm.official} />
       </div>
       <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
 

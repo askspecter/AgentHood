@@ -112,7 +112,7 @@ function Card({ charm, price, onOpen, onTrade }) {
       <div className="p-5">
         <div className="flex items-center gap-1.5 min-w-0">
           <span className="font-semibold text-lg truncate">{charm.name}</span>
-          <Verified size={14} />
+          <Verified size={14} gold={charm.official} />
         </div>
         <div className="flex items-center gap-1.5 text-xs text-[var(--color-ink-faint)] mt-0.5">
           <XLogo size={10} /><span className="truncate">{charm.creator}</span>

@@ -80,6 +80,7 @@ export function tokenToAgent(t, ethUsd = null) {
     marketCapWeth: t.marketCapWeth ?? null,
     change24: Number.isFinite(t.change24) ? t.change24 : null,
     featured: t.featured ?? false,
+    official: t.official ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
     creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'pons'),

@@ -33,12 +33,10 @@ export async function GET(request) {
   // CSRF token — the callback refuses any state it did not issue.
   const state = crypto.randomBytes(16).toString("base64url");
 
-  // A referral code carried in as ?ref=CODE — remembered through the round-trip
-  // so the callback can credit the referrer on this user's first sign-in.
-  const ref = (new URL(request.url).searchParams.get("ref") || "")
-    .replace(/^@/, "")
-    .trim()
-    .slice(0, 40) || null;
+  // A referral code (?ref=HANDLE) rides along in the OAuth state cookie so it
+  // survives the round-trip to X and can credit the referrer on the callback.
+  const refRaw = new URL(request.url).searchParams.get("ref");
+  const ref = refRaw ? String(refRaw).replace(/[^a-zA-Z0-9_]/g, "").slice(0, 40) : null;
 
   try {
     // The redirect URI is pinned into the cookie: the token exchange must send

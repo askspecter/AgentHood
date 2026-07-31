@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { setSession, takeOAuthState } from "@/lib/session";
 import { publicOrigin, xConfig } from "@/lib/xauth";
-import { bumpReferral } from "@/lib/leaderboard";
+import { recordReferral } from "@/lib/stats";
 
 /** Step 2: X redirects here with a code. Exchange it, then load the profile. */
 export async function GET(request) {
@@ -102,14 +102,18 @@ export async function GET(request) {
       avatar: data.profile_image_url || null,
     });
 
-    // Credit the referrer, if this user arrived through a ?ref= code. De-duped
-    // by user id server-side, so re-signing never inflates the count.
+    // Credit the referrer, if this sign-in came through a ?ref= link. Skipped for
+    // a self-referral, and each referee is only ever counted once (server-side).
+    // Best-effort: a stats failure must never break sign-in.
     if (saved.ref) {
-      await bumpReferral({
-        referrerCode: saved.ref,
-        referredId: data.id,
-        referredHandle: data.username,
-      });
+      try {
+        const refCode = String(saved.ref).replace(/^@/, "").toLowerCase();
+        if (refCode && refCode !== String(data.username || "").toLowerCase()) {
+          await recordReferral({ referrerCode: saved.ref, refereeId: data.id });
+        }
+      } catch {
+        /* referral tracking is non-critical */
+      }
     }
 
     return NextResponse.redirect(home);

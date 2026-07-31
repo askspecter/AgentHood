@@ -19,7 +19,7 @@ const CHAT_KEY = 'eska.chats.v1'
 const FEED_KEY = 'eska.feed.v1'
 const THEME_KEY = 'eska.theme'
 const PROFILE_KEY = 'eska.profile.v1'
-const REF_KEY = 'eska.ref'
+const REF_KEY = 'eska.ref.v1'
 const StoreCtx = createContext(null)
 
 function loadChats() {
@@ -54,6 +54,8 @@ export function StoreProvider({ children }) {
   const [agentsLoading, setAgentsLoading] = useState(!initFeed)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
+  // Which chat threads are waiting on the agent's reply (for the typing bubble).
+  const [chatTyping, setChatTyping] = useState({})
 
   // Appearance: 'dark' | 'light' | 'auto'. Applied as data-theme on <html> so the
   // CSS light/dark variables switch; 'auto' follows the OS and updates live.
@@ -91,13 +93,13 @@ export function StoreProvider({ children }) {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
   }, [chats])
 
-  // Remember a referral code from a /?ref=CODE invite link so it survives until
-  // the visitor signs in (which may be several taps later).
+  // Capture a referral code from ?ref= the moment someone lands, and keep it
+  // until they sign in — connect() then forwards it so the referrer is credited.
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
       const ref = new URLSearchParams(window.location.search).get('ref')
-      if (ref) localStorage.setItem(REF_KEY, ref.replace(/^@/, '').trim().slice(0, 40))
+      if (ref) localStorage.setItem(REF_KEY, ref.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40))
     } catch {}
   }, [])
 
@@ -191,24 +193,42 @@ export function StoreProvider({ children }) {
   }, [wallet, profile])
 
   function connect() {
-    // Carry a referral code (from a /?ref=CODE invite link, remembered on load)
-    // into sign-in so the referrer gets credited on the leaderboard.
-    let ref = null
-    try { ref = localStorage.getItem(REF_KEY) } catch {}
-    window.location.href = ref ? `/api/auth/x/login?ref=${encodeURIComponent(ref)}` : '/api/auth/x/login'
+    let ref = ''
+    try { ref = localStorage.getItem(REF_KEY) || '' } catch {}
+    window.location.href = '/api/auth/x/login' + (ref ? `?ref=${encodeURIComponent(ref)}` : '')
   }
   async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null) }
 
   const sendMessage = useCallback((id, text) => {
     const agent = agentsById[id]
     const now = Date.now()
+    // The turns the model should see — before this new user line is added.
+    const priorHistory = chats[id] ?? []
     setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'user', text, ts: now }] }))
     if (!agent) return
-    const reply = replyFor(agent, text)
-    setTimeout(() => {
-      setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
-    }, 500 + Math.random() * 600)
-  }, [agentsById])
+
+    const pushReply = (reply) => setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
+
+    // Talk to the live agent — a real model that speaks as the coin and knows its
+    // numbers. Fall back to the built-in local flavour if AI isn't configured or
+    // the request fails, so chat always answers.
+    setChatTyping((t) => ({ ...t, [id]: true }))
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 16000)
+    const facts = {
+      ticker: agent.ticker, name: agent.name, mcap: agent.mcap, priceUsd: agent.priceUsd,
+      change24: agent.change24, holders: agent.holders, graduated: agent.graduated,
+      graduationProgress: agent.graduationProgress, creator: agent.creator, official: agent.official, vibe: agent.vibe,
+    }
+    fetch('/api/agent/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      body: JSON.stringify({ agent: facts, history: priorHistory.slice(-8), message: text }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { pushReply(j?.reply || replyFor(agent, text)) })
+      .catch(() => { pushReply(replyFor(agent, text)) })
+      .finally(() => { clearTimeout(timer); setChatTyping((t) => { const n = { ...t }; delete n[id]; return n }) })
+  }, [agentsById, chats])
 
   const value = {
     wallet: displayWallet, connect, disconnect,
@@ -216,7 +236,7 @@ export function StoreProvider({ children }) {
     theme, setTheme,
     agents, agentsLoading, loadAgents, ethUsd, explorer,
     prices, getAgent,
-    chats, sendMessage,
+    chats, sendMessage, chatTyping,
   }
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>
 }

@@ -12,6 +12,7 @@ import {
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { eskaCutEnabled, opsWallet } from "@/lib/fees";
+import { BUYBACK_ID } from "@/lib/eska";
 
 /**
  * POST /api/creator/claim  { token, network }
@@ -140,6 +141,14 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
   } catch (error) {
     return { status: "config-error", detail: error?.message };
   }
+  // Where the buyback WETH accumulates (server-controlled). Absent if wallets
+  // aren't configured — then ESKA's whole cut just goes to ops.
+  let buybackTo = null;
+  try {
+    buybackTo = getAddress(deriveAddress(BUYBACK_ID));
+  } catch {
+    /* no buyback reserve — fall back to ops-only below */
+  }
 
   const signer = deriveSigner(xUserId, chain);
   const provider = signer.provider;
@@ -162,12 +171,23 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
   const transfers = [];
   for (const a of assets) {
     if (a.recv <= 0n) continue;
-    // 70% landed → ESKA's cut is 10/70 of it, the creator keeps the other 60/70.
-    const opsShare = (a.recv * 10n) / 70n;
-    if (opsShare <= 0n) continue;
-    const res = await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: opsTo, amount: opsShare, label: `ops:${a.key}`, nonce });
-    transfers.push(res);
-    if (res.status === "sent") nonce++;
+    // 70% landed → ESKA's cut is 10/70; the creator keeps the other 60/70. WETH
+    // splits 5/70 to ops + 5/70 to the buyback reserve (later buys & burns
+    // $ESKA); the launched token has no buyback use, so its whole 10/70 goes to
+    // ops. If no buyback reserve is configured, everything goes to ops.
+    const slices =
+      a.key === "weth" && buybackTo
+        ? [
+            { to: opsTo, amount: (a.recv * 5n) / 70n, label: "ops:weth" },
+            { to: buybackTo, amount: (a.recv * 5n) / 70n, label: "buyback:weth" },
+          ]
+        : [{ to: opsTo, amount: (a.recv * 10n) / 70n, label: `ops:${a.key}` }];
+    for (const s of slices) {
+      if (s.amount <= 0n) continue;
+      const res = await transferSlice({ provider, signer, from: wallet, asset: a.addr, to: s.to, amount: s.amount, label: s.label, nonce });
+      transfers.push(res);
+      if (res.status === "sent") nonce++;
+    }
   }
 
   // "sent" only if every non-zero slice actually broadcast.
@@ -333,7 +353,7 @@ export async function POST(request) {
     hash,
     block: receipt?.blockNumber ?? null,
     explorer: chain.explorer,
-    split: doSplit ? { creator: 60, protocol: 30, ops: 10 } : null,
+    split: doSplit ? { creator: 60, protocol: 30, buyback: 5, ops: 5 } : null,
     distribution,
   });
 }
