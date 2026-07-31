@@ -13,9 +13,9 @@ const KEY = 'eska.holdings.v1'
 const TTL_MS = 60_000
 let mem = null // { at, holdings }
 
-function readSession() {
+function readPersisted() {
   try {
-    const raw = sessionStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY)
     if (!raw) return null
     const j = JSON.parse(raw)
     if (!j || !Array.isArray(j.holdings)) return null
@@ -25,17 +25,21 @@ function readSession() {
   }
 }
 
-/** The freshest holdings we already have, or null. Never hits the network. */
+/**
+ * The freshest holdings we already have, or null. Never hits the network.
+ * Persisted to localStorage so the very first paint on a fresh page load is
+ * instant (stale-while-revalidate — loadHoldings still refetches behind it).
+ */
 export function cachedHoldings() {
   if (mem) return mem.holdings
-  const s = readSession()
+  const s = readPersisted()
   if (s) { mem = s; return s.holdings }
   return null
 }
 
 function store(holdings) {
   mem = { at: Date.now(), holdings }
-  try { sessionStorage.setItem(KEY, JSON.stringify(mem)) } catch {}
+  try { localStorage.setItem(KEY, JSON.stringify(mem)) } catch {}
   return holdings
 }
 
@@ -79,5 +83,5 @@ export function primeHoldings(holdings) {
 /** Drop the cache — call after a trade/send so the next read rescans. */
 export function invalidateHoldings() {
   mem = null
-  try { sessionStorage.removeItem(KEY) } catch {}
+  try { localStorage.removeItem(KEY) } catch {}
 }

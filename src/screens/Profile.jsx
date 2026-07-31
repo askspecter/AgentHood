@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import { Gear, XGlyph, Coin, Verified } from '../components/icons'
 import CharmAvatar from '../components/CharmAvatar'
 import WalletActions from '../components/WalletActions'
-import { primeHoldings } from '../lib/holdings'
+import { primeHoldings, cachedHoldings } from '../lib/holdings'
 
 /**
  * Portfolio — real, on-chain.
@@ -49,6 +49,9 @@ export default function Profile() {
   }, [agents])
 
   const [folio, setFolio] = useState(null)
+  // Holdings we already read (this or a previous session) paint instantly while
+  // the fresh scan runs — so the list never sits on "Reading your wallet…".
+  const [seed] = useState(() => cachedHoldings())
   const [folioEthUsd, setFolioEthUsd] = useState(null)
   const [walletEth, setWalletEth] = useState(null)
   const [address, setAddress] = useState(null)
@@ -119,7 +122,8 @@ export default function Profile() {
   const eth = walletEth ?? wallet?.ethBalance ?? folio?.eth ?? null
   const totalWeth = folio?.totalWeth ?? eth
   const totalUsd = totalWeth != null && rate ? totalWeth * rate : null
-  const holdings = folio?.holdings ?? []
+  const holdings = folio?.holdings ?? seed ?? []
+  const haveHoldings = Boolean(folio || seed)
 
   // Portfolio 24h PnL, summed over the coins we can price a 24h change for.
   // Each coin's value 24h ago is value / (1 + change%/100); the delta is the
@@ -174,7 +178,7 @@ export default function Profile() {
 
         <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t hairline">
           <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '—'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
-          <Mini label="Coins held" value={loading && !folio ? '…' : String(holdings.length)} sub={folio ? `of ${folio.scanned} scanned` : null} />
+          <Mini label="Coins held" value={haveHoldings ? String(holdings.length) : (loading ? '…' : '0')} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
         <div className="mt-5">

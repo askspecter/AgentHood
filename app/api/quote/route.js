@@ -6,6 +6,16 @@ import { getChain, quote as quoteSwap, rpcProvider } from "@/lib/engine";
 const RPC_NOISE = /coalesce|UNKNOWN_ERROR|rate.?limit|429|503|timeout|ETIMEDOUT|ECONN|fetch failed|server response|SERVER_ERROR/i;
 
 /**
+ * Token decimals/symbol never change, so read them once per token — that removes
+ * one RPC round-trip from every re-quote. And a full quote is cached for a few
+ * seconds so re-opening the panel or toggling slippage is instant instead of
+ * spinning on "Pricing…"; the pool barely moves in that window.
+ */
+const META_CACHE = new Map();
+const QUOTE_CACHE = new Map();
+const QUOTE_TTL_MS = Number(process.env.QUOTE_TTL_MS || 3500);
+
+/**
  * POST /api/quote  { token, side: "buy"|"sell", amount, network }
  *
  * Quotes a swap through QuoterV2 so the UI can show the expected output before
@@ -42,17 +52,31 @@ export async function POST(request) {
     );
   }
 
+  // Serve an identical recent quote straight from cache.
+  const cacheKey = `${network}:${String(token).toLowerCase()}:${side}:${amount}:${slippage}`;
+  const cachedQuote = QUOTE_CACHE.get(cacheKey);
+  if (cachedQuote && Date.now() - cachedQuote.at < QUOTE_TTL_MS) {
+    return NextResponse.json(cachedQuote.value);
+  }
+
   try {
     const provider = rpcProvider(chain);
 
     let decimals = 18;
     let symbol = "TOKEN";
-    try {
-      const meta = new Contract(token, DECIMALS_ABI, provider);
-      decimals = Number(await meta.decimals());
-      symbol = await meta.symbol();
-    } catch {
-      /* keep the 18/TOKEN defaults — a quote is still useful without metadata */
+    const cachedMeta = META_CACHE.get(String(token).toLowerCase());
+    if (cachedMeta) {
+      decimals = cachedMeta.decimals;
+      symbol = cachedMeta.symbol;
+    } else {
+      try {
+        const meta = new Contract(token, DECIMALS_ABI, provider);
+        decimals = Number(await meta.decimals());
+        symbol = await meta.symbol();
+        META_CACHE.set(String(token).toLowerCase(), { decimals, symbol });
+      } catch {
+        /* keep the 18/TOKEN defaults — a quote is still useful without metadata */
+      }
     }
 
     const isBuy = side === "buy";
@@ -107,7 +131,7 @@ export async function POST(request) {
         ? `${Number(formatEther(raw)).toLocaleString("en-US", { maximumFractionDigits: 6 })} ETH`
         : `${Number(formatUnits(raw, decimals)).toLocaleString("en-US")} ${symbol}`;
 
-    return NextResponse.json({
+    const payload = {
       side,
       symbol,
       decimals,
@@ -119,7 +143,9 @@ export async function POST(request) {
       minOutLabel: label(minOut, !isBuy),
       slippagePercent: Number(slippage) || 5,
       poolFee,
-    });
+    };
+    QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
+    return NextResponse.json(payload);
   } catch (error) {
     console.error("Quote failed:", error);
     return NextResponse.json({ error: error.message || "Quote failed." }, { status: 502 });
