@@ -35,7 +35,7 @@ async function fetchJson(url, timeoutMs = 6000) {
 
 /** The explorer's market cap for a token, used when the on-chain read gave none. */
 async function explorerMcap(explorer, token) {
-  const j = await fetchJson(`${explorer.replace(/\/+$/, "")}/api/v2/tokens/${token}`);
+  const j = await fetchJson(`${explorer.replace(/\/+$/, "")}/api/v2/tokens/${token}`, 2500);
   if (!j) return 0;
   const em = Number(j.circulating_market_cap ?? j.market_cap);
   return Number.isFinite(em) && em > 0 ? em : 0;
@@ -54,8 +54,11 @@ async function creatorBoard(chain, network) {
   const start = Date.now();
   const priced = [];
   const CONC = 4;
+  // Hard cap well under Vercel's function limit so the request always returns
+  // quickly with whatever it priced — rather than hanging until it's killed,
+  // which leaves the board stuck on skeletons.
   for (let i = 0; i < entries.length; i += CONC) {
-    if (Date.now() - start > 6000) break;
+    if (Date.now() - start > 3500) break;
     const batch = entries.slice(i, i + CONC);
     const rows = await Promise.all(
       batch.map(async (e) => {
@@ -133,7 +136,7 @@ export async function GET(request) {
 
   const key = `${network}:${board}`;
   const cached = CACHE.get(key);
-  if (cached && Date.now() - cached.at < TTL && !url.searchParams.has("fresh")) {
+  if (cached && Date.now() < cached.exp && !url.searchParams.has("fresh")) {
     return NextResponse.json(cached.value);
   }
 
@@ -157,7 +160,9 @@ export async function GET(request) {
       const { rows, coins, creators } = await creatorBoard(chain, network);
       value = { board, rows, coins, creators, network, kv };
     }
-    if (value.rows.length) CACHE.set(key, { at: Date.now(), value });
+    // Cache a populated board for the full window; cache an empty one only
+    // briefly, so a board that just got its first activity shows up soon.
+    CACHE.set(key, { exp: Date.now() + (value.rows.length ? TTL : 20_000), value });
     return NextResponse.json(value);
   } catch (error) {
     return NextResponse.json({ board, rows: [], kv, error: error.message || "Could not build the leaderboard." }, { status: 200 });
