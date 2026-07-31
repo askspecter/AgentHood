@@ -4,6 +4,7 @@ import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
 import Ticker from '../components/Ticker'
 import CharmCarousel from '../components/CharmCarousel'
+import BurnCounter from '../components/BurnCounter'
 import { usd, num, pct } from '../lib/format'
 import { Verified, ArrowStat, Mentions } from '../components/icons'
 
@@ -64,6 +65,7 @@ export default function Explore() {
       {agents.length > 0 && <Ticker charms={agents} prices={prices} />}
 
       <Section id="index">
+        <BurnCounter />
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
             <h2 className="display text-3xl">Discover</h2>

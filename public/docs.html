@@ -305,7 +305,7 @@ td b{color:var(--ink);font-weight:600}
         <h2><span class="num">08</span>The $ESKA token</h2>
         <p>$ESKA is the platform's own token &mdash; pinned to the top of the feed with a gold verified check. It's designed to be <strong>deflationary</strong>: the ESKA share of fees across every coin is used to <strong>buy back and burn $ESKA</strong>. More launches and more volume mean more burned.</p>
         <div class="stats">
-          <div class="stat"><div class="n holo">28.38M</div><div class="k">$ESKA burned</div></div>
+          <div class="stat"><div class="n holo" id="burnStat" data-burn>28.38M</div><div class="k">$ESKA burned &middot; <span id="burnLive" style="color:var(--up,#5ad19a)">live</span></div></div>
           <div class="stat"><div class="n">10%</div><div class="k">of fees &rarr; buyback</div></div>
           <div class="stat"><div class="n">Official</div><div class="k">Gold verified</div></div>
         </div>
@@ -414,6 +414,30 @@ td b{color:var(--ink);font-weight:600}
     });
   },{rootMargin:'-15% 0px -70% 0px',threshold:0});
   secs.forEach(function(s){obs.observe(s);});
+
+  // Live $ESKA burn total. The API is CORS-open, so this works whether the docs
+  // are served same-origin (docs.eska.fun) or from anywhere else. Falls back to
+  // the apex domain, and keeps the printed figure if neither can be reached.
+  function fmt(n){
+    if(!isFinite(n)) return null;
+    if(Math.abs(n)>=1e9) return (n/1e9).toFixed(2)+'B';
+    if(Math.abs(n)>=1e6) return (n/1e6).toFixed(2)+'M';
+    if(Math.abs(n)>=1e3) return (n/1e3).toFixed(1)+'K';
+    return String(Math.round(n));
+  }
+  function paintBurn(){
+    var el=document.getElementById('burnStat'); if(!el) return;
+    var urls=['/api/eska/burned?network=robinhood','https://eska.fun/api/eska/burned?network=robinhood'];
+    (function tryAt(i){
+      if(i>=urls.length) return;
+      fetch(urls[i]).then(function(r){return r.ok?r.json():null;}).then(function(j){
+        if(j&&isFinite(j.burned)){ var s=fmt(j.burned); if(s) el.textContent=s; }
+        else tryAt(i+1);
+      }).catch(function(){ tryAt(i+1); });
+    })(0);
+  }
+  paintBurn();
+  setInterval(paintBurn,60000);
 })();
 </script>
 

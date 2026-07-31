@@ -1,26 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Back, Crown } from '../components/icons'
+import { Back, Crown, Verified } from '../components/icons'
+import { usd } from '../lib/format'
 
 /**
  * Leaderboard — three boards for activity on ESKA.
  *
- * All three rank real, ESKA-native activity: trades made here, sign-ups through
- * your referral, and coins launched here. None of them invent names — each fills
- * in as that activity is recorded, so they show an honest "warming up" state
- * until there's real data to rank. (The Discover feed's pons coins are not
- * counted as ESKA launches; Top creator is only for coins launched on ESKA.)
+ * The Creator board is live: it ranks people by the coins they've launched here,
+ * priced on-chain and totalled by the market cap they've created. The volume and
+ * referral boards rank real swaps and real referral sign-ups — data we don't
+ * index yet — so they honestly show a "warming up" state until there is
+ * something to rank. None of them invent names.
  */
 
+const NETWORK = 'robinhood'
+
 const TABS = [
+  { key: 'creator', label: 'Top creator' },
   { key: 'volume', label: 'Trade volume' },
   { key: 'referral', label: 'Top referral' },
-  { key: 'creator', label: 'Top creator' },
 ]
+
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
 
 export default function Leaderboard() {
   const nav = useNavigate()
-  const [tab, setTab] = useState('volume')
+  const [tab, setTab] = useState('creator')
+  const [creator, setCreator] = useState(null) // { rows, loading, failed }
+
+  useEffect(() => {
+    if (tab !== 'creator' || creator) return
+    let cancelled = false
+    setCreator({ loading: true, rows: [] })
+    fetch(`/api/leaderboard?board=creator&network=${NETWORK}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled) setCreator({ loading: false, rows: Array.isArray(j?.rows) ? j.rows : [] }) })
+      .catch(() => { if (!cancelled) setCreator({ loading: false, rows: [], failed: true }) })
+    return () => { cancelled = true }
+  }, [tab, creator])
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -35,6 +52,26 @@ export default function Leaderboard() {
         ))}
       </div>
 
+      {tab === 'creator' && (
+        creator?.loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="card h-16 animate-pulse opacity-40" />)}
+          </div>
+        ) : creator && creator.rows.length > 0 ? (
+          <div className="space-y-2">
+            {creator.rows.map((r) => <CreatorRow key={r.rank} row={r} />)}
+            <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">
+              Ranked by total market cap of coins launched on ESKA · priced live on-chain
+            </p>
+          </div>
+        ) : (
+          <Soon
+            title="Creator board is warming up"
+            body="This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot."
+          />
+        )
+      )}
+
       {tab === 'volume' && (
         <Soon
           title="Trade volume board is warming up"
@@ -48,13 +85,32 @@ export default function Leaderboard() {
           body="Share your referral code from Settings. Once friends sign in through it, the biggest referrers show up here — ranked by real sign-ups, nothing invented."
         />
       )}
+    </div>
+  )
+}
 
-      {tab === 'creator' && (
-        <Soon
-          title="Creator board is warming up"
-          body="This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It stays empty until the first coins are launched on ESKA."
-        />
-      )}
+function CreatorRow({ row }) {
+  const name = row.handle ? `@${row.handle}` : short(row.deployer)
+  const medal = row.rank <= 3
+  return (
+    <div className="card flex items-center gap-3 p-3.5">
+      <span className={`grid place-items-center w-8 h-8 rounded-lg shrink-0 font-mono text-sm ${medal ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
+        style={medal ? { background: 'var(--holo)' } : { background: 'var(--color-paper-2)' }}>
+        {row.rank}
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-semibold truncate">{name}</span>
+          {row.official && <Verified size={13} gold />}
+        </div>
+        <div className="text-xs text-[var(--color-ink-faint)] font-mono truncate">
+          {row.coins} coin{row.coins === 1 ? '' : 's'}{row.topSymbol ? ` · top $${String(row.topSymbol).replace(/^\$/, '')}` : ''}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <div className="font-mono num">{row.mcapUsd > 0 ? usd(row.mcapUsd) : '—'}</div>
+        <div className="eyebrow">mcap created</div>
+      </div>
     </div>
   )
 }

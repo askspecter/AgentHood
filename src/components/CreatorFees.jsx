@@ -43,7 +43,7 @@ export default function CreatorFees({ token, symbol }) {
   const parts = [
     `${s.creator ?? 70}% you`,
     `${s.protocol ?? 30}% pons`,
-    ...(s.eska ? [`${s.ops}% ESKA`] : []),
+    ...(s.eska ? [`${s.buyback ?? 5}% $ESKA buyback & burn`, `${s.ops ?? 5}% ops`] : []),
   ]
 
   // Always show what's claimable — the token and the WETH side — even when it's
@@ -70,9 +70,10 @@ export default function CreatorFees({ token, symbol }) {
         let text = 'Fees claimed to your wallet.'
         let good = true
         if (j.split) {
+          const eskaPct = (j.split.buyback ?? 5) + (j.split.ops ?? 5)
           const st = j.distribution?.status
-          if (st === 'sent') text = `Fees claimed — ESKA's ${j.split.ops}% was sent to the ops wallet.`
-          else { good = false; text = `Fees claimed to your wallet, but ESKA's ${j.split.ops}% didn't send: ${j.distribution?.note || 'try again in a moment.'}` }
+          if (st === 'sent') text = `Fees claimed — ESKA's ${eskaPct}% went to buyback & burn and ops.`
+          else { good = false; text = `Fees claimed to your wallet, but ESKA's ${eskaPct}% didn't send: ${j.distribution?.note || 'try again in a moment.'}` }
         }
         setMsg({ ok: good, text })
         loadFees()
