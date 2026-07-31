@@ -125,6 +125,12 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  // Whether durable storage is connected. When false, every board relies on an
+  // in-memory fallback that resets on each serverless cold start — so the boards
+  // look permanently empty. Surfaced so the UI can say "storage not connected"
+  // instead of the misleading "warming up".
+  const kv = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+
   const key = `${network}:${board}`;
   const cached = CACHE.get(key);
   if (cached && Date.now() - cached.at < TTL && !url.searchParams.has("fresh")) {
@@ -142,18 +148,18 @@ export async function GET(request) {
         volumeWeth: r.volumeWeth,
         volumeUsd: rate?.usd ? Math.round(r.volumeWeth * rate.usd) : null,
       }));
-      value = { board, rows, network };
+      value = { board, rows, network, kv };
     } else if (board === "referral") {
       const raw = await topReferrers({ limit: 25 });
       const rows = raw.map((r, i) => ({ rank: i + 1, code: r.code, count: r.count }));
-      value = { board, rows, network };
+      value = { board, rows, network, kv };
     } else {
       const { rows, coins, creators } = await creatorBoard(chain, network);
-      value = { board, rows, coins, creators, network };
+      value = { board, rows, coins, creators, network, kv };
     }
     if (value.rows.length) CACHE.set(key, { at: Date.now(), value });
     return NextResponse.json(value);
   } catch (error) {
-    return NextResponse.json({ board, rows: [], error: error.message || "Could not build the leaderboard." }, { status: 200 });
+    return NextResponse.json({ board, rows: [], kv, error: error.message || "Could not build the leaderboard." }, { status: 200 });
   }
 }
