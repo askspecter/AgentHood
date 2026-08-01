@@ -9,7 +9,7 @@ import {
   getEthUsd,
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
-import { resolveLaunch, curvePricing } from "@/lib/engine/ponsV2";
+import { resolveLaunch, curvePricing, v4Pricing } from "@/lib/engine/ponsV2";
 
 /**
  * GET  /api/registry        → tokens launched through this site, newest first
@@ -101,6 +101,10 @@ export async function GET(request) {
               l.graduated = false;
             } else if (lc.phase === 2) {
               l.graduated = true;
+              const p = await v4Pricing(provider, chain, lc);
+              if (p.priceInWeth != null) l.priceInWeth = p.priceInWeth;
+              if (p.marketCapWeth != null) l.marketCapWeth = p.marketCapWeth;
+              l.graduationProgress = 1;
             }
           } catch {
             /* leave the v1-derived values as-is */
