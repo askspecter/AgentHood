@@ -81,6 +81,8 @@ p strong,li strong{color:var(--ink);font-weight:600}
 ul,ol{margin:12px 0 12px 4px;padding-left:22px;color:var(--soft)}
 li{margin:7px 0}
 code{font-family:var(--mono);font-size:.86em;background:var(--panel2);border:1px solid var(--line);padding:1.5px 6px;border-radius:6px;color:#d7cffb;word-break:break-all}
+.codeblock{font-family:var(--mono);font-size:.8rem;line-height:1.6;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:#d7cffb;overflow-x:auto;white-space:pre;margin:14px 0}
+.muted{color:var(--soft);font-size:.92em}
 .steps{counter-reset:s;list-style:none;padding:0;margin:16px 0}
 .steps li{counter-increment:s;position:relative;padding:14px 16px 14px 56px;border:1px solid var(--line);border-radius:14px;margin:10px 0;background:var(--panel)}
 .steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:16px;top:14px;font-family:var(--mono);font-size:13px;color:transparent;background:var(--foil);-webkit-background-clip:text;background-clip:text;font-weight:700}
@@ -171,6 +173,12 @@ td b{color:var(--ink);font-weight:600}
         <a href="#architecture">Architecture</a>
         <a href="#security">Security</a>
         <a href="#contracts">Contracts</a>
+      </nav>
+    </div>
+    <div class="navgrp">
+      <p class="lbl">Developers</p>
+      <nav class="nav">
+        <a href="#mcp">AI access (MCP)</a>
       </nav>
     </div>
     <div class="navgrp">
@@ -360,9 +368,64 @@ td b{color:var(--ink);font-weight:600}
         </table></div>
       </section>
 
+      <!-- MCP / AI ACCESS -->
+      <section id="mcp" class="sec">
+        <h2><span class="num">12</span>AI access (MCP)</h2>
+        <p>ESKA runs a <strong>Model Context Protocol</strong> server, so you can drive it from an AI client &mdash; Claude, Cursor, or anything that speaks MCP. Browse coins, get quotes, check your wallet, and (with your key) trade and launch, all by asking.</p>
+
+        <div class="stats">
+          <div class="stat"><div class="n holo">1</div><div class="k">endpoint to connect</div></div>
+          <div class="stat"><div class="n">8</div><div class="k">tools</div></div>
+          <div class="stat"><div class="n">MCP</div><div class="k">streamable HTTP</div></div>
+        </div>
+
+        <h3>Endpoint</h3>
+        <p>Add this as a remote MCP server in your client:</p>
+        <div class="codeblock">https://eska.fun/api/mcp</div>
+
+        <h3>Get your key</h3>
+        <p>Read tools work with no key. To trade or launch, generate a personal <strong>ESKA API key</strong> in the app at <strong>Settings &rarr; AI access</strong>. Send it on every request as a bearer token:</p>
+        <div class="codeblock">Authorization: Bearer eska_mcp_&hellip;</div>
+        <div class="note warn"><div class="t">Treat your key like a password</div><p>The key carries spend authority over your custodial wallet &mdash; anyone holding it can trade and launch as you. It's shown once, isn't stored, and should only ever go into an AI client you trust. Never paste it publicly.</p></div>
+
+        <h3>Connect (Claude Desktop)</h3>
+        <p>Add ESKA under <code>mcpServers</code> in your client config, with the key in the auth header:</p>
+        <div class="codeblock">{
+  "mcpServers": {
+    "eska": {
+      "url": "https://eska.fun/api/mcp",
+      "headers": { "Authorization": "Bearer eska_mcp_&hellip;" }
+    }
+  }
+}</div>
+        <p class="muted">Clients differ &mdash; some take a URL + header in their UI, others a JSON config like the above. Point any of them at the endpoint and set the bearer header.</p>
+
+        <h3>Tools</h3>
+        <div class="tbl"><table>
+          <tr><th>Tool</th><th>Does</th><th>Key?</th></tr>
+          <tr><td><code>list_coins</code></td><td>Live coins on ESKA with market cap &amp; 24h</td><td>&mdash;</td></tr>
+          <tr><td><code>get_coin</code></td><td>Details for one coin by address</td><td>&mdash;</td></tr>
+          <tr><td><code>quote_trade</code></td><td>Price a buy/sell without executing</td><td>&mdash;</td></tr>
+          <tr><td><code>eska_burned</code></td><td>Live $ESKA burn total</td><td>&mdash;</td></tr>
+          <tr><td><code>leaderboard</code></td><td>Top creator / volume / referral</td><td>&mdash;</td></tr>
+          <tr><td><code>wallet</code></td><td>Your wallet address &amp; balances</td><td>&#10003;</td></tr>
+          <tr><td><code>trade</code></td><td>Buy or sell &mdash; spends real funds</td><td>&#10003;</td></tr>
+          <tr><td><code>launch_coin</code></td><td>Launch a new coin &mdash; spends real funds</td><td>&#10003;</td></tr>
+        </table></div>
+
+        <h3>Try it</h3>
+        <p>Once connected, just talk to your AI:</p>
+        <ul>
+          <li>&ldquo;List the top coins on ESKA and quote me 0.05 ETH into the biggest one.&rdquo;</li>
+          <li>&ldquo;Launch a coin called Nova, ticker $NOVA, and buy 0.01 of it.&rdquo;</li>
+          <li>&ldquo;How much $ESKA has been burned?&rdquo;</li>
+        </ul>
+        <div class="note"><div class="t">Safety</div><p>Every trade is still re-quoted, slippage-guarded and dry-run before it's sent, exactly as in the app. Fees always route to your own wallet. Start with tiny amounts while you get comfortable.</p></div>
+      </section>
+
       <!-- FAQ -->
       <section id="faq" class="sec">
-        <h2><span class="num">12</span>FAQ</h2>
+        <h2><span class="num">13</span>FAQ</h2>
         <div class="faq">
           <div class="q">Do I need a wallet or seed phrase?</div>
           <div class="a">No. Sign in with X and a wallet is minted for you. You can export its private key any time.</div>
@@ -381,10 +444,11 @@ td b{color:var(--ink);font-weight:600}
 
       <!-- LINKS -->
       <section id="links" class="sec">
-        <h2><span class="num">13</span>Links</h2>
+        <h2><span class="num">14</span>Links</h2>
         <ul>
           <li><strong>App</strong> &mdash; eska.fun</li>
           <li><strong>X</strong> &mdash; @eskafun</li>
+          <li><strong>MCP server</strong> &mdash; eska.fun/api/mcp</li>
           <li><strong>Chain</strong> &mdash; Robinhood Chain (ID 4663)</li>
         </ul>
         <div class="foot">
