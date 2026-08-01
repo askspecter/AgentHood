@@ -407,6 +407,10 @@ export async function GET(request) {
       for (const addr of alwaysShow) {
         if (have.has(addr)) continue;
         const sym = KNOWN_SYMBOLS[addr] || null;
+        // Only stub a coin we can label. A launched-here coin with no known symbol
+        // whose enrich failed this cycle is skipped rather than shown as "$TOKEN";
+        // it appears once its on-chain symbol reads on a later refresh.
+        if (!sym) continue;
         try {
           featured.push({ token: getAddress(addr), symbol: sym, name: sym, marketCapWeth: null });
         } catch {
@@ -459,6 +463,11 @@ export async function GET(request) {
           (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) ||
           (mcapUsd(b) - mcapUsd(a))
       );
+
+      // Never surface a coin we couldn't label — it renders as the "$TOKEN"
+      // placeholder. The official pin is always kept; everything else needs a
+      // real symbol or name (it returns once its on-chain read succeeds).
+      launches = launches.filter((l) => l.official || l.symbol || l.name);
     }
 
     const value = serialise({

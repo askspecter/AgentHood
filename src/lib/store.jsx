@@ -154,6 +154,10 @@ export function StoreProvider({ children }) {
         for (const t of [...(reg?.launches || []), ...(feed?.launches || [])]) {
           const key = (t.token || t.id || '').toLowerCase()
           if (!key || seen.has(key)) continue
+          // Skip a coin whose real name/symbol couldn't be read this cycle — it
+          // would render as the "$TOKEN" placeholder. It comes back the moment its
+          // symbol resolves. The official pin is always kept.
+          if (!t.official && !t.symbol && !t.name) continue
           seen.add(key)
           agentsOut.push(tokenToAgent(t, rate))
         }
