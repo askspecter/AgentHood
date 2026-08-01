@@ -97,21 +97,12 @@ export async function POST(request) {
   const pairToken = ZeroAddress; // native ETH launch
 
   try {
-    // Gate: launching may be whitelist-restricted.
-    try {
-      const enabled = await factory.launchEnabled();
-      if (!enabled) {
-        const ok = await factory.whitelistedLaunchers(owner).catch(() => false);
-        if (!ok) {
-          return NextResponse.json(
-            { error: "Launching is currently limited to approved addresses on pons v2." },
-            { status: 403 }
-          );
-        }
-      }
-    } catch {
-      /* if the gate can't be read, let the dry-run below be the source of truth */
-    }
+    // No pre-flight whitelist gate: launchEnabled()/whitelistedLaunchers() can
+    // read false even when this wallet can actually launch (their semantics vary
+    // by deployment), which wrongly blocked real launches. The launchToken
+    // dry-run below is the authoritative, free check — if the launch would truly
+    // revert (e.g. genuinely not whitelisted), it returns the contract's own
+    // reason; if it would succeed, it proceeds.
 
     // Choose an open config and pin its economics right before launching.
     const launchConfigId = await chooseLaunchConfigId(provider, chain);
@@ -144,9 +135,16 @@ export async function POST(request) {
     try {
       await factory.launchToken.staticCall(params, launchConfigId, pairToken, { value: fee });
     } catch (error) {
+      const reason = error.shortMessage || error.reason || error.message || "";
+      if (/NotWhitelisted/i.test(reason)) {
+        return NextResponse.json(
+          { error: "pons v2 is still limiting launches to approved wallets. Your wallet isn't whitelisted yet — ask pons to approve it, or launch once v2 opens publicly." },
+          { status: 403 }
+        );
+      }
       return NextResponse.json(
         {
-          error: `Simulation reverted, so nothing was sent: ${error.shortMessage || error.reason || error.message}`,
+          error: `Simulation reverted, so nothing was sent: ${reason}`,
           hint: "The factory rejected these terms. This is often the economics pin moving — try again.",
         },
         { status: 400 }
