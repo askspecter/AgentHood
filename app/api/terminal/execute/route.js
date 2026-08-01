@@ -11,6 +11,7 @@ import { NextResponse } from "next/server";
 import { DEADLINE_SECONDS, deriveSigner, getChain, quote, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { recordTrade } from "@/lib/stats";
+import { CURVE_ABI, resolveLaunch, phaseBlockedMessage } from "@/lib/engine/ponsV2";
 
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
@@ -236,6 +237,75 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+  }
+
+  // ---- pons v2: a launched token trades on its bonding curve before graduation.
+  // Route curve buys/sells here. A graduated (Uniswap v4) launch is handled once
+  // v4 infra is configured. Not a v2 launch → fall through to the v1 path. ----
+  try {
+    const launch = await resolveLaunch(provider, chain, token);
+    if (launch) {
+      if (launch.phase !== 0) {
+        const msg = phaseBlockedMessage(launch.phase);
+        return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
+      }
+      const curve = new Contract(launch.curve, CURVE_ABI, signer);
+      const slippageBps = BigInt(Math.round(Math.min(50, Math.max(0.1, Number(slippage) || 5)) * 100));
+      let expectedOut = 0n;
+      try { expectedOut = BigInt(expectedOutRaw || 0); } catch { /* keep 0 */ }
+      const minOut = expectedOut > 0n ? (expectedOut * (10_000n - slippageBps)) / 10_000n : 0n;
+
+      if (isBuy) {
+        if (launch.isNativeQuote) {
+          const bal = await provider.getBalance(owner);
+          if (bal <= amountIn) {
+            return NextResponse.json(
+              { error: `Your X wallet holds ${Number(formatEther(bal)).toFixed(6)} ETH, which does not cover ${Number(formatEther(amountIn)).toFixed(6)} ETH plus gas.`, hint: "Send ETH to your wallet first." },
+              { status: 400 }
+            );
+          }
+          await curve.buy.staticCall(amountIn, minOut, owner, { value: amountIn });
+          const tx = await curve.buy(amountIn, minOut, owner, { value: amountIn });
+          const receipt = await tx.wait();
+          if (receipt.status === 0) return NextResponse.json({ error: "The buy was mined but reverted.", hash: tx.hash }, { status: 400 });
+          try { await recordTrade({ network, handle: session.username, wethValue: Number(formatEther(amountIn)) }); } catch { /* stats non-critical */ }
+          return NextResponse.json({ ok: true, hash: tx.hash, token, side, venue: "curve", explorer: chain.explorer });
+        }
+        // custom-pair buy: approve the curve to pull the quote asset, then buy.
+        const pair = new Contract(launch.pairToken, ERC20_ABI, signer);
+        if ((await pair.allowance(owner, launch.curve)) < amountIn) {
+          const a = await pair.approve(launch.curve, MaxUint256); await a.wait();
+        }
+        await curve.buy.staticCall(amountIn, minOut, owner);
+        const tx = await curve.buy(amountIn, minOut, owner);
+        const receipt = await tx.wait();
+        if (receipt.status === 0) return NextResponse.json({ error: "The buy was mined but reverted.", hash: tx.hash }, { status: 400 });
+        return NextResponse.json({ ok: true, hash: tx.hash, token, side, venue: "curve", explorer: chain.explorer });
+      }
+
+      // sell: approve the curve to pull the token, then sell it into the curve.
+      const erc = new Contract(token, ERC20_ABI, signer);
+      const bal = await erc.balanceOf(owner);
+      if (bal < amountIn) {
+        return NextResponse.json({ error: `Your X wallet holds ${Number(formatUnits(bal, 18)).toLocaleString("en-US")} of this token, which is less than that.` }, { status: 400 });
+      }
+      if ((await erc.allowance(owner, launch.curve)) < amountIn) {
+        const a = await erc.approve(launch.curve, MaxUint256); await a.wait();
+      }
+      await curve.sell.staticCall(amountIn, minOut, owner);
+      const tx = await curve.sell(amountIn, minOut, owner);
+      const receipt = await tx.wait();
+      if (receipt.status === 0) return NextResponse.json({ error: "The sell was mined but reverted.", hash: tx.hash }, { status: 400 });
+      try { if (launch.isNativeQuote && expectedOut > 0n) await recordTrade({ network, handle: session.username, wethValue: Number(formatEther(expectedOut)) }); } catch { /* non-critical */ }
+      return NextResponse.json({ ok: true, hash: tx.hash, token, side, venue: "curve", explorer: chain.explorer });
+    }
+  } catch (error) {
+    // We only get here after entering the v2 branch (resolveLaunch returned a
+    // launch), so a revert is a real curve-trade failure — surface it.
+    return NextResponse.json(
+      { error: `The trade failed: ${error.shortMessage || error.reason || error.message}` },
+      { status: 400 }
+    );
   }
 
   try {
