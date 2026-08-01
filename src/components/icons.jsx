@@ -153,6 +153,7 @@ const P = {
   docs: <><path d="M4 5c3-1.5 5-1.5 8 0v14c-3-1.5-5-1.5-8 0zM20 5c-3-1.5-5-1.5-8 0v14c3-1.5 5-1.5 8 0z" strokeLinejoin="round" /></>,
   logout: <><path d="M14 4H6v16h8" /><path d="M18 12H10M15 9l3 3-3 3" strokeLinecap="round" /></>,
   wallet: <><rect x="3.5" y="6" width="17" height="13" rx="3" /><path d="M16 12h2" strokeLinecap="round" /></>,
+  terminal: <><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M7.5 9.5l3 2.5-3 2.5M12.5 15h4" strokeLinecap="round" strokeLinejoin="round" /></>,
 }
 export function RowIcon({ name, size = 20, stroke = 'var(--color-ink)' }) {
   return (

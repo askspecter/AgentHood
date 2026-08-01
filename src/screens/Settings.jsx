@@ -21,7 +21,8 @@ export default function Settings() {
             {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize !px-2.5 !text-[13px] ${theme === k ? 'on' : ''}`}>{k}</button>)}
           </div>
         } />
-        <Row icon="gift" label="Referral code" onClick={() => nav('/settings/referral')} last />
+        <Row icon="gift" label="Referral code" onClick={() => nav('/settings/referral')} />
+        <Row icon="terminal" label="AI access (MCP)" onClick={() => nav('/settings/ai')} last />
       </Section>
 
       <Section title="Resources">
