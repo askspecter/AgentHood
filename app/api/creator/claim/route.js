@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { Interface, formatUnits, getAddress, isAddress } from "ethers";
+import { Contract, Interface, formatUnits, getAddress, isAddress } from "ethers";
 import {
   deriveSigner,
   deriveAddress,
@@ -13,6 +13,7 @@ import {
 import { getSession } from "@/lib/session";
 import { eskaCutEnabled, opsWallet } from "@/lib/fees";
 import { BUYBACK_ID } from "@/lib/eska";
+import { resolveLaunch, v2Config, ESCROW_ABI } from "@/lib/engine/ponsV2";
 
 /**
  * POST /api/creator/claim  { token, network }
@@ -241,6 +242,46 @@ export async function POST(request) {
     (entry?.xUsername && entry.xUsername.toLowerCase() === (session.username || "").replace(/^@/, "").toLowerCase());
   if (!isCreator) {
     return NextResponse.json({ error: "Only the coin's creator can claim its fees." }, { status: 403 });
+  }
+
+  // pons v2: fees accrue to the shared escrow and are withdrawn with claim()
+  // (native) / claimToken(asset) (custom pair). Recipients claim their whole
+  // credited balance at once — there's no per-token claim on the escrow.
+  try {
+    const provider = rpcProvider(chain);
+    const launch = await resolveLaunch(provider, chain, token);
+    if (launch) {
+      const signer = deriveSigner(session.id, chain);
+      const owner = await signer.getAddress();
+      const esc = new Contract(v2Config(chain).escrow, ESCROW_ABI, signer);
+      let hash = null;
+      const claimed = [];
+      const nativeOwed = await esc.balanceOf(owner).catch(() => 0n);
+      if (nativeOwed > 0n) {
+        const tx = await esc.claim();
+        const r = await tx.wait();
+        hash = r?.hash || tx.hash;
+        claimed.push("ETH");
+      }
+      if (!launch.isNativeQuote) {
+        const owed = await esc.balanceOfToken(owner, launch.pairToken).catch(() => 0n);
+        if (owed > 0n) {
+          const tx = await esc.claimToken(launch.pairToken);
+          const r = await tx.wait();
+          hash = r?.hash || tx.hash;
+          claimed.push("token");
+        }
+      }
+      if (!claimed.length) {
+        return NextResponse.json({ error: "Nothing to claim right now." }, { status: 400 });
+      }
+      return NextResponse.json({ ok: true, hash, claimed, v2: true, explorer: chain.explorer });
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: `Claim failed: ${error.shortMessage || error.reason || error.message}` },
+      { status: 400 }
+    );
   }
 
   const locker = chain.pons?.locker;

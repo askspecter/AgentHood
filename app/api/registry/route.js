@@ -9,6 +9,7 @@ import {
   getEthUsd,
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
+import { resolveLaunch, curvePricing } from "@/lib/engine/ponsV2";
 
 /**
  * GET  /api/registry        → tokens launched through this site, newest first
@@ -84,6 +85,28 @@ export async function GET(request) {
         };
       });
       ethUsd = rate?.usd ?? null;
+
+      // Overlay pons v2 curve pricing so a v2 launch shows a real price, market
+      // cap and graduation progress instead of the empty v3-pool read.
+      await Promise.all(
+        launches.map(async (l) => {
+          try {
+            const lc = await resolveLaunch(provider, chain, l.token);
+            if (!lc) return;
+            if (lc.phase === 0) {
+              const p = await curvePricing(provider, chain, lc);
+              if (p.priceInWeth != null) l.priceInWeth = p.priceInWeth;
+              if (p.marketCapWeth != null) l.marketCapWeth = p.marketCapWeth;
+              if (p.graduationProgress != null) l.graduationProgress = p.graduationProgress;
+              l.graduated = false;
+            } else if (lc.phase === 2) {
+              l.graduated = true;
+            }
+          } catch {
+            /* leave the v1-derived values as-is */
+          }
+        })
+      );
     }
 
     return NextResponse.json(serialise({ ...result, launches, ethUsd, network }));

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Contract, Interface, formatUnits, getAddress, isAddress } from "ethers";
 import { deriveAddress, getChain, listLaunched, fetchFactoryAbi, getEthUsd, spotPrice, rpcProvider } from "@/lib/engine";
 import { getSession } from "@/lib/session";
+import { resolveLaunch, escrow } from "@/lib/engine/ponsV2";
 
 /**
  * GET /api/creator/fees?token=0x…&network=robinhood
@@ -63,6 +64,31 @@ export async function GET(request) {
     (entry?.deployer && entry.deployer.toLowerCase() === wallet.toLowerCase()) ||
     (entry?.xUsername && entry.xUsername.toLowerCase() === (session.username || "").replace(/^@/, "").toLowerCase());
   if (!isCreator) return NextResponse.json({ accrued: null });
+
+  // pons v2: fees accrue to the shared escrow, per recipient — a native ETH
+  // ledger plus a per-asset ledger for custom-pair launches. This is the
+  // recipient's total across their v2 launches (aggregate, not per-coin).
+  try {
+    const provider = rpcProvider(chain);
+    const launch = await resolveLaunch(provider, chain, token);
+    if (launch) {
+      const esc = escrow(provider, chain);
+      const rate = (await getEthUsd().catch(() => null))?.usd ?? null;
+      const accrued = [];
+      const nativeOwed = await esc.balanceOf(wallet).catch(() => 0n);
+      const nativeQty = Number(formatUnits(nativeOwed, 18));
+      accrued.push({ symbol: "ETH", amount: nativeQty, usd: rate != null ? nativeQty * rate : null });
+      if (!launch.isNativeQuote) {
+        const owed = await esc.balanceOfToken(wallet, launch.pairToken).catch(() => 0n);
+        let dec = 18, sym = "TOKEN";
+        try { const c = new Contract(launch.pairToken, META_ABI, provider); sym = await c.symbol(); dec = Number(await c.decimals()); } catch { /* defaults */ }
+        accrued.push({ symbol: (sym || "TOKEN").replace(/^\$/, ""), amount: Number(formatUnits(owed, dec)), usd: null });
+      }
+      return NextResponse.json({ accrued, canRead: true, v2: true, aggregate: true });
+    }
+  } catch {
+    /* not a v2 launch — fall through to the v1 locker path */
+  }
 
   const locker = chain.pons?.locker;
   const weth = chain.pons?.weth;
