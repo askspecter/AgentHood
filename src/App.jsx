@@ -15,6 +15,7 @@ import Leaderboard from './screens/Leaderboard'
 import Referral from './screens/Referral'
 import Terms from './screens/Terms'
 import Privacy from './screens/Privacy'
+import About from './screens/About'
 
 function ScrollTop() {
   const { pathname } = useLocation()
@@ -42,6 +43,7 @@ export default function App() {
               <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="terms" element={<Terms />} />
               <Route path="privacy" element={<Privacy />} />
+              <Route path="about" element={<About />} />
             </Route>
           </Routes>
         </ErrorBoundary>
