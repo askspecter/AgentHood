@@ -305,7 +305,7 @@ export default function Launch() {
 
   const doLaunch = useCallback(async () => {
     if (!user) return connect()
-    if (!canLaunch) return
+    if (!canLaunch || !meta?.chosen) return
     setBusy(true); setError(null)
     try {
       // Ensure the logo is a durable, self-hosted URL before it goes on-chain —
@@ -315,21 +315,29 @@ export default function Launch() {
         const stable = await persistLogo(logo)
         if (stable) { logo = stable; set('logo', stable) }
       }
+      // Launch on pons v1: map the pretty fields onto the factory's discovered
+      // ABI and sign server-side. (v2 launching is whitelist-gated during its
+      // audit; trading still auto-detects v2 vs v1 per token.)
+      const values = {}
+      for (const field of fields) {
+        const n = field.name || ''
+        const key = field.path.join('.')
+        const hint = hintFor(field)
+        if (/^(name|tokenname)$/i.test(n)) values[key] = d.name
+        else if (/^(symbol|ticker)$/i.test(n)) values[key] = d.ticker
+        else if (/(logo|image|icon|avatar|uri)/i.test(n)) { if (logo) values[key] = logo }
+        else if (/(description|desc|bio)/i.test(n)) values[key] = describe()
+        else if (hint.fillWithAccount) values[key] = xWallet
+        else if (hint.isEth) { values[key] = d.firstBuy || '0'; values[`${key}__isEth`] = true }
+        else if (hint.fillWithSalt) values[key] = randomSalt()
+      }
+      const feePath = fields.find((f) => hintFor(f).fillWithAccount)?.path.join('.') || null
+      const buyEth = Number(d.firstBuy || 0)
 
-      // Launch on pons v2. The server picks the open launch config, pins the
-      // economics, reads the exact launch fee, and forces the fee recipient —
-      // so the client only sends the coin's identity.
-      const res = await fetch('/api/launch/v2', {
+      const res = await fetch('/api/launch/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: d.name,
-          symbol: d.ticker || d.name,
-          logo: logo || '',
-          description: describe(),
-          socials: {},
-          network: NETWORK,
-        }),
+        body: JSON.stringify({ fnName: meta.chosen.name, fnInputs: meta.chosen.inputs, values, feePath, buyEth, network: NETWORK }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.hint ? `${json.error} ${json.hint}` : json.error || 'The launch failed.'); return }
@@ -347,7 +355,7 @@ export default function Launch() {
     } finally {
       setBusy(false)
     }
-  }, [user, canLaunch, d])
+  }, [user, canLaunch, meta, fields, d, xWallet])
 
   // "Generating the look": kick off FLUX.1 [schnell] on fal.ai and animate the
   // progress. The bar eases toward ~94% while the image renders, then snaps to
@@ -683,13 +691,14 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
         {xWallet && <Row k="Creator fees →" v={short(xWallet)} />}
       </div>
 
+      {metaError && <div className="chip chip-down w-full mb-4">Could not read the pons factory. {friendly(metaError)}</div>}
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
-      <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {busy ? 'Minting on pons…' : !user ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : `Launch ${preview.name} on pons`}
+      <button onClick={onLaunch} disabled={busy || !meta?.chosen} className="btn btn-holo w-full !py-3.5 mt-auto">
+        {busy ? 'Minting on pons…' : !user ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : !meta?.chosen ? 'Reading factory…' : `Launch ${preview.name} on pons`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Real launch on pons v2 — simulated first, signed by your X wallet.
+        Real launch — simulated first, signed by your X wallet, deployed through the pons factory.
       </p>
     </div>
   )
