@@ -59,6 +59,14 @@ export default function BurnCounter() {
 
   const shown = useCountUp(data?.burned ?? 0)
 
+  // Share the current burn total to X. eska.fun unfurls with the live burn card.
+  const shareBurn = () => {
+    const n = fmtBurn(data?.burned ?? 0)
+    const text = `🔥 ${n} $ESKA burned and counting — bought back & burned on-chain, forever. deflationary by design.`
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://eska.fun')}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   // Nothing to show until the first read lands (and stay quiet if it can't read).
   if (failed && !data) return null
   if (!data) return null
@@ -87,10 +95,16 @@ export default function BurnCounter() {
           </div>
         </div>
 
-        <div className="hidden sm:block text-right shrink-0">
+        <div className="hidden sm:flex flex-col items-end text-right shrink-0 mr-1">
           <div className="eyebrow">buyback &amp; burn</div>
           <div className="text-xs font-mono text-[var(--color-up)] mt-0.5">live · on-chain</div>
         </div>
+
+        <button onClick={shareBurn} title="Share the burn on X"
+          className="btn btn-secondary !py-2 !px-3 shrink-0 inline-flex items-center gap-1.5 text-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M18.9 2H22l-7.5 8.6L23 22h-6.8l-5.3-6.9L4.8 22H1.7l8-9.2L1 2h7l4.8 6.3L18.9 2Zm-1.2 18h1.9L6.4 4H4.4l13.3 16Z" /></svg>
+          Share
+        </button>
       </div>
     </div>
   )

@@ -70,6 +70,13 @@ export default function CharmDetail() {
   const grad = charm.graduated
   const addr = charm.token
 
+  // Share to X. The coin's link unfurls with its branded card (per-URL OG meta).
+  const shareCoin = () => {
+    const text = `$${charm.ticker} on ESKA — ${charm.name}. a real coin and a living AI agent on Robinhood Chain.`
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`https://eska.fun/c/${addr}`)}`
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div className="max-w-xl mx-auto space-y-4">
       <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
@@ -96,8 +103,12 @@ export default function CharmDetail() {
             </div>
           </div>
         </div>
-        <div className="mt-5">
-          <Link to={`/chat/${charm.id}`} className="btn btn-primary w-full">Chat with {charm.name}</Link>
+        <div className="mt-5 flex gap-2">
+          <Link to={`/chat/${charm.id}`} className="btn btn-primary flex-1 justify-center">Chat with {charm.name}</Link>
+          <button onClick={shareCoin} title="Share on X" className="btn btn-secondary shrink-0 inline-flex items-center gap-1.5">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M18.9 2H22l-7.5 8.6L23 22h-6.8l-5.3-6.9L4.8 22H1.7l8-9.2L1 2h7l4.8 6.3L18.9 2Zm-1.2 18h1.9L6.4 4H4.4l13.3 16Z" /></svg>
+            Share
+          </button>
         </div>
       </div>
 
