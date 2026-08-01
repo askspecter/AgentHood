@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import { DEADLINE_SECONDS, deriveSigner, getChain, quote, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { recordTrade } from "@/lib/stats";
-import { CURVE_ABI, resolveLaunch, phaseBlockedMessage } from "@/lib/engine/ponsV2";
+import { CURVE_ABI, resolveLaunch, phaseBlockedMessage, buildV4Swap, v2Config, UNIVERSAL_ROUTER_ABI, PERMIT2_ABI } from "@/lib/engine/ponsV2";
 
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
@@ -245,6 +245,64 @@ export async function POST(request) {
   try {
     const launch = await resolveLaunch(provider, chain, token);
     if (launch) {
+      // ---- Graduated: trade the Uniswap v4 pool through the Universal Router ----
+      if (launch.phase === 2) {
+        const cfg = v2Config(chain);
+        if (!cfg?.universalRouter) {
+          return NextResponse.json({ error: "This coin graduated to a Uniswap v4 pool, and v4 trading isn't configured here yet." }, { status: 400 });
+        }
+        const slippageBps0 = BigInt(Math.round(Math.min(50, Math.max(0.1, Number(slippage) || 5)) * 100));
+        let expectedOut0 = 0n;
+        try { expectedOut0 = BigInt(expectedOutRaw || 0); } catch { /* keep 0 */ }
+        const minOut0 = expectedOut0 > 0n ? (expectedOut0 * (10_000n - slippageBps0)) / 10_000n : 0n;
+        const plan = buildV4Swap(chain, launch, side, amountIn, minOut0);
+
+        if (isBuy) {
+          const bal = await provider.getBalance(owner);
+          if (bal <= amountIn) {
+            return NextResponse.json({ error: `Your X wallet holds ${Number(formatEther(bal)).toFixed(6)} ETH, which does not cover ${Number(formatEther(amountIn)).toFixed(6)} ETH plus gas.` }, { status: 400 });
+          }
+        } else {
+          // Sell: the Universal Router pulls the token through Permit2, so approve
+          // the token to Permit2 and Permit2 to the router before swapping.
+          const erc = new Contract(token, ERC20_ABI, signer);
+          const held = await erc.balanceOf(owner);
+          if (held < amountIn) {
+            return NextResponse.json({ error: `Your X wallet holds ${Number(formatUnits(held, 18)).toLocaleString("en-US")} of this token, which is less than that.` }, { status: 400 });
+          }
+          if ((await erc.allowance(owner, cfg.permit2)) < amountIn) {
+            const a = await erc.approve(cfg.permit2, MaxUint256); await a.wait();
+          }
+          const p2 = new Contract(cfg.permit2, PERMIT2_ABI, signer);
+          let allowed = 0n;
+          try { const r = await p2.allowance(owner, token, plan.to); allowed = BigInt(r[0]); } catch { /* treat as 0 */ }
+          if (allowed < amountIn) {
+            const MAX160 = (1n << 160n) - 1n;
+            const exp = Math.floor(Date.now() / 1000) + 3600;
+            const a = await p2.approve(token, plan.to, MAX160, exp); await a.wait();
+          }
+        }
+
+        const router = new Contract(plan.to, UNIVERSAL_ROUTER_ABI, signer);
+        const deadline = Math.floor(Date.now() / 1000) + DEADLINE_SECONDS;
+        try {
+          await router.execute.staticCall(plan.commands, plan.inputs, deadline, { value: plan.value });
+        } catch (e) {
+          return NextResponse.json(
+            { error: `This v4 swap would revert, so nothing was sent: ${e.shortMessage || e.reason || e.message}`, hint: "Raise slippage a little or try a smaller amount." },
+            { status: 400 }
+          );
+        }
+        const tx = await router.execute(plan.commands, plan.inputs, deadline, { value: plan.value });
+        const receipt = await tx.wait();
+        if (receipt.status === 0) return NextResponse.json({ error: "The swap was mined but reverted.", hash: tx.hash }, { status: 400 });
+        try {
+          const wv = isBuy ? Number(formatEther(amountIn)) : (expectedOut0 > 0n ? Number(formatEther(expectedOut0)) : 0);
+          if (wv > 0) await recordTrade({ network, handle: session.username, wethValue: wv });
+        } catch { /* stats non-critical */ }
+        return NextResponse.json({ ok: true, hash: tx.hash, token, side, venue: "v4", explorer: chain.explorer });
+      }
+
       if (launch.phase !== 0) {
         const msg = phaseBlockedMessage(launch.phase);
         return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });

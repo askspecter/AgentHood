@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
 import { getChain, quote as quoteSwap, rpcProvider } from "@/lib/engine";
-import { curveAt, resolveLaunch, phaseBlockedMessage } from "@/lib/engine/ponsV2";
+import { curveAt, resolveLaunch, phaseBlockedMessage, quoteV4, v2Config } from "@/lib/engine/ponsV2";
 
 /** A neutral recipient for read-only buy simulations on a curve. */
 const QUOTE_RECIPIENT = "0x000000000000000000000000000000000000dEaD";
@@ -74,6 +74,40 @@ async function quoteCurve(provider, launch, side, amount, slippage) {
   };
 }
 
+/** Quote a graduated launch on its Uniswap v4 pool via the V4 Quoter. */
+async function quoteV4Payload(provider, chain, launch, side, amount, slippage) {
+  const isBuy = side === "buy";
+  let decimals = 18;
+  let symbol = "TOKEN";
+  try {
+    const erc = new Contract(launch.token, ["function decimals() view returns (uint8)", "function symbol() view returns (string)"], provider);
+    decimals = Number(await erc.decimals());
+    symbol = await erc.symbol();
+  } catch { /* defaults */ }
+  const slippageBps = BigInt(Math.round(Math.min(50, Math.max(0.1, Number(slippage) || 5)) * 100));
+  const amountIn = isBuy ? parseEther(String(amount)) : parseUnits(String(amount), decimals);
+  const amountOut = await quoteV4(provider, chain, launch, side, amountIn);
+  const minOut = (amountOut * (10_000n - slippageBps)) / 10_000n;
+  const label = (raw, isEth) =>
+    isEth
+      ? `${Number(formatEther(raw)).toLocaleString("en-US", { maximumFractionDigits: 6 })} ETH`
+      : `${Number(formatUnits(raw, decimals)).toLocaleString("en-US")} ${symbol}`;
+  return {
+    side,
+    symbol,
+    decimals,
+    amountInRaw: amountIn.toString(),
+    amountOutRaw: amountOut.toString(),
+    minOutRaw: minOut.toString(),
+    amountInLabel: label(amountIn, isBuy),
+    amountOutLabel: label(amountOut, !isBuy),
+    minOutLabel: label(minOut, !isBuy),
+    slippagePercent: Number(slippage) || 5,
+    poolFee: 0,
+    venue: "v4",
+  };
+}
+
 /** An RPC hiccup (rate-limit, batch coalesce, timeout) — not a real revert. */
 const RPC_NOISE = /coalesce|UNKNOWN_ERROR|rate.?limit|429|503|timeout|ETIMEDOUT|ECONN|fetch failed|server response|SERVER_ERROR/i;
 
@@ -138,13 +172,18 @@ export async function POST(request) {
     const v2Provider = rpcProvider(chain);
     const launch = await resolveLaunch(v2Provider, chain, token);
     if (launch) {
-      if (launch.phase !== 0) {
-        const msg = phaseBlockedMessage(launch.phase);
-        return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
+      if (launch.phase === 0) {
+        const payload = await quoteCurve(v2Provider, launch, side, amount, slippage);
+        QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
+        return NextResponse.json(payload);
       }
-      const payload = await quoteCurve(v2Provider, launch, side, amount, slippage);
-      QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
-      return NextResponse.json(payload);
+      if (launch.phase === 2 && v2Config(chain)?.v4Quoter) {
+        const payload = await quoteV4Payload(v2Provider, chain, launch, side, amount, slippage);
+        QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
+        return NextResponse.json(payload);
+      }
+      const msg = phaseBlockedMessage(launch.phase);
+      return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
     }
   } catch {
     /* not a resolvable v2 launch — fall through to the v1 path below */
