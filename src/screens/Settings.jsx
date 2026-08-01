@@ -25,6 +25,7 @@ export default function Settings() {
       </Section>
 
       <Section title="Resources">
+        <Row icon="docs" label="About ESKA" onClick={() => nav('/about')} />
         <Row icon="tos" label="Terms of service" onClick={() => nav('/terms')} />
         <Row icon="privacy" label="Privacy policy" onClick={() => nav('/privacy')} />
         <Row icon="x" label="Follow us on X" href="https://x.com/eskafun" external />
