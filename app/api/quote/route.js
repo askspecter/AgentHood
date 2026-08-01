@@ -1,6 +1,78 @@
 import { NextResponse } from "next/server";
 import { Contract, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
 import { getChain, quote as quoteSwap, rpcProvider } from "@/lib/engine";
+import { curveAt, resolveLaunch, phaseBlockedMessage } from "@/lib/engine/ponsV2";
+
+/** A neutral recipient for read-only buy simulations on a curve. */
+const QUOTE_RECIPIENT = "0x000000000000000000000000000000000000dEaD";
+
+/** Curve reserves + total quote-leg fee (base fee + creator tax), as bigints. */
+async function curveReservesAndFee(curve) {
+  const [q, t] = await curve.getReserves();
+  let feeBps = 0n, taxBps = 0n;
+  try { feeBps = BigInt(await curve.feeBps()); } catch { /* default 0 */ }
+  try { taxBps = BigInt(await curve.creatorTaxBps()); } catch { /* default 0 */ }
+  return { q: BigInt(q), t: BigInt(t), fee: feeBps + taxBps };
+}
+
+/**
+ * Quote a bonding-curve trade. A buy is priced by a read-only `buy` simulation
+ * (exact, including any near-graduation clamp); a sell is estimated from the
+ * curve's reserves (its spot price is quoteReserve/tokenReserve, i.e. a constant
+ * product with a virtual quote reserve) net of the fee — the on-chain minOut
+ * guards the fill either way.
+ */
+async function quoteCurve(provider, launch, side, amount, slippage) {
+  const curve = curveAt(provider, launch.curve);
+  const isBuy = side === "buy";
+  let decimals = 18;
+  let symbol = "TOKEN";
+  try {
+    const erc = new Contract(launch.token, ["function decimals() view returns (uint8)", "function symbol() view returns (string)"], provider);
+    decimals = Number(await erc.decimals());
+    symbol = await erc.symbol();
+  } catch { /* keep defaults */ }
+
+  const slippageBps = BigInt(Math.round(Math.min(50, Math.max(0.1, Number(slippage) || 5)) * 100));
+
+  let amountIn, amountOut;
+  if (isBuy) {
+    amountIn = parseEther(String(amount));
+    try {
+      amountOut = BigInt(await curve.buy.staticCall(amountIn, 0n, QUOTE_RECIPIENT, { value: amountIn }));
+    } catch {
+      const { q, t, fee } = await curveReservesAndFee(curve);
+      const inNet = (amountIn * (10_000n - fee)) / 10_000n;
+      amountOut = (t * inNet) / (q + inNet);
+    }
+  } else {
+    amountIn = parseUnits(String(amount), decimals);
+    const { q, t, fee } = await curveReservesAndFee(curve);
+    const grossOut = (q * amountIn) / (t + amountIn);
+    amountOut = (grossOut * (10_000n - fee)) / 10_000n;
+  }
+  const minOut = (amountOut * (10_000n - slippageBps)) / 10_000n;
+
+  const label = (raw, isEth) =>
+    isEth
+      ? `${Number(formatEther(raw)).toLocaleString("en-US", { maximumFractionDigits: 6 })} ETH`
+      : `${Number(formatUnits(raw, decimals)).toLocaleString("en-US")} ${symbol}`;
+
+  return {
+    side,
+    symbol,
+    decimals,
+    amountInRaw: amountIn.toString(),
+    amountOutRaw: amountOut.toString(),
+    minOutRaw: minOut.toString(),
+    amountInLabel: label(amountIn, isBuy),
+    amountOutLabel: label(amountOut, !isBuy),
+    minOutLabel: label(minOut, !isBuy),
+    slippagePercent: Number(slippage) || 5,
+    poolFee: 0,
+    venue: "curve",
+  };
+}
 
 /** An RPC hiccup (rate-limit, batch coalesce, timeout) — not a real revert. */
 const RPC_NOISE = /coalesce|UNKNOWN_ERROR|rate.?limit|429|503|timeout|ETIMEDOUT|ECONN|fetch failed|server response|SERVER_ERROR/i;
@@ -57,6 +129,25 @@ export async function POST(request) {
   const cachedQuote = QUOTE_CACHE.get(cacheKey);
   if (cachedQuote && Date.now() - cachedQuote.at < QUOTE_TTL_MS) {
     return NextResponse.json(cachedQuote.value);
+  }
+
+  // pons v2: a launched token trades on its bonding curve before graduation, and
+  // a Uniswap v4 pool after. Route curve quotes here; fall through to the v1
+  // Uniswap-v3 path only when this isn't a v2 launch.
+  try {
+    const v2Provider = rpcProvider(chain);
+    const launch = await resolveLaunch(v2Provider, chain, token);
+    if (launch) {
+      if (launch.phase !== 0) {
+        const msg = phaseBlockedMessage(launch.phase);
+        return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
+      }
+      const payload = await quoteCurve(v2Provider, launch, side, amount, slippage);
+      QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
+      return NextResponse.json(payload);
+    }
+  } catch {
+    /* not a resolvable v2 launch — fall through to the v1 path below */
   }
 
   try {
