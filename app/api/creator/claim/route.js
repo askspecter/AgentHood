@@ -299,7 +299,7 @@ export async function POST(request) {
   }
   if (!claimFn) {
     return NextResponse.json(
-      { error: "This pons locker exposes no automatic claim — fees may accrue directly to your wallet, or need the pons app to collect." },
+      { error: "This locker exposes no automatic claim — fees may accrue directly to your wallet, or need the Bankr app to collect." },
       { status: 501 }
     );
   }

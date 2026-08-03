@@ -22,7 +22,7 @@ export async function GET(request) {
   const factory = chain.pons?.factory;
   if (!factory || !chain.explorer) {
     return NextResponse.json(
-      { error: "This network has no pons factory or explorer configured." },
+      { error: "This network has no launch factory or explorer configured." },
       { status: 400 }
     );
   }

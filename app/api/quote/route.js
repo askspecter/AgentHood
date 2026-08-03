@@ -153,7 +153,7 @@ export async function POST(request) {
   const { weth, quoter, poolFee } = chain.pons || {};
   if (!weth || !quoter) {
     return NextResponse.json(
-      { error: "This network has no pons quoter configured." },
+      { error: "This network has no swap quoter configured." },
       { status: 400 }
     );
   }

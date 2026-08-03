@@ -849,7 +849,7 @@ export async function POST(request) {
                 },
                 lines: [
                   line(
-                    `Price is ${l.symbol}'s issuer bid/ask from Robinhood. Buy/sell here needs a pool on the pons router — try \`buy $5 ${l.symbol}\` to check.`,
+                    `Price is ${l.symbol}'s issuer bid/ask from Robinhood. Buy/sell here needs a pool on the swap router — try \`buy $5 ${l.symbol}\` to check.`,
                     "muted"
                   ),
                 ],
@@ -905,7 +905,7 @@ export async function POST(request) {
               },
               lines: [
                 line(
-                  `No WETH pool quotes ${meta.symbol || "this token"} right now, so it cannot be priced or traded through the pons router here. \`audit\` still works.`,
+                  `No WETH pool quotes ${meta.symbol || "this token"} right now, so it cannot be priced or traded through the swap router here. \`audit\` still works.`,
                   "muted"
                 ),
               ],

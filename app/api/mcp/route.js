@@ -112,7 +112,7 @@ const TOOLS = [
   },
   {
     name: "launch_coin",
-    description: "Launch a new coin on eska.fun (pons factory). SPENDS REAL FUNDS (launch fee + optional first buy). Requires your ESKA API key and operator-enabled writes.",
+    description: "Launch a new coin on eska.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your ESKA API key and operator-enabled writes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -207,7 +207,7 @@ async function callTool(params, ctx) {
       case "launch_coin": {
         if (!args.name || !args.symbol) return asErr("Provide at least `name` and `symbol`.");
         const meta = await getJson(`${origin}/api/factory?network=${net}`);
-        if (meta.error || !meta.chosen) return asErr(`Couldn't read the pons factory: ${meta.error || "no launch function found"}`);
+        if (meta.error || !meta.chosen) return asErr(`Couldn't read the launch factory: ${meta.error || "no launch function found"}`);
         const fields = meta.chosen.fields || [];
         const values = {};
         let feePath = null;

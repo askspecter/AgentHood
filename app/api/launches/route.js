@@ -89,7 +89,6 @@ const TOKEN_LAUNCHED_TOPIC =
  * PONS_SEED_TOKENS env) as the roster changes.
  */
 const FEATURED_PONS = [
-  "0x39dBED3a2bd333467115dE45665cC57F813C4571", // PONS
   "0x2076CD26D8Cf26f91655d4Ada3dD2fdBFdd8e7a4", // APES
   "0x62C71cd34a52c30d894419CBcc55Db2aFA8032eA", // YOLO
   "0x45F82AC5d507e988f7406935da8eEfe495a360e0", // BRODIE
@@ -114,7 +113,7 @@ const FEATURED_PONS = [
 // to read its symbol on-chain — otherwise the whole featured row thins out to
 // almost nothing whenever the public node is busy.
 const FEATURED_SYMBOL_LIST = [
-  "PONS", "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
+  "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
   "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS", "FRONG",
 ];
 const KNOWN_SYMBOLS = Object.fromEntries(

@@ -97,7 +97,7 @@ export async function POST(request) {
   const factory = chain.pons?.factory;
   if (!factory) {
     return NextResponse.json(
-      { error: "This network has no pons factory configured." },
+      { error: "This network has no launch factory configured." },
       { status: 400 }
     );
   }

@@ -167,7 +167,7 @@ export async function POST(request) {
   const { weth, usdg, quoter, swapRouter, poolFee } = chain.pons || {};
   if (!weth || !quoter || !swapRouter) {
     return NextResponse.json(
-      { error: "This network has no pons router configured." },
+      { error: "This network has no swap router configured." },
       { status: 400 }
     );
   }
