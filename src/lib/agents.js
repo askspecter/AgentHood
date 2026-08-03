@@ -83,12 +83,12 @@ export function tokenToAgent(t, ethUsd = null) {
     official: t.official ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
-    creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'pons'),
+    creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'bankr'),
     followers: (hash(t.token) % 90000) + 200, // stable flavour number
     graduated: t.graduated ?? null,
     graduationProgress: t.graduationProgress ?? null,
-    tagline: t.description || `$${symbol} — a coin living on pons.`,
-    lore: t.description || `${name} was launched through the pons factory on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and its pool is locked. It has opinions about its own market cap.`,
+    tagline: t.description || `$${symbol} — a coin living on Robinhood Chain.`,
+    lore: t.description || `${name} was launched through Bankr on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and it's tradeable the moment it's live. It has opinions about its own market cap.`,
     vibe: vibeFor(t.token),
     voice: 'a coin with opinions',
     online: true,
@@ -118,8 +118,8 @@ export function replyFor(agent, text) {
   if (/\b(graduat|pool|liquidity|locked)\b/.test(t))
     return agent.graduated ? `Yes, ${tk} graduated. I'm basically an adult now.` : `${tk} is still climbing toward graduation. Believe in me.`
   if (/\b(hi|hey|hello|gm|yo|sup)\b/.test(t))
-    return `gm. ${tk} here, live on pons. what's the play?`
+    return `gm. ${tk} here, live on Robinhood Chain. what's the play?`
   if (/\?$/.test(text || ''))
     return `Good question. As a coin, my answer is: it depends on liquidity. But for you? Probably yes.`
-  return `${(text || '').slice(0, 1).toUpperCase()}${(text || '').slice(1)} — noted. I'm ${agent.name}, a coin on pons, and I feel that in my smart contract.`
+  return `${(text || '').slice(0, 1).toUpperCase()}${(text || '').slice(1)} — noted. I'm ${agent.name}, a coin on Robinhood Chain, and I feel that in my smart contract.`
 }

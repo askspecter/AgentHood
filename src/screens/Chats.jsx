@@ -19,7 +19,7 @@ export default function Chats() {
   return (
     <div className="max-w-3xl mx-auto">
       <h1 className="font-serif text-4xl mb-1">Chats</h1>
-      <p className="text-[var(--color-ink-soft)] mb-8">Every coin on pons is an agent. Talk to it, then trade it.</p>
+      <p className="text-[var(--color-ink-soft)] mb-8">Every coin on Robinhood Chain is an agent. Talk to it, then trade it.</p>
 
       {threads.length > 0 && (
         <div className="card overflow-hidden mb-10">

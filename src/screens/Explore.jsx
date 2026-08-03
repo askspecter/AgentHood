@@ -69,7 +69,7 @@ export default function Explore() {
         <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
           <div>
             <h2 className="display text-3xl">Discover</h2>
-            <p className="text-[var(--color-ink-soft)] text-sm mt-1">Live agents · coins on pons · Robinhood Chain</p>
+            <p className="text-[var(--color-ink-soft)] text-sm mt-1">Live agents · coins on Robinhood Chain</p>
           </div>
           <div className="relative w-full sm:w-56">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search agents…" className="input" />

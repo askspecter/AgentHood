@@ -138,7 +138,7 @@ export async function POST(request) {
       const reason = error.shortMessage || error.reason || error.message || "";
       if (/NotWhitelisted/i.test(reason)) {
         return NextResponse.json(
-          { error: "pons v2 is still limiting launches to approved wallets. Your wallet isn't whitelisted yet — ask pons to approve it, or launch once v2 opens publicly." },
+          { error: "Launching is still limited to approved wallets. Your wallet isn't approved yet — try again once launches open publicly." },
           { status: 403 }
         );
       }

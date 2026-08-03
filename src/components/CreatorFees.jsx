@@ -42,7 +42,7 @@ export default function CreatorFees({ token, symbol }) {
   const s = status.split || {}
   const parts = [
     `${s.creator ?? 70}% you`,
-    `${s.protocol ?? 30}% pons`,
+    `${s.protocol ?? 30}% protocol`,
     ...(s.eska ? [`${s.buyback ?? 5}% $ESKA buyback & burn`, `${s.ops ?? 5}% ops`] : []),
   ]
 
