@@ -17,6 +17,7 @@ const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
 const NETWORK = 'robinhood'
 const CHAT_KEY = 'eska.chats.v1'
 const FEED_KEY = 'eska.feed.v1'
+const WALLET_KEY = 'eska.wallet.v1'
 const THEME_KEY = 'eska.theme'
 const PROFILE_KEY = 'eska.profile.v1'
 const REF_KEY = 'eska.ref.v1'
@@ -24,6 +25,14 @@ const StoreCtx = createContext(null)
 
 function loadChats() {
   try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {} } catch { return {} }
+}
+
+// Last-known wallet address + ETH balance, keyed by X user id. Painting it the
+// instant the session resolves means the balance and total value show at once on
+// a reload, then refresh quietly behind the (slower) RPC read — instead of
+// sitting on "—" every visit while getBalance crawls on a busy public node.
+function loadWalletCache() {
+  try { const j = JSON.parse(localStorage.getItem(WALLET_KEY)); return j && j.id ? j : null } catch { return null }
 }
 
 // Local profile edits (display name + photo) layered over the X identity. The
@@ -111,20 +120,21 @@ export function StoreProvider({ children }) {
       .then((data) => {
         if (cancelled) return
         const user = data?.user
-        if (!user) { setWallet(null); return }
+        if (!user) { setWallet(null); try { localStorage.removeItem(WALLET_KEY) } catch {}; return }
         // Show the signed-in identity immediately — don't make it wait behind the
-        // (slower) balance read. The address and ETH balance fill in a moment
-        // later without blocking the avatar/handle from appearing.
-        setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address: '', ethBalance: null, kind: 'x' })
+        // (slower) balance read. Seed the address + ETH balance from the last-known
+        // cache for THIS user so the number paints at once, then refresh it.
+        const cached = loadWalletCache()
+        const seed = cached && cached.id === user.id ? cached : null
+        setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address: seed?.address || '', ethBalance: seed?.ethBalance ?? null, kind: 'x' })
         fetch('/api/wallet')
           .then((r) => (r.ok ? r.json() : null))
           .then((w) => {
             if (cancelled || !w) return
-            setWallet((prev) => prev && prev.id === user.id ? {
-              ...prev,
-              address: w.address || prev.address,
-              ethBalance: w?.balance?.formatted != null ? Number(w.balance.formatted) : prev.ethBalance,
-            } : prev)
+            const address = w.address || seed?.address || ''
+            const ethBalance = w?.balance?.formatted != null ? Number(w.balance.formatted) : (seed?.ethBalance ?? null)
+            setWallet((prev) => prev && prev.id === user.id ? { ...prev, address, ethBalance } : prev)
+            try { localStorage.setItem(WALLET_KEY, JSON.stringify({ id: user.id, address, ethBalance, at: Date.now() })) } catch {}
           })
           .catch(() => {})
       })
@@ -201,7 +211,7 @@ export function StoreProvider({ children }) {
     try { ref = localStorage.getItem(REF_KEY) || '' } catch {}
     window.location.href = '/api/auth/x/login' + (ref ? `?ref=${encodeURIComponent(ref)}` : '')
   }
-  async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null) }
+  async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null); try { localStorage.removeItem(WALLET_KEY) } catch {} }
 
   const sendMessage = useCallback((id, text) => {
     const agent = agentsById[id]
