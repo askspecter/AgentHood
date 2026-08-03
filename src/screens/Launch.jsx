@@ -19,7 +19,7 @@ const VIBES = ['cozy', 'chaotic', 'dreamy', 'hype', 'spooky', 'poetic', 'retro',
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 const friendly = (m) =>
   /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
-    ? "Couldn't reach Robinhood Chain right now — the pons factory is unavailable. Try again in a moment."
+    ? "Couldn't reach Robinhood Chain right now — launching is unavailable. Try again in a moment."
     : String(m || '')
 
 const IDEAS = [
@@ -323,7 +323,7 @@ export default function Launch() {
 
   const doLaunch = useCallback(async () => {
     if (!user) return connect()
-    if (!canLaunch || !meta?.chosen) return
+    if (!canLaunch) return
     setBusy(true); setError(null)
     try {
       // Ensure the logo is a durable, self-hosted URL before it goes on-chain —
@@ -333,29 +333,17 @@ export default function Launch() {
         const stable = await persistLogo(logo)
         if (stable) { logo = stable; set('logo', stable) }
       }
-      // Launch on pons v1: map the pretty fields onto the factory's discovered
-      // ABI and sign server-side. (v2 launching is whitelist-gated during its
-      // audit; trading still auto-detects v2 vs v1 per token.)
-      const values = {}
-      for (const field of fields) {
-        const n = field.name || ''
-        const key = field.path.join('.')
-        const hint = hintFor(field)
-        if (/^(name|tokenname)$/i.test(n)) values[key] = d.name
-        else if (/^(symbol|ticker)$/i.test(n)) values[key] = d.ticker
-        else if (/(logo|image|icon|avatar|uri)/i.test(n)) { if (logo) values[key] = logo }
-        else if (/(description|desc|bio)/i.test(n)) values[key] = describe()
-        else if (hint.fillWithAccount) values[key] = xWallet
-        else if (hint.isEth) { values[key] = d.firstBuy || '0'; values[`${key}__isEth`] = true }
-        else if (hint.fillWithSalt) values[key] = randomSalt()
-      }
-      const feePath = fields.find((f) => hintFor(f).fillWithAccount)?.path.join('.') || null
-      const buyEth = Number(d.firstBuy || 0)
-
-      const res = await fetch('/api/launch/execute', {
+      // Launch through Bankr on Robinhood Chain. The server sets the fee
+      // recipient to your ESKA wallet and deploys the token + its pool.
+      const res = await fetch('/api/launch/bankr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fnName: meta.chosen.name, fnInputs: meta.chosen.inputs, values, feePath, buyEth, network: NETWORK }),
+        body: JSON.stringify({
+          name: d.name,
+          symbol: d.ticker || d.name,
+          logo: logo || '',
+          network: NETWORK,
+        }),
       })
       const json = await res.json()
       if (!res.ok) { setError(json.hint ? `${json.error} ${json.hint}` : json.error || 'The launch failed.'); return }
@@ -373,7 +361,7 @@ export default function Launch() {
     } finally {
       setBusy(false)
     }
-  }, [user, canLaunch, meta, fields, d, xWallet])
+  }, [user, canLaunch, d])
 
   // "Generating the look": kick off FLUX.1 [schnell] on fal.ai and animate the
   // progress. The bar eases toward ~94% while the image renders, then snaps to
@@ -553,7 +541,7 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
             <button onClick={() => fileRef.current?.click()} className="btn btn-secondary !py-2 text-sm">{d.logo ? 'Change image' : 'Upload image'}</button>
             {d.logo && <button onClick={() => set('logo', '')} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">Remove</button>}
-            <span className="text-xs text-[var(--color-ink-faint)]">Shown as the coin logo on pons</span>
+            <span className="text-xs text-[var(--color-ink-faint)]">Shown as the coin logo</span>
           </div>
         )}
 
@@ -701,27 +689,20 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
       </div>
 
       <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
-        <Row k="Network" v="Robinhood Chain · pons" />
-        <Row k="Supply" v="1,000,000,000 (fixed)" />
-        <Row k="Pool" v="Locked WETH · 1% fee" />
-        {fee && <Row k="Launch fee" v={`${fee} ETH`} />}
-        {Number(d.firstBuy) > 0 && <Row k="Your first buy" v={`${d.firstBuy} ETH`} />}
-        {xWallet && <Row k="Creator fees →" v={short(xWallet)} />}
+        <Row k="Network" v="Robinhood Chain · Bankr" />
+        <Row k="Supply" v="100,000,000,000 (fixed)" />
+        <Row k="Pool" v="Uniswap V4 · tradeable at launch" />
+        <Row k="Creator fees" v="95% of the swap fee" />
+        {xWallet && <Row k="Fees →" v={short(xWallet)} />}
       </div>
 
-      {metaError && (
-        <div className="chip chip-down w-full mb-4 flex items-center justify-between gap-3">
-          <span>Could not read the pons factory. {friendly(metaError)}</span>
-          <button onClick={() => { setMetaError(null); setRetryKey((k) => k + 1) }} className="underline shrink-0 font-medium">Try again</button>
-        </div>
-      )}
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
-      <button onClick={onLaunch} disabled={busy || !meta?.chosen} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {busy ? 'Minting on pons…' : !user ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : !meta?.chosen ? 'Reading factory…' : `Launch ${preview.name} on pons`}
+      <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
+        {busy ? 'Launching…' : !user ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : `Launch ${preview.name}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Real launch — simulated first, signed by your X wallet, deployed through the pons factory.
+        Real launch on Robinhood Chain via Bankr — deployed to your ESKA wallet, tradeable instantly.
       </p>
     </div>
   )
@@ -734,9 +715,9 @@ function Row({ k, v }) {
 function StepDone({ charm, result, meta, onTrade }) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
-      <div className="eyebrow mb-2">Live on pons</div>
+      <div className="eyebrow mb-2">Live on Robinhood Chain</div>
       <h1 className="display text-4xl sm:text-5xl mb-2"><span className="holo-text">{charm.name}</span> is live.</h1>
-      <p className="text-[var(--color-ink-soft)] mb-9">Minted on Robinhood Chain — it now appears on ponsfamily.com.</p>
+      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Bankr on Robinhood Chain — tradeable now, with creator fees flowing to your wallet.</p>
 
       <div className="glass card-glow rounded-3xl p-8 w-full max-w-sm relative overflow-hidden mb-7">
         <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">ESKA</span>
