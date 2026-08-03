@@ -120,6 +120,12 @@ const KNOWN_SYMBOLS = Object.fromEntries(
   FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
 );
 
+// The official $ESKA token — always pinned to the top of Discover and
+// gold-checked, no matter the env/registry state, so ESKA's own coin is
+// unmistakable. OFFICIAL_TOKEN env can still override the address if it moves.
+const OFFICIAL_ESKA_TOKEN = "0x8e7d62f76df1ffc369ab90967c92d7d68009dba3";
+KNOWN_SYMBOLS[OFFICIAL_ESKA_TOKEN] = "ESKA";
+
 /**
  * Discover launch token addresses from the block explorer's own index.
  *
@@ -342,11 +348,13 @@ export async function GET(request) {
     const officialSet = new Set(
       (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
     );
+    // Always gold-check the official $ESKA token, even if it isn't in the registry.
+    officialSet.add((process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN).toLowerCase());
 
     const seeds = [
       ...(includePons ? FEATURED_PONS : []),
       ...launchedHere,
-      process.env.OFFICIAL_TOKEN,
+      process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN,
       ...(includePons ? (process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/) : []),
     ].filter(Boolean);
 
@@ -382,6 +390,7 @@ export async function GET(request) {
       const alwaysShow = new Set([
         ...(includePons ? FEATURED_PONS.map((a) => a.toLowerCase()) : []),
         ...launchedHere.map((a) => String(a).toLowerCase()),
+        (process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN).toLowerCase(),
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
