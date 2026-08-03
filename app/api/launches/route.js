@@ -446,7 +446,11 @@ export async function GET(request) {
         const k = (l.token || "").toLowerCase();
         const h = handleByToken.get(k);
         if (h) l.xUsername = h;
-        if (officialSet.has(k)) l.official = true;
+        if (officialSet.has(k)) {
+          l.official = true;
+          // The official $ESKA token is @eskafun, not the deployer/"bankr" fallback.
+          if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "eskafun";
+        }
       }
       const shown = launches.slice(0, 24);
       await Promise.all([
