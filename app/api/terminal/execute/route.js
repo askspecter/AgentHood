@@ -11,7 +11,7 @@ import { NextResponse } from "next/server";
 import { DEADLINE_SECONDS, deriveSigner, getChain, quote, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { recordTrade } from "@/lib/stats";
-import { CURVE_ABI, resolveLaunch, phaseBlockedMessage, buildV4Swap, v2Config, UNIVERSAL_ROUTER_ABI, PERMIT2_ABI } from "@/lib/engine/ponsV2";
+import { CURVE_ABI, resolveLaunch, resolveBankrPool, phaseBlockedMessage, buildV4Swap, v2Config, UNIVERSAL_ROUTER_ABI, PERMIT2_ABI } from "@/lib/engine/ponsV2";
 
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
@@ -243,9 +243,14 @@ export async function POST(request) {
   // Route curve buys/sells here. A graduated (Uniswap v4) launch is handled once
   // v4 infra is configured. Not a v2 launch → fall through to the v1 path. ----
   try {
-    const launch = await resolveLaunch(provider, chain, token);
+    // A pons launch (curve or graduated v4), or — failing that — a Bankr token's
+    // ordinary Uniswap v4 pool discovered from its Initialize event. Both feed the
+    // same v4 execution branch below; only the pool key (hook/fee/tickSpacing)
+    // differs, and buildV4Swap reads it off the launch object.
+    let launch = await resolveLaunch(provider, chain, token);
+    if (!launch) launch = await resolveBankrPool(provider, chain, token, chain.explorer);
     if (launch) {
-      // ---- Graduated: trade the Uniswap v4 pool through the Universal Router ----
+      // ---- Graduated / Bankr v4: trade the Uniswap v4 pool via the Universal Router ----
       if (launch.phase === 2) {
         const cfg = v2Config(chain);
         if (!cfg?.universalRouter) {
