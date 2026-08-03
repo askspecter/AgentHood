@@ -28,6 +28,7 @@ export async function POST(request) {
     network = "robinhood",
     disableVesting = false,
     quoteOnlyFees = false,
+    pairedStock = "",
   } = body || {};
   if (!name) {
     return NextResponse.json({ error: "A token name is required." }, { status: 400 });
@@ -76,6 +77,7 @@ export async function POST(request) {
       chain: "robinhood",
       disableVesting: Boolean(disableVesting),
       quoteOnlyFees: Boolean(quoteOnlyFees),
+      pairedStock: pairedStock ? String(pairedStock).trim() : undefined,
     });
 
     return NextResponse.json({
@@ -83,6 +85,7 @@ export async function POST(request) {
       token,
       owner: wallet,
       pool: raw?.pool || raw?.poolMetadata || raw?.poolKey || null,
+      pairedStock: pairedStock ? String(pairedStock).trim().toUpperCase() : null,
       chainId: raw?.chainId ?? null,
       hash: raw?.transactionHash || raw?.txHash || null,
       raw,
