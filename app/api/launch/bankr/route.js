@@ -19,7 +19,16 @@ export async function POST(request) {
     return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
   }
 
-  const { name, symbol, logo = "", tweet = "", website = "", network = "robinhood" } = body || {};
+  const {
+    name,
+    symbol,
+    logo = "",
+    tweet = "",
+    website = "",
+    network = "robinhood",
+    disableVesting = false,
+    quoteOnlyFees = false,
+  } = body || {};
   if (!name) {
     return NextResponse.json({ error: "A token name is required." }, { status: 400 });
   }
@@ -65,6 +74,8 @@ export async function POST(request) {
       tweet: tweet || undefined,
       website: website || undefined,
       chain: "robinhood",
+      disableVesting: Boolean(disableVesting),
+      quoteOnlyFees: Boolean(quoteOnlyFees),
     });
 
     return NextResponse.json({

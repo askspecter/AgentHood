@@ -343,6 +343,8 @@ export default function Launch() {
           symbol: d.ticker || d.name,
           logo: logo || '',
           network: NETWORK,
+          disableVesting: Boolean(d.noVesting),
+          quoteOnlyFees: Boolean(d.quoteOnly),
         }),
       })
       const json = await res.json()
@@ -421,7 +423,7 @@ export default function Launch() {
         {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} lookBusy={lookBusy} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
-        {step === 4 && <StepReview d={d} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
+        {step === 4 && <StepReview d={d} set={set} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/c/${result?.token || ''}`)} />}
       </div>
     </div>
@@ -663,7 +665,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
 }
 
 /* ---------- 5 · Review & launch (REAL) ---------- */
-function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWallet, busy, error }) {
+function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, xWallet, busy, error }) {
   const fee = meta?.launchFeeEth
   return (
     <div className="flex-1 flex flex-col">
@@ -696,6 +698,24 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
         {xWallet && <Row k="Fees →" v={short(xWallet)} />}
       </div>
 
+      {/* Bankr launch options */}
+      <div className="card p-4 mb-6 space-y-4">
+        <OptionRow
+          label="Creator vesting"
+          hint={d.noVesting ? '100% sold into the pool — no allocation preminted.' : '15% vests to you over 1 year (30-day cliff).'}
+          options={[{ k: false, label: '15% vesting' }, { k: true, label: 'No vesting' }]}
+          value={Boolean(d.noVesting)}
+          onChange={(v) => set('noVesting', v)}
+        />
+        <OptionRow
+          label="Fee collection"
+          hint={d.quoteOnly ? 'All creator fees collected in WETH.' : 'Fees in a mix of your token and WETH.'}
+          options={[{ k: false, label: 'Both tokens' }, { k: true, label: 'Quote only' }]}
+          value={Boolean(d.quoteOnly)}
+          onChange={(v) => set('quoteOnly', v)}
+        />
+      </div>
+
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
       <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
@@ -709,6 +729,23 @@ function StepReview({ d, preview, meta, metaError, onEdit, onLaunch, user, xWall
 }
 function Row({ k, v }) {
   return <div className="flex items-center justify-between"><span>{k}</span><span className="font-mono num text-[var(--color-ink)]">{v}</span></div>
+}
+
+/* A two-choice segmented option row (matches Bankr's launch options). */
+function OptionRow({ label, hint, options, value, onChange }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-sm font-medium">{label}</span>
+        <div className="seg shrink-0">
+          {options.map((o) => (
+            <button key={String(o.k)} onClick={() => onChange(o.k)} className={`!px-2.5 !text-[13px] ${value === o.k ? 'on' : ''}`}>{o.label}</button>
+          ))}
+        </div>
+      </div>
+      <p className="text-[11px] text-[var(--color-ink-faint)]">{hint}</p>
+    </div>
+  )
 }
 
 /* ---------- 6 · Done (REAL result) ---------- */
