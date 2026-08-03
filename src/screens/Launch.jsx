@@ -196,6 +196,7 @@ export default function Launch() {
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
+  const [retryKey, setRetryKey] = useState(0)
   const [xWallet, setXWallet] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -270,17 +271,34 @@ export default function Launch() {
   }
 
   // Discover the factory ABI + the X wallet up front, so the review step can mint
-  // without any extra round trip.
+  // without any extra round trip. The factory read depends on the block explorer,
+  // which occasionally hiccups — so retry a few times with backoff before showing
+  // an error, and let the user retry without reloading. Most blips resolve
+  // themselves and are never seen.
   useEffect(() => {
-    fetch(`/api/factory?network=${NETWORK}`)
-      .then((r) => r.json())
-      .then((json) => (json.error ? setMetaError(json.error) : setMeta(json)))
-      .catch(() => setMetaError('Could not reach the factory endpoint.'))
+    let cancelled = false
+    ;(async () => {
+      setMetaError(null)
+      for (let i = 0; i < 4; i++) {
+        try {
+          const r = await fetch(`/api/factory?network=${NETWORK}`)
+          const json = await r.json()
+          if (cancelled) return
+          if (!json.error) { setMeta(json); setMetaError(null); return }
+          if (i === 3) { setMetaError(json.error); return }
+        } catch {
+          if (cancelled) return
+          if (i === 3) { setMetaError('Could not reach the factory endpoint.'); return }
+        }
+        await new Promise((res) => setTimeout(res, 800 * (i + 1)))
+      }
+    })()
     fetch(`/api/wallet?network=${NETWORK}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => { if (json?.address) setXWallet(json.address) })
       .catch(() => {})
-  }, [user])
+    return () => { cancelled = true }
+  }, [user, retryKey])
 
   const fields = useMemo(() => meta?.chosen?.fields || [], [meta])
 

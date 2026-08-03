@@ -313,6 +313,8 @@ body::after {
 /* chat typing indicator — three dots the agent shows while it's thinking */
 @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-4px); opacity: 1 } }
 .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-ink-soft); display: inline-block; animation: typingBounce 1.1s ease-in-out infinite; }
+/* streaming caret — blinks at the end of a reply while it types out */
+.stream-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -0.15em; background: var(--color-ink-soft); animation: blink 1s step-end infinite; }
 
 /* 3D tilt helpers */
 .tilt-scene { perspective: 1000px; }

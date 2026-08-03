@@ -154,6 +154,10 @@ export function StoreProvider({ children }) {
         for (const t of [...(reg?.launches || []), ...(feed?.launches || [])]) {
           const key = (t.token || t.id || '').toLowerCase()
           if (!key || seen.has(key)) continue
+          // Skip a coin whose real name/symbol couldn't be read this cycle — it
+          // would render as the "$TOKEN" placeholder. It comes back the moment its
+          // symbol resolves. The official pin is always kept.
+          if (!t.official && !t.symbol && !t.name) continue
           seen.add(key)
           agentsOut.push(tokenToAgent(t, rate))
         }
@@ -207,27 +211,67 @@ export function StoreProvider({ children }) {
     setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'user', text, ts: now }] }))
     if (!agent) return
 
-    const pushReply = (reply) => setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: reply, ts: Date.now() }] }))
+    // A stable timestamp identifies this reply so streamed tokens land in the
+    // right bubble even as new messages arrive.
+    const replyTs = now + 1
+    const clearTyping = () => setChatTyping((t) => { const n = { ...t }; delete n[id]; return n })
+    const updateReply = (patch) => setChats((c) => {
+      const list = c[id] ?? []
+      const i = list.findIndex((m) => m.ts === replyTs)
+      if (i === -1) return c
+      const next = list.slice(); next[i] = { ...next[i], ...patch }; return { ...c, [id]: next }
+    })
+    // Put the built-in local flavour in the reply bubble (fallback path).
+    const useLocal = () => setChats((c) => {
+      const list = c[id] ?? []
+      const i = list.findIndex((m) => m.ts === replyTs)
+      const msg = { role: 'charm', text: replyFor(agent, text), ts: replyTs, streaming: false }
+      if (i === -1) return { ...c, [id]: [...list, msg] }
+      const next = list.slice(); next[i] = msg; return { ...c, [id]: next }
+    })
 
     // Talk to the live agent — a real model that speaks as the coin and knows its
-    // numbers. Fall back to the built-in local flavour if AI isn't configured or
-    // the request fails, so chat always answers.
+    // numbers, streamed so it types out live. Fall back to the built-in local
+    // flavour whenever AI isn't configured or the request fails, so chat always
+    // answers.
     setChatTyping((t) => ({ ...t, [id]: true }))
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 16000)
+    const timer = setTimeout(() => controller.abort(), 22000)
     const facts = {
       ticker: agent.ticker, name: agent.name, mcap: agent.mcap, priceUsd: agent.priceUsd,
       change24: agent.change24, holders: agent.holders, graduated: agent.graduated,
       graduationProgress: agent.graduationProgress, creator: agent.creator, official: agent.official, vibe: agent.vibe,
     }
-    fetch('/api/agent/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
-      body: JSON.stringify({ agent: facts, history: priorHistory.slice(-8), message: text }),
-    })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => { pushReply(j?.reply || replyFor(agent, text)) })
-      .catch(() => { pushReply(replyFor(agent, text)) })
-      .finally(() => { clearTimeout(timer); setChatTyping((t) => { const n = { ...t }; delete n[id]; return n }) })
+    ;(async () => {
+      let res
+      try {
+        res = await fetch('/api/agent/chat', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+          body: JSON.stringify({ agent: facts, history: priorHistory.slice(-8), message: text }),
+        })
+      } catch { useLocal(); return }
+      if (!res.ok || !res.body) { useLocal(); return }
+
+      const reader = res.body.getReader()
+      const dec = new TextDecoder()
+      let acc = '', started = false
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          acc += dec.decode(value, { stream: true })
+          if (!started && acc) {
+            started = true
+            clearTyping()
+            setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'charm', text: acc, ts: replyTs, streaming: true }] }))
+          } else if (started) {
+            updateReply({ text: acc })
+          }
+        }
+      } catch { /* keep whatever streamed so far */ }
+      if (!acc.trim()) useLocal()
+      else updateReply({ streaming: false })
+    })().finally(() => { clearTimeout(timer); clearTyping() })
   }, [agentsById, chats])
 
   const value = {

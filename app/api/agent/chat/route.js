@@ -101,9 +101,10 @@ export async function POST(request) {
   ];
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), 20000);
+  let upstream;
   try {
-    const res = await fetch(cfg.url, {
+    upstream = await fetch(cfg.url, {
       method: "POST",
       headers: cfg.headers,
       cache: "no-store",
@@ -112,20 +113,72 @@ export async function POST(request) {
         model: cfg.model,
         temperature: 0.9,
         max_tokens: 160,
+        stream: true,
         messages,
       }),
     });
-    if (!res.ok) {
-      const detail = (await res.text().catch(() => "")).slice(0, 200);
-      return NextResponse.json({ error: "AI request failed.", detail }, { status: 502 });
-    }
-    const json = await res.json();
-    const text = json.choices?.[0]?.message?.content?.trim() || "";
-    if (!text) return NextResponse.json({ error: "Empty reply." }, { status: 502 });
-    return NextResponse.json({ reply: text });
   } catch {
-    return NextResponse.json({ error: "AI request failed." }, { status: 502 });
-  } finally {
     clearTimeout(timer);
+    return NextResponse.json({ error: "AI request failed." }, { status: 502 });
   }
+  if (!upstream.ok || !upstream.body) {
+    clearTimeout(timer);
+    const detail = (await upstream.text?.().catch(() => "") || "").slice(0, 200);
+    return NextResponse.json({ error: "AI request failed.", detail }, { status: 502 });
+  }
+
+  // Re-stream the model's token deltas to the client as plain text, so the coin's
+  // reply types out live. We parse the upstream SSE (`data: {json}` lines) and
+  // forward only the content deltas — the client just appends what it reads.
+  const stream = new ReadableStream({
+    async start(ctrl) {
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+      const encoder = new TextEncoder();
+      let buffer = "";
+      let sentAny = false;
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            const s = line.trim();
+            if (!s.startsWith("data:")) continue;
+            const data = s.slice(5).trim();
+            if (data === "[DONE]") continue;
+            try {
+              const json = JSON.parse(data);
+              const delta = json.choices?.[0]?.delta?.content;
+              if (delta) { sentAny = true; ctrl.enqueue(encoder.encode(delta)); }
+            } catch {
+              /* keep going on a partial/non-JSON line */
+            }
+          }
+        }
+        // If the model streamed nothing at all, signal a soft failure so the
+        // client can fall back to its local flavour.
+        if (!sentAny) ctrl.enqueue(encoder.encode(""));
+      } catch {
+        /* upstream dropped — client keeps whatever streamed so far */
+      } finally {
+        clearTimeout(timer);
+        ctrl.close();
+      }
+    },
+    cancel() {
+      clearTimeout(timer);
+      try { controller.abort(); } catch { /* already done */ }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }

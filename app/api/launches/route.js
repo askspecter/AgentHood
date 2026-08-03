@@ -120,7 +120,6 @@ const FEATURED_SYMBOL_LIST = [
 const KNOWN_SYMBOLS = Object.fromEntries(
   FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
 );
-KNOWN_SYMBOLS["0x0eb9960654d3661d551a4536d7d425184ec81756"] = "ESKA"; // official $ESKA
 
 /**
  * Discover launch token addresses from the block explorer's own index.
@@ -319,9 +318,15 @@ export async function GET(request) {
     const pons = chain.pons || {};
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
+    // The Discover feed shows ONLY coins launched through eska.fun (the registry)
+    // plus the official $ESKA pin. The wider pons universe — curated featured
+    // coins and auto-discovered launches — is included only when ESKA_FEED_PONS=on.
+    // Off by default: our feed is our own launches.
+    const includePons = String(process.env.ESKA_FEED_PONS || "").trim().toLowerCase() === "on";
+
     const [topTokens, discovered, registry, rate] = await Promise.all([
-      discoverTopTokens(chain.explorer).catch(() => []),
-      discoverViaExplorer(chain.explorer, factories).catch(() => []),
+      includePons ? discoverTopTokens(chain.explorer).catch(() => []) : Promise.resolve([]),
+      includePons ? discoverViaExplorer(chain.explorer, factories).catch(() => []) : Promise.resolve([]),
       // Coins launched through ESKA — always show these, even brand-new with no
       // liquidity yet, so a creator sees their own coin the moment they refresh.
       listLaunched({ limit: 100 }).catch(() => ({ tokens: [], entries: [] })),
@@ -340,10 +345,10 @@ export async function GET(request) {
     );
 
     const seeds = [
-      ...FEATURED_PONS,
+      ...(includePons ? FEATURED_PONS : []),
       ...launchedHere,
       process.env.OFFICIAL_TOKEN,
-      ...(process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/),
+      ...(includePons ? (process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/) : []),
     ].filter(Boolean);
 
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
@@ -376,7 +381,7 @@ export async function GET(request) {
       // the latter so a creator's brand-new coin appears even before it has a
       // priced pool. Everything else must earn its place with real liquidity.
       const alwaysShow = new Set([
-        ...FEATURED_PONS.map((a) => a.toLowerCase()),
+        ...(includePons ? FEATURED_PONS.map((a) => a.toLowerCase()) : []),
         ...launchedHere.map((a) => String(a).toLowerCase()),
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
@@ -401,17 +406,25 @@ export async function GET(request) {
       for (const addr of alwaysShow) {
         if (have.has(addr)) continue;
         const sym = KNOWN_SYMBOLS[addr] || null;
+        // Only stub a coin we can label. A launched-here coin with no known symbol
+        // whose enrich failed this cycle is skipped rather than shown as "$TOKEN";
+        // it appears once its on-chain symbol reads on a later refresh.
+        if (!sym) continue;
         try {
           featured.push({ token: getAddress(addr), symbol: sym, name: sym, marketCapWeth: null });
         } catch {
           /* skip a malformed curated address */
         }
       }
-      // Auto-discovered coins must be real pons launches with a priced pool, so
-      // no-liquidity spam and non-pons ERC-20s are dropped.
-      const extra = enriched
-        .filter((l) => !alwaysShow.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
-        .sort(byMcap);
+      // Auto-discovered pons coins (not launched here) — included only when
+      // ESKA_FEED_PONS=on. Off by default, so nothing outside our own launches
+      // enters the feed. When on, they must be real pons launches with a priced
+      // pool, so no-liquidity spam and non-pons ERC-20s are dropped.
+      const extra = includePons
+        ? enriched
+            .filter((l) => !alwaysShow.has((l.token || "").toLowerCase()) && l.isPonsLaunch && Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
+            .sort(byMcap)
+        : [];
 
       // Tag the source so the client can keep established (featured) coins ranked
       // ahead of freshly-discovered ones on the Top tab, and show the discovered
@@ -449,6 +462,11 @@ export async function GET(request) {
           (Number(Boolean(b.featured)) - Number(Boolean(a.featured))) ||
           (mcapUsd(b) - mcapUsd(a))
       );
+
+      // Never surface a coin we couldn't label — it renders as the "$TOKEN"
+      // placeholder. The official pin is always kept; everything else needs a
+      // real symbol or name (it returns once its on-chain read succeeds).
+      launches = launches.filter((l) => l.official || l.symbol || l.name);
     }
 
     const value = serialise({

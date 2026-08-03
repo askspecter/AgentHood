@@ -81,6 +81,8 @@ p strong,li strong{color:var(--ink);font-weight:600}
 ul,ol{margin:12px 0 12px 4px;padding-left:22px;color:var(--soft)}
 li{margin:7px 0}
 code{font-family:var(--mono);font-size:.86em;background:var(--panel2);border:1px solid var(--line);padding:1.5px 6px;border-radius:6px;color:#d7cffb;word-break:break-all}
+.codeblock{font-family:var(--mono);font-size:.8rem;line-height:1.6;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:#d7cffb;overflow-x:auto;white-space:pre;margin:14px 0}
+.muted{color:var(--soft);font-size:.92em}
 .steps{counter-reset:s;list-style:none;padding:0;margin:16px 0}
 .steps li{counter-increment:s;position:relative;padding:14px 16px 14px 56px;border:1px solid var(--line);border-radius:14px;margin:10px 0;background:var(--panel)}
 .steps li::before{content:counter(s,decimal-leading-zero);position:absolute;left:16px;top:14px;font-family:var(--mono);font-size:13px;color:transparent;background:var(--foil);-webkit-background-clip:text;background-clip:text;font-weight:700}
@@ -171,6 +173,12 @@ td b{color:var(--ink);font-weight:600}
         <a href="#architecture">Architecture</a>
         <a href="#security">Security</a>
         <a href="#contracts">Contracts</a>
+      </nav>
+    </div>
+    <div class="navgrp">
+      <p class="lbl">Developers</p>
+      <nav class="nav">
+        <a href="#mcp">AI access (MCP)</a>
       </nav>
     </div>
     <div class="navgrp">
@@ -303,20 +311,21 @@ td b{color:var(--ink);font-weight:600}
       <!-- TOKEN -->
       <section id="token" class="sec">
         <h2><span class="num">08</span>The $ESKA token</h2>
-        <p>$ESKA is the platform's own token &mdash; pinned to the top of the feed with a gold verified check. It's designed to be <strong>deflationary</strong>: the ESKA share of fees across every coin is used to <strong>buy back and burn $ESKA</strong>. More launches and more volume mean more burned.</p>
+        <p>$ESKA is the platform's own token, designed to be <strong>deflationary</strong>: the ESKA share of fees is used to <strong>buy back and burn $ESKA</strong>. More launches and more volume mean more burned.</p>
+        <p><strong>$ESKA is relaunching on <a href="https://x.com/bankrbot">@bankrbot</a>.</strong> The new official contract address will be announced at relaunch &mdash; there is no live official contract until then.</p>
         <div class="stats">
-          <div class="stat"><div class="n holo" id="burnStat" data-burn>28.38M</div><div class="k">$ESKA burned &middot; <span id="burnLive" style="color:var(--up,#5ad19a)">live</span></div></div>
+          <div class="stat"><div class="n">33.2M+</div><div class="k">$ESKA burned to date</div></div>
           <div class="stat"><div class="n">10%</div><div class="k">of fees &rarr; buyback</div></div>
-          <div class="stat"><div class="n">Official</div><div class="k">Gold verified</div></div>
+          <div class="stat"><div class="n">Bankr</div><div class="k">relaunch home</div></div>
         </div>
         <div class="tbl"><table>
           <tr><th>Field</th><th>Value</th></tr>
           <tr><td><b>Token</b></td><td>$ESKA</td></tr>
-          <tr><td><b>Contract</b></td><td><span class="addr">0x0eB9960654d3661D551a4536D7d425184eC81756</span></td></tr>
+          <tr><td><b>Contract</b></td><td>TBA &mdash; announced at the @bankrbot relaunch</td></tr>
           <tr><td><b>Chain</b></td><td>Robinhood Chain (ID 4663)</td></tr>
           <tr><td><b>Mechanic</b></td><td>Fee-funded buyback &amp; burn</td></tr>
         </table></div>
-        <div class="note warn"><div class="t">Verify the address</div><p>Only ever trade $ESKA at the contract above. Impersonators are common &mdash; the official coin carries the gold check on eska.fun.</p></div>
+        <div class="note warn"><div class="t">Verify the address</div><p>The official $ESKA contract will be published here and on eska.fun at the @bankrbot relaunch. Until then, treat <strong>any</strong> $ESKA contract as unofficial &mdash; impersonators are common.</p></div>
       </section>
 
       <!-- ARCHITECTURE -->
@@ -350,7 +359,7 @@ td b{color:var(--ink);font-weight:600}
         <p>Core addresses on Robinhood Chain (ID <code>4663</code>). Always confirm against the block explorer.</p>
         <div class="tbl"><table>
           <tr><th>Contract</th><th>Address</th></tr>
-          <tr><td><b>$ESKA token</b></td><td><span class="addr">0x0eB9960654d3661D551a4536D7d425184eC81756</span></td></tr>
+          <tr><td><b>$ESKA token</b></td><td>TBA &mdash; announced at the @bankrbot relaunch</td></tr>
           <tr><td><b>pons factory</b></td><td><span class="addr">0xA5aAb3F0c6EeadF30Ef1D3Eb997108E976351feB</span></td></tr>
           <tr><td><b>pons locker</b></td><td><span class="addr">0x736D76699C26D0d966744cAe304C000d471f7F35</span></td></tr>
           <tr><td><b>Uniswap V3 factory</b></td><td><span class="addr">0x1f7d7550B1b028f7571E69A784071F0205FD2EfA</span></td></tr>
@@ -360,9 +369,64 @@ td b{color:var(--ink);font-weight:600}
         </table></div>
       </section>
 
+      <!-- MCP / AI ACCESS -->
+      <section id="mcp" class="sec">
+        <h2><span class="num">12</span>AI access (MCP)</h2>
+        <p>ESKA runs a <strong>Model Context Protocol</strong> server, so you can drive it from an AI client &mdash; Claude, Cursor, or anything that speaks MCP. Browse coins, get quotes, check your wallet, and (with your key) trade and launch, all by asking.</p>
+
+        <div class="stats">
+          <div class="stat"><div class="n holo">1</div><div class="k">endpoint to connect</div></div>
+          <div class="stat"><div class="n">8</div><div class="k">tools</div></div>
+          <div class="stat"><div class="n">MCP</div><div class="k">streamable HTTP</div></div>
+        </div>
+
+        <h3>Endpoint</h3>
+        <p>Add this as a remote MCP server in your client:</p>
+        <div class="codeblock">https://eska.fun/api/mcp</div>
+
+        <h3>Get your key</h3>
+        <p>Read tools work with no key. To trade or launch, generate a personal <strong>ESKA API key</strong> in the app at <strong>Settings &rarr; AI access</strong>. Send it on every request as a bearer token:</p>
+        <div class="codeblock">Authorization: Bearer eska_mcp_&hellip;</div>
+        <div class="note warn"><div class="t">Treat your key like a password</div><p>The key carries spend authority over your custodial wallet &mdash; anyone holding it can trade and launch as you. It's shown once, isn't stored, and should only ever go into an AI client you trust. Never paste it publicly.</p></div>
+
+        <h3>Connect (Claude Desktop)</h3>
+        <p>Add ESKA under <code>mcpServers</code> in your client config, with the key in the auth header:</p>
+        <div class="codeblock">{
+  "mcpServers": {
+    "eska": {
+      "url": "https://eska.fun/api/mcp",
+      "headers": { "Authorization": "Bearer eska_mcp_&hellip;" }
+    }
+  }
+}</div>
+        <p class="muted">Clients differ &mdash; some take a URL + header in their UI, others a JSON config like the above. Point any of them at the endpoint and set the bearer header.</p>
+
+        <h3>Tools</h3>
+        <div class="tbl"><table>
+          <tr><th>Tool</th><th>Does</th><th>Key?</th></tr>
+          <tr><td><code>list_coins</code></td><td>Live coins on ESKA with market cap &amp; 24h</td><td>&mdash;</td></tr>
+          <tr><td><code>get_coin</code></td><td>Details for one coin by address</td><td>&mdash;</td></tr>
+          <tr><td><code>quote_trade</code></td><td>Price a buy/sell without executing</td><td>&mdash;</td></tr>
+          <tr><td><code>eska_burned</code></td><td>Live $ESKA burn total</td><td>&mdash;</td></tr>
+          <tr><td><code>leaderboard</code></td><td>Top creator / volume / referral</td><td>&mdash;</td></tr>
+          <tr><td><code>wallet</code></td><td>Your wallet address &amp; balances</td><td>&#10003;</td></tr>
+          <tr><td><code>trade</code></td><td>Buy or sell &mdash; spends real funds</td><td>&#10003;</td></tr>
+          <tr><td><code>launch_coin</code></td><td>Launch a new coin &mdash; spends real funds</td><td>&#10003;</td></tr>
+        </table></div>
+
+        <h3>Try it</h3>
+        <p>Once connected, just talk to your AI:</p>
+        <ul>
+          <li>&ldquo;List the top coins on ESKA and quote me 0.05 ETH into the biggest one.&rdquo;</li>
+          <li>&ldquo;Launch a coin called Nova, ticker $NOVA, and buy 0.01 of it.&rdquo;</li>
+          <li>&ldquo;How much $ESKA has been burned?&rdquo;</li>
+        </ul>
+        <div class="note"><div class="t">Safety</div><p>Every trade is still re-quoted, slippage-guarded and dry-run before it's sent, exactly as in the app. Fees always route to your own wallet. Start with tiny amounts while you get comfortable.</p></div>
+      </section>
+
       <!-- FAQ -->
       <section id="faq" class="sec">
-        <h2><span class="num">12</span>FAQ</h2>
+        <h2><span class="num">13</span>FAQ</h2>
         <div class="faq">
           <div class="q">Do I need a wallet or seed phrase?</div>
           <div class="a">No. Sign in with X and a wallet is minted for you. You can export its private key any time.</div>
@@ -375,16 +439,17 @@ td b{color:var(--ink);font-weight:600}
           <div class="q">Is it safe?</div>
           <div class="a">Coins have fixed supply and locked liquidity, and a honeypot check runs before you buy. Your wallet is custodial, so keep balances modest and self-custody the rest.</div>
           <div class="q">What is $ESKA?</div>
-          <div class="a">The platform's official, deflationary token. Fees fund $ESKA buyback &amp; burn. Contract: 0x0eB9&hellip;81756.</div>
+          <div class="a">The platform's deflationary token. Fees fund $ESKA buyback &amp; burn. $ESKA is relaunching on @bankrbot; the new official contract will be announced at relaunch.</div>
         </div>
       </section>
 
       <!-- LINKS -->
       <section id="links" class="sec">
-        <h2><span class="num">13</span>Links</h2>
+        <h2><span class="num">14</span>Links</h2>
         <ul>
           <li><strong>App</strong> &mdash; eska.fun</li>
           <li><strong>X</strong> &mdash; @eskafun</li>
+          <li><strong>MCP server</strong> &mdash; eska.fun/api/mcp</li>
           <li><strong>Chain</strong> &mdash; Robinhood Chain (ID 4663)</li>
         </ul>
         <div class="foot">

@@ -113,6 +113,11 @@ export async function GET(request) {
       );
     }
 
+    // Never emit a coin we couldn't label — it renders as the "$TOKEN"
+    // placeholder. The official pin is always kept; everything else needs a real
+    // symbol or name (it returns once its on-chain read succeeds).
+    launches = launches.filter((l) => l.official || l.symbol || l.name);
+
     return NextResponse.json(serialise({ ...result, launches, ethUsd, network }));
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
