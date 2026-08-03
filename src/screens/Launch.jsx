@@ -324,6 +324,10 @@ export default function Launch() {
   const doLaunch = useCallback(async () => {
     if (!user) return connect()
     if (!canLaunch) return
+    if (d.pairing === 'stock' && !d.pairedStock) {
+      setError('Pick a stock to pair with, or switch pool pairing back to WETH.')
+      return
+    }
     setBusy(true); setError(null)
     try {
       // Ensure the logo is a durable, self-hosted URL before it goes on-chain —
@@ -345,6 +349,7 @@ export default function Launch() {
           network: NETWORK,
           disableVesting: Boolean(d.noVesting),
           quoteOnlyFees: Boolean(d.quoteOnly),
+          pairedStock: d.pairing === 'stock' && d.pairedStock ? d.pairedStock : '',
         }),
       })
       const json = await res.json()
@@ -693,13 +698,14 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
       <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
         <Row k="Network" v="Robinhood Chain · Bankr" />
         <Row k="Supply" v="100,000,000,000 (fixed)" />
-        <Row k="Pool" v="Uniswap V4 · tradeable at launch" />
+        <Row k="Pool" v={d.pairing === 'stock' && d.pairedStock ? `Uniswap V4 · $${d.pairedStock} pair` : 'Uniswap V4 · WETH pair'} />
         <Row k="Creator fees" v="95% of the swap fee" />
         {xWallet && <Row k="Fees →" v={short(xWallet)} />}
       </div>
 
       {/* Bankr launch options */}
       <div className="card p-4 mb-6 space-y-4">
+        <PoolPairing d={d} set={set} />
         <OptionRow
           label="Creator vesting"
           hint={d.noVesting ? '100% sold into the pool — no allocation preminted.' : '15% vests to you over 1 year (30-day cliff).'}
@@ -744,6 +750,67 @@ function OptionRow({ label, hint, options, value, onChange }) {
         </div>
       </div>
       <p className="text-[11px] text-[var(--color-ink-faint)]">{hint}</p>
+    </div>
+  )
+}
+
+/* Stocks Bankr supports as a pool-pairing quote asset on Robinhood Chain. */
+const PAIR_STOCKS = [
+  ['NVDA', 'NVIDIA'], ['TSLA', 'Tesla'], ['AAPL', 'Apple'], ['MSFT', 'Microsoft'],
+  ['AMZN', 'Amazon'], ['GOOGL', 'Alphabet Class A'], ['META', 'Meta Platforms'],
+  ['AMD', 'AMD'], ['PLTR', 'Palantir Technologies'], ['INTC', 'Intel'],
+  ['MU', 'Micron Technology'], ['SNDK', 'Sandisk Corporation'], ['SPY', 'SPDR S&P 500 ETF'],
+  ['QQQ', 'Invesco QQQ'], ['SLV', 'iShares Silver Trust'], ['CRCL', 'Circle Internet Group'],
+  ['USO', 'United States Oil Fund'], ['ORCL', 'Oracle'], ['NFLX', 'Netflix'],
+  ['ASML', 'ASML Holding NV'], ['TSM', 'Taiwan Semiconductor'], ['COST', 'Costco'],
+  ['GME', 'GameStop'], ['CRWD', 'CrowdStrike Holdings'], ['IONQ', 'IonQ'],
+  ['CRWV', 'CoreWeave'], ['APLD', 'Applied Digital'], ['AAOI', 'Applied Optoelectronics'],
+  ['IREN', 'IREN Limited'], ['SpaceX', 'SpaceX'],
+]
+
+/* Pool pairing — quote the new pool in WETH (default) or in a tokenized stock,
+   mirroring Bankr's own launch flow. */
+function PoolPairing({ d, set }) {
+  const [q, setQ] = useState('')
+  const mode = d.pairing === 'stock' ? 'stock' : 'weth'
+  const needle = q.trim().toLowerCase()
+  const list = PAIR_STOCKS.filter(([t, n]) =>
+    !needle || t.toLowerCase().includes(needle) || n.toLowerCase().includes(needle)
+  )
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-sm font-medium">Pool pairing</span>
+        <div className="seg shrink-0">
+          <button onClick={() => set('pairing', 'weth')} className={`!px-2.5 !text-[13px] ${mode === 'weth' ? 'on' : ''}`}>WETH</button>
+          <button onClick={() => set('pairing', 'stock')} className={`!px-2.5 !text-[13px] ${mode === 'stock' ? 'on' : ''}`}>Stock paired</button>
+        </div>
+      </div>
+      {mode === 'weth' ? (
+        <p className="text-[11px] text-[var(--color-ink-faint)]">Your pool is quoted in WETH (default).</p>
+      ) : (
+        <div className="mt-1">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search stocks by ticker or name…" className="input !py-2 !text-sm mb-2" />
+          <div className="max-h-44 overflow-y-auto rounded-xl panel-soft">
+            {list.map(([t, n]) => (
+              <button
+                key={t}
+                onClick={() => set('pairedStock', t)}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-[var(--color-paper-2)] ${d.pairedStock === t ? 'bg-[var(--color-paper-2)]' : ''}`}
+              >
+                <span className="text-sm truncate"><span className="font-mono font-semibold">{t}</span> <span className="text-[var(--color-ink-faint)]">{n}</span></span>
+                {d.pairedStock === t && <span className="text-[var(--color-accent)] text-xs shrink-0">✓</span>}
+              </button>
+            ))}
+            {!list.length && <div className="px-3 py-2 text-sm text-[var(--color-ink-faint)]">No match.</div>}
+          </div>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">
+            {d.pairedStock
+              ? `Pool quoted in $${d.pairedStock} instead of WETH. Stock-paired volume doesn't count toward developer rebates.`
+              : 'Pick a stock — your pool is quoted in it instead of WETH.'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
