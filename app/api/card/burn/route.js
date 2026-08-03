@@ -27,7 +27,9 @@ async function resolveBurn(request) {
     const origin = new URL(request.url).origin;
     const r = await fetch(`${origin}/api/eska/burned?network=robinhood`, { cache: "no-store" });
     const j = await r.json();
-    const s = fmt(Number(j?.burned));
+    // Only a real, positive on-chain total earns the number; otherwise the card
+    // reads "live" rather than a hollow zero (e.g. between an old and new token).
+    const s = Number(j?.burned) > 0 ? fmt(Number(j.burned)) : null;
     if (s) return s;
   } catch {
     /* fall through to a label */

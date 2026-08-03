@@ -45,7 +45,14 @@ export async function GET(request) {
   }
 
   const token = eskaToken();
-  const out = { token, symbol: "ESKA", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline() };
+  // No official token set (e.g. between launches) — nothing to read. The UI hides
+  // the burn counter when `token` is null rather than showing a hollow zero.
+  if (!token) {
+    const v = { token: null, symbol: "ESKA", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: false };
+    cache = { at: Date.now(), value: v };
+    return cors(NextResponse.json(v));
+  }
+  const out = { token, symbol: "ESKA", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: true };
   try {
     const provider = rpcProvider(chain);
     const c = new Contract(token, ERC20, provider);

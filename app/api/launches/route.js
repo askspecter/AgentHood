@@ -120,7 +120,6 @@ const FEATURED_SYMBOL_LIST = [
 const KNOWN_SYMBOLS = Object.fromEntries(
   FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
 );
-KNOWN_SYMBOLS["0x0eb9960654d3661d551a4536d7d425184ec81756"] = "ESKA"; // official $ESKA
 
 /**
  * Discover launch token addresses from the block explorer's own index.

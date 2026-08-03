@@ -50,7 +50,7 @@ export default function BurnCounter() {
     const load = () =>
       fetch(`/api/eska/burned?network=${NETWORK}`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((j) => { if (!cancelled) { if (j && Number.isFinite(j.burned)) setData(j); else setFailed(true) } })
+        .then((j) => { if (!cancelled) { if (j && j.token && j.configured !== false && Number.isFinite(j.burned)) setData(j); else setFailed(true) } })
         .catch(() => { if (!cancelled) setFailed(true) })
     load()
     const id = setInterval(load, 60_000)
