@@ -123,7 +123,7 @@ const KNOWN_SYMBOLS = Object.fromEntries(
 // The official $ESKA token — always pinned to the top of Discover and
 // gold-checked, no matter the env/registry state, so ESKA's own coin is
 // unmistakable. OFFICIAL_TOKEN env can still override the address if it moves.
-const OFFICIAL_ESKA_TOKEN = "0x8e7d62f76df1ffc369ab90967c92d7d68009dba3";
+const OFFICIAL_ESKA_TOKEN = "0x78c91d5d2222e7d86e6ed51af4dadbe84174f4f8";
 KNOWN_SYMBOLS[OFFICIAL_ESKA_TOKEN] = "ESKA";
 
 /**
