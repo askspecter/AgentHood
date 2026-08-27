@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { parseEther, parseUnits, isAddress } from 'ethers'
+import { useAccount, useSendTransaction, useSwitchChain } from 'wagmi'
+import { encodeFunctionData, parseAbi } from 'viem'
+import { robinhoodChain } from '../lib/chain'
 import { useStore } from '../lib/store'
 import { cachedHoldings, loadHoldings, invalidateHoldings } from '../lib/holdings'
 import TradePanel from './TradePanel'
@@ -10,8 +13,8 @@ import { Coin } from './icons'
 /**
  * Portfolio quick actions — Receive · Send · Trade.
  *
- * Real, on the X-derived wallet: Receive shows the deposit address, Send moves
- * ETH or a token out via /api/terminal/send (signed server-side), and Trade
+ * Real, on your connected wallet: Receive shows the deposit address, Send moves
+ * ETH or a token out — signed by your own wallet, non-custodially — and Trade
  * opens the pons-style swap sheet — with a picker of every coin you hold so you
  * can trade one in a tap, or paste any Robinhood Chain address to trade it.
  */
@@ -161,7 +164,7 @@ function TradeModal({ wallet, onClose }) {
 
           {isAddress(token) ? (
             <div className="mt-4 pt-4 border-t hairline">
-              <TradePanel token={token} symbol={sel?.symbol} name={sel?.name} bare onDone={invalidateHoldings} />
+              <TradePanel token={token} symbol={sel?.symbol} bare onDone={invalidateHoldings} />
             </div>
           ) : (
             <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-4">Pick a coin above, or paste an address — you can trade any token on Robinhood Chain.</p>
@@ -172,7 +175,12 @@ function TradeModal({ wallet, onClose }) {
   )
 }
 
+const erc20TransferAbi = parseAbi(['function transfer(address to, uint256 amount) returns (bool)'])
+
 function SendModal({ wallet, onClose }) {
+  const { chainId } = useAccount()
+  const { sendTransactionAsync } = useSendTransaction()
+  const { switchChainAsync } = useSwitchChain()
   const [asset, setAsset] = useState('native') // 'native' | 'token'
   const [tokenAddr, setTokenAddr] = useState('')
   const [maxQty, setMaxQty] = useState(null)
@@ -195,14 +203,24 @@ function SendModal({ wallet, onClose }) {
     if (asset === 'token' && !isAddress(tokenAddr)) { setError('Pick a token or paste a valid token address.'); return }
     setBusy(true)
     try {
-      const amountRaw = (asset === 'native' ? parseEther(amount) : parseUnits(amount, 18)).toString()
-      const body = { asset, to, amountRaw, network: 'robinhood', ...(asset === 'token' ? { token: tokenAddr } : {}) }
-      const res = await fetch('/api/terminal/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      const j = await res.json()
-      if (!res.ok) setError(j.error || 'The send failed.')
-      else { invalidateHoldings(); setDone({ hash: j.hash }) }
-    } catch { setError('The send failed.') } finally { setBusy(false) }
-  }, [asset, tokenAddr, to, amount])
+      if (chainId !== robinhoodChain.id) {
+        try { await switchChainAsync({ chainId: robinhoodChain.id }) }
+        catch { throw new Error(`Switch your wallet to ${robinhoodChain.name} first.`) }
+      }
+      // Signed by the connected wallet — non-custodial. A plain ETH transfer for
+      // native, or an ERC-20 transfer() call for a token.
+      let hash
+      if (asset === 'native') {
+        hash = await sendTransactionAsync({ to, value: parseEther(amount), chainId: robinhoodChain.id })
+      } else {
+        const data = encodeFunctionData({ abi: erc20TransferAbi, functionName: 'transfer', args: [to, parseUnits(amount, 18)] })
+        hash = await sendTransactionAsync({ to: tokenAddr, data, value: 0n, chainId: robinhoodChain.id })
+      }
+      invalidateHoldings(); setDone({ hash })
+    } catch (err) {
+      setError(err?.shortMessage || err?.message?.split('\n')[0] || 'The send failed.')
+    } finally { setBusy(false) }
+  }, [asset, tokenAddr, to, amount, chainId, sendTransactionAsync, switchChainAsync])
 
   return (
     <Overlay onClose={onClose} title="Send">
@@ -242,7 +260,7 @@ function SendModal({ wallet, onClose }) {
           </label>
           {error && <div className="chip chip-down w-full mb-3">{error}</div>}
           <button onClick={submit} disabled={busy} className="btn btn-primary w-full">{busy ? 'Sending…' : 'Send'}</button>
-          <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Simulated first, signed by your X wallet.</p>
+          <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Signed by your own wallet — we never touch your funds.</p>
         </>
       )}
     </Overlay>

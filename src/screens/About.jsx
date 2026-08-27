@@ -14,7 +14,7 @@ export default function About() {
     >
       <Sec n={1} title="What ESKA is">
         <p>ESKA turns tokens into characters. It is a consumer interface to a decentralized token protocol (“Bankr”) on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
-        <p>Through ESKA you can discover coins, chat with them, view live market data, launch your own coin, and swap coins that live in public liquidity pools — with a wallet minted from your X sign-in, so there is no separate wallet app to install.</p>
+        <p>Through ESKA you can discover coins, chat with them, view live market data, launch your own coin, and swap coins that live in public liquidity pools — with your own self-custodial wallet, so your keys and your funds stay entirely in your hands.</p>
       </Sec>
 
       <Sec n={2} title="What we're building">
@@ -24,8 +24,8 @@ export default function About() {
 
       <Sec n={3} title="How it works">
         <UL items={[
-          'Sign in with X. A blockchain wallet is deterministically derived for your account, so you can transact without a browser extension.',
-          'Launch a coin in a few taps — name, look, and soul — deployed through Bankr on Robinhood Chain.',
+          'Connect your wallet — MetaMask, Rainbow, or any WalletConnect wallet. Nothing to derive, no keys to hand over; you sign every transaction yourself.',
+          'Launch a coin in a few taps — name, look, and soul — deployed through Pons on Robinhood Chain.',
           'Trade any coin. Prices, liquidity, and market caps are read live from the chain.',
           'Own it. Coins you launch or buy are real tokens in your wallet, and creators can claim their fees.',
         ]} />
@@ -41,7 +41,7 @@ export default function About() {
       </Sec>
 
       <Sec n={5} title="Safety & transparency">
-        <p>ESKA is a front-end. We do not operate a bank, broker-dealer, exchange, or money transmitter, and we do not take custody of your funds beyond the wallet mechanics described in our Terms. Crypto assets are volatile and speculative — nothing in the app is financial advice, and you trade at your own risk.</p>
+        <p>ESKA is a front-end. We do not operate a bank, broker-dealer, exchange, or money transmitter, and we never take custody of your funds — your self-custodial wallet always holds them. Crypto assets are volatile and speculative — nothing in the app is financial advice, and you trade at your own risk.</p>
         <p>Read our <a className="text-[var(--color-accent)] hover:underline" href="/terms">Terms of Service</a> and <a className="text-[var(--color-accent)] hover:underline" href="/privacy">Privacy Policy</a> for the full details.</p>
       </Sec>
 

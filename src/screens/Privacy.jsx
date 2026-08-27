@@ -9,24 +9,24 @@ export default function Privacy() {
     >
       <Sec n={1} title="A quick summary">
         <UL items={[
-          'We sign you in with X and read only your basic public profile (id, handle, name, and avatar).',
-          'Your wallet address is derived from your X account. Its balances and activity are public on the blockchain — that is inherent to how blockchains work, not something we publish.',
+          'You connect your own self-custodial wallet. We never see or store its private keys, and we do not ask you to sign in with a social account.',
+          'Your wallet address and its balances and activity are public on the blockchain — that is inherent to how blockchains work, not something we publish.',
           'Your chats with a coin, your theme choice, and any name/photo you set in Edit profile are stored on your own device, not on our servers.',
           'We do not sell your personal information.',
         ]} />
       </Sec>
 
       <Sec n={2} title="Information we collect">
-        <p><strong className="text-[var(--color-ink)]">From X sign-in.</strong> When you connect X, we receive your X user id, username (handle), display name, and profile image. We use your user id to derive and recognize your wallet. We do not receive your X password, and we do not post to X on your behalf.</p>
-        <p><strong className="text-[var(--color-ink)]">Wallet and on-chain data.</strong> We compute your wallet address and read public blockchain data to show your balance, holdings, and the coins in the feed. Everything on a public blockchain is, by design, visible to anyone.</p>
+        <p><strong className="text-[var(--color-ink)]">From your wallet.</strong> When you connect a wallet, we receive its public address. That is all a wallet connection shares — we never receive your seed phrase or private keys, and we cannot move your funds.</p>
+        <p><strong className="text-[var(--color-ink)]">Wallet and on-chain data.</strong> We read public blockchain data for your connected address to show your balance, holdings, and the coins in the feed. Everything on a public blockchain is, by design, visible to anyone.</p>
         <p><strong className="text-[var(--color-ink)]">Technical data.</strong> Like most websites, our hosting provider may automatically log basic technical information such as IP address, browser type, and timestamps to keep the Service running and secure.</p>
         <p><strong className="text-[var(--color-ink)]">Stored on your device.</strong> Your chat transcripts, appearance preference, referral view, and profile edits (display name and photo) are saved in your browser’s local storage and never leave your device unless you clear or move them.</p>
       </Sec>
 
       <Sec n={3} title="What we do not collect">
         <UL items={[
-          'We do not collect your X password or private messages.',
-          'We do not store your wallet’s private key in a database — it is derived on demand from a server secret and your X id, and used only to sign a transaction you asked for.',
+          'We never receive your wallet’s seed phrase or private keys — they never leave your wallet.',
+          'We do not store any key that could move your funds. Every transaction is signed inside your own wallet, by you.',
           'We do not ask for your legal name, address, or government ID to browse or trade.',
         ]} />
       </Sec>
@@ -42,13 +42,13 @@ export default function Privacy() {
       </Sec>
 
       <Sec n={5} title="Cookies and sessions">
-        <p>We use a single secure, signed session cookie to keep you logged in after you sign in with X. It is an <span className="font-mono text-[13px]">httpOnly</span> cookie, meaning it cannot be read by page scripts, and it holds only what is needed to identify your session. We do not use third-party advertising or tracking cookies.</p>
+        <p>Because you connect a self-custodial wallet, there is no server-side login session. Your wallet connection is kept by your browser and your wallet app, not by us. We do not use third-party advertising or tracking cookies.</p>
       </Sec>
 
       <Sec n={6} title="How information is shared">
         <p>We share information only as needed to run the Service:</p>
         <UL items={[
-          'X, for authentication.',
+          'Wallet providers and WalletConnect, to connect your wallet and relay transactions you approve.',
           'Blockchain RPC providers and block explorers, to read public chain data and broadcast the transactions you initiate.',
           'Our hosting and infrastructure providers, to serve the site.',
           'Where required by law, or to protect the rights, safety, and security of ESKA, our users, or the public.',
@@ -65,14 +65,13 @@ export default function Privacy() {
       </Sec>
 
       <Sec n={9} title="Security">
-        <p>We use reasonable technical measures to protect the Service, including signed session cookies and deriving keys on demand rather than storing them. No system is perfectly secure, however, and you are responsible for protecting access to your X account, which controls your wallet.</p>
+        <p>We use reasonable technical measures to protect the Service. Because your wallet is self-custodial, its keys never reach us, so we cannot lose or expose them. No system is perfectly secure, however, and you are responsible for protecting your wallet, its seed phrase, and its private keys.</p>
       </Sec>
 
       <Sec n={10} title="Your choices and rights">
         <UL items={[
-          'You can sign out at any time from Settings, which ends your session.',
+          'You can disconnect your wallet at any time from Settings or from your wallet app.',
           'You can clear your on-device data (chats, preferences, profile edits) by clearing your browser storage.',
-          'You can disconnect ESKA from your X account in your X app settings.',
           'Depending on where you live, you may have rights to access, correct, or delete the limited personal data we hold — contact us to make a request.',
         ]} />
       </Sec>

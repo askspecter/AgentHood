@@ -13,7 +13,7 @@ const NETWORK = 'robinhood'
  * as an ordered list of unsigned steps (approvals + swap) that the connected
  * wallet signs in turn via wagmi — no server key, the user's own wallet signs.
  */
-export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bare = false }) {
+export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bare = false, onDone }) {
   const { connect } = useStore()
   const { address, isConnected, chainId } = useAccount()
   const { sendTransactionAsync } = useSendTransaction()
@@ -110,6 +110,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bar
         if (i < plan.steps.length - 1) { try { await publicClient.waitForTransactionReceipt({ hash }) } catch {} }
       }
       setTxHash(last); setStatus('done'); setStepMsg(''); setAmount(''); setQuote(null)
+      onDone?.()
       setTimeout(() => { refetchEth(); refetchToken() }, 3000)
     } catch (err) {
       setStatus('error'); setStepMsg('')

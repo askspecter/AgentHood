@@ -9,7 +9,7 @@ export default function Terms() {
     >
       <Sec n={1} title="What ESKA is">
         <p>ESKA is an interface to a decentralized token protocol (“Bankr”) on Robinhood Chain. Through ESKA you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. ESKA is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
-        <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We do not take custody of your funds beyond the wallet mechanics described in Section 3, we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
+        <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We never take custody of your funds — your self-custodial wallet always holds them — we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
       </Sec>
 
       <Sec n={2} title="Eligibility">
@@ -17,11 +17,11 @@ export default function Terms() {
         <p>You are responsible for ensuring that your use of the Service is legal where you live. Access from a particular country does not mean the Service is appropriate or available there.</p>
       </Sec>
 
-      <Sec n={3} title="Signing in and your wallet">
-        <p>You sign in with your X (Twitter) account. When you do, a blockchain wallet is deterministically derived for your account so you can transact without installing a separate wallet app. You are responsible for maintaining control of the X account tied to your wallet.</p>
+      <Sec n={3} title="Connecting your wallet">
+        <p>You connect your own self-custodial wallet — such as MetaMask, Rainbow, or any WalletConnect-compatible wallet. We never create, hold, or have access to your wallet or its private keys. Every transaction is signed inside your wallet, by you; we only prepare the transaction for you to review and approve.</p>
         <UL items={[
-          'Access to your wallet follows access to your X account. If you lose access to your X account, or it is suspended, transferred, or renamed in a way that changes its identity, you may lose the ability to use the derived wallet.',
-          'You are solely responsible for all activity that occurs through your account and wallet.',
+          'You are solely responsible for safeguarding your wallet, its seed phrase, and its private keys. We cannot recover them, reset them, or move your funds if you lose access.',
+          'You are solely responsible for all activity that occurs through your connected wallet.',
           'Transactions on a blockchain are irreversible. Once a swap, transfer, or launch is confirmed on-chain, it cannot be undone by us or anyone else.',
         ]} />
       </Sec>
