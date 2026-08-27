@@ -220,7 +220,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editab
       {/* action */}
       <button onClick={doTrade} disabled={busy || quoting || (user && (!quote || !tradeable))}
         className="btn btn-holo static w-full !py-3 mt-3">
-        {busy ? 'Working…' : !user ? <>Sign in with <XGlyph size={13} color="#0b0a12" /></> : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : isWeth ? (side === 'buy' ? 'Wrap to WETH' : 'Unwrap to ETH') : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
+        {busy ? 'Working…' : !user ? 'Connect Wallet' : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : isWeth ? (side === 'buy' ? 'Wrap to WETH' : 'Unwrap to ETH') : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
       </button>
 
       {error && <div className="chip chip-down w-full mt-3">{error}</div>}

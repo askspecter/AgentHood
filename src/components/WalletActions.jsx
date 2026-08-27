@@ -87,7 +87,7 @@ function DepositModal({ wallet, receive, onClose }) {
           <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Robinhood Chain (chain ID 4663) · ETH for gas</p>
         </>
       ) : (
-        <p className="text-sm text-[var(--color-ink-soft)]">Sign in with X to get a wallet address.</p>
+        <p className="text-sm text-[var(--color-ink-soft)]">Connect your wallet to see your address.</p>
       )}
     </Overlay>
   )
@@ -150,7 +150,7 @@ function TradeModal({ wallet, onClose }) {
   return (
     <Overlay onClose={onClose} title="Trade">
       {!wallet ? (
-        <p className="text-sm text-[var(--color-ink-soft)]">Sign in with X first.</p>
+        <p className="text-sm text-[var(--color-ink-soft)]">Connect your wallet first.</p>
       ) : (
         <>
           <HeldTokenPicker selected={token} onPick={(h) => { setSel(h); setPaste('') }} />
@@ -207,7 +207,7 @@ function SendModal({ wallet, onClose }) {
   return (
     <Overlay onClose={onClose} title="Send">
       {!wallet ? (
-        <p className="text-sm text-[var(--color-ink-soft)]">Sign in with X first.</p>
+        <p className="text-sm text-[var(--color-ink-soft)]">Connect your wallet first.</p>
       ) : done ? (
         <div className="chip chip-up w-full">Sent ✓ {done.hash && <span className="font-mono text-xs break-all"> {done.hash.slice(0, 10)}…</span>}</div>
       ) : (

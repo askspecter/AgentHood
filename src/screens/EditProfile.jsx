@@ -52,8 +52,8 @@ export default function EditProfile() {
     return (
       <div className="max-w-md mx-auto text-center py-24">
         <h1 className="font-serif text-3xl mb-2">Edit profile</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to edit your name and photo.</p>
-        <button onClick={connect} className="btn btn-primary mx-auto">Sign in with <XLogo size={13} /></button>
+        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to edit your name and photo.</p>
+        <button onClick={connect} className="btn btn-primary mx-auto">Connect Wallet</button>
       </div>
     )
   }

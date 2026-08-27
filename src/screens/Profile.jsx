@@ -111,8 +111,8 @@ export default function Profile() {
       <div className="max-w-md mx-auto text-center py-24">
         <div className="orb-spin mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)' }}><XGlyph size={20} color="#0b0a12" /></div>
         <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Sign in with X to see the wallet minted for your account, its balance and every coin it holds.</p>
-        <button onClick={connect} className="btn btn-primary mx-auto">Sign in with <XGlyph size={13} color="#fff" /></button>
+        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to see its balance and every coin it holds.</p>
+        <button onClick={connect} className="btn btn-primary mx-auto">Connect Wallet</button>
       </div>
     )
   }

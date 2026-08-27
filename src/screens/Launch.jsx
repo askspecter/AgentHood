@@ -725,7 +725,7 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
       <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {busy ? 'Launching…' : !user ? (<>Sign in with <XGlyph size={13} color="#0b0a12" /> to launch</>) : `Launch ${preview.name}`}
+        {busy ? 'Launching…' : !user ? 'Connect Wallet to launch' : `Launch ${preview.name}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
         Real launch on Robinhood Chain via Bankr — deployed to your ESKA wallet, tradeable instantly.

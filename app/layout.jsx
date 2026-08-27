@@ -1,3 +1,4 @@
+import "@rainbow-me/rainbowkit/styles.css"; // REQUIRED, before app CSS — styles the connect modal
 import "../src/index.css";
 
 export const metadata = {

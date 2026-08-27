@@ -1,6 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useAccount, useBalance, useDisconnect } from 'wagmi'
+import { useConnectModal } from '@rainbow-me/rainbowkit'
 import { tokenToAgent, replyFor } from './agents'
 import { SEED_TOKENS } from '../data/seed'
+
+// A wallet address shown as identity: 0x1234…abcd
+function shortAddr(a) { return a ? a.slice(0, 6) + '…' + a.slice(-4) : '' }
 
 // Bundled placeholders shown the instant the app opens on a cold first visit,
 // replaced by the live feed within a second or two.
@@ -52,7 +57,11 @@ function loadFeed() {
 }
 
 export function StoreProvider({ children }) {
-  const [wallet, setWallet] = useState(null)
+  // Non-custodial identity: the connected wallet IS the account (wagmi + RainbowKit).
+  const { address, isConnected } = useAccount()
+  const { openConnectModal } = useConnectModal()
+  const { disconnect: wagmiDisconnect } = useDisconnect()
+  const { data: balanceData } = useBalance({ address, query: { enabled: !!address, refetchInterval: 15000 } })
 
   const initFeed = typeof window === 'undefined' ? null : loadFeed()
   // Cached feed if we have one, else the bundled seed — so the grid is never blank.
@@ -112,36 +121,6 @@ export function StoreProvider({ children }) {
     } catch {}
   }, [])
 
-  // Real X session.
-  useEffect(() => {
-    let cancelled = false
-    fetch('/api/auth/me')
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return
-        const user = data?.user
-        if (!user) { setWallet(null); try { localStorage.removeItem(WALLET_KEY) } catch {}; return }
-        // Show the signed-in identity immediately — don't make it wait behind the
-        // (slower) balance read. Seed the address + ETH balance from the last-known
-        // cache for THIS user so the number paints at once, then refresh it.
-        const cached = loadWalletCache()
-        const seed = cached && cached.id === user.id ? cached : null
-        setWallet({ id: user.id, handle: '@' + user.username, name: user.name, avatar: user.avatar || null, address: seed?.address || '', ethBalance: seed?.ethBalance ?? null, kind: 'x' })
-        fetch('/api/wallet')
-          .then((r) => (r.ok ? r.json() : null))
-          .then((w) => {
-            if (cancelled || !w) return
-            const address = w.address || seed?.address || ''
-            const ethBalance = w?.balance?.formatted != null ? Number(w.balance.formatted) : (seed?.ethBalance ?? null)
-            setWallet((prev) => prev && prev.id === user.id ? { ...prev, address, ethBalance } : prev)
-            try { localStorage.setItem(WALLET_KEY, JSON.stringify({ id: user.id, address, ethBalance, at: Date.now() })) } catch {}
-          })
-          .catch(() => {})
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [])
-
   // Real pons feed → agents. The discovery feed (/api/launches) plus the
   // launched-here registry (/api/registry), unioned so a coin launched on ESKA
   // always shows the moment it's recorded — even if the discovery feed missed it.
@@ -196,22 +175,25 @@ export function StoreProvider({ children }) {
   // `baseName`/`baseAvatar` keep the untouched X values so Edit profile can show
   // what X provides and offer a reset.
   const displayWallet = useMemo(() => {
-    if (!wallet) return null
+    if (!isConnected || !address) return null
+    const short = shortAddr(address)
+    const ethBalance = balanceData?.formatted != null ? Number(balanceData.formatted) : null
     return {
-      ...wallet,
-      name: profile.displayName || wallet.name,
-      avatar: profile.avatar || wallet.avatar,
-      baseName: wallet.name,
-      baseAvatar: wallet.avatar,
+      id: address,
+      address,
+      handle: short,
+      name: profile.displayName || short,
+      avatar: profile.avatar || null,
+      ethBalance,
+      kind: 'wallet',
+      baseName: short,
+      baseAvatar: null,
     }
-  }, [wallet, profile])
+  }, [isConnected, address, balanceData, profile])
 
-  function connect() {
-    let ref = ''
-    try { ref = localStorage.getItem(REF_KEY) || '' } catch {}
-    window.location.href = '/api/auth/x/login' + (ref ? `?ref=${encodeURIComponent(ref)}` : '')
-  }
-  async function disconnect() { try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}; setWallet(null); try { localStorage.removeItem(WALLET_KEY) } catch {} }
+  // Open the RainbowKit modal (MetaMask / Injected / Rainbow / WalletConnect).
+  const connect = useCallback(() => { openConnectModal?.() }, [openConnectModal])
+  const disconnect = useCallback(() => { try { wagmiDisconnect() } catch {} }, [wagmiDisconnect])
 
   const sendMessage = useCallback((id, text) => {
     const agent = agentsById[id]
