@@ -6,10 +6,10 @@ import { Back, XLogo, Gift, Share } from '../components/icons'
 /**
  * Referral code — your personal invite.
  *
- * The code is your X handle, so it's memorable and unique to you, and the link
- * carries it as ?ref= for whoever you share it with. When they sign in through
- * it, the referrer is credited server-side (once per new account), and the
- * counts rank the Top Referral leaderboard.
+ * The code is drawn from your wallet address, so it's unique to you, and the
+ * link carries it as ?ref= for whoever you share it with. When they connect a
+ * wallet through it, the referrer is credited server-side (once per new
+ * account), and the counts rank the Top Referral leaderboard.
  */
 export default function Referral() {
   const nav = useNavigate()
@@ -26,7 +26,9 @@ export default function Referral() {
     )
   }
 
-  const code = (wallet.handle?.replace(/^@/, '') || 'eska').toUpperCase()
+  // A clean, URL-safe code from the wallet address (the handle carries a
+  // Unicode ellipsis, which can't go in a link).
+  const code = (wallet.address ? wallet.address.slice(2, 10) : 'eska').toUpperCase()
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://eska.fun'
   const link = `${origin}/?ref=${code}`
 
@@ -81,7 +83,7 @@ export default function Referral() {
         <div className="eyebrow mb-3">How it works</div>
         <ol className="space-y-3 text-sm text-[var(--color-ink-soft)]">
           <Step n={1}>Share your code or link with a friend.</Step>
-          <Step n={2}>They sign in with X through your link.</Step>
+          <Step n={2}>They connect their wallet through your link.</Step>
           <Step n={3}>You climb the referral leaderboard as friends join.</Step>
         </ol>
       </div>

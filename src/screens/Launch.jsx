@@ -14,10 +14,10 @@ import { XGlyph, Verified, Back } from '../components/icons'
  * Launch — create an agent, mint a real token on pons.
  *
  * The charms.ai-style creation flow (name → look → forge → soul → review) is the
- * theme; the deployment underneath is real. The factory's launch signature is
- * discovered from its verified ABI (/api/factory) and the nice fields here are
- * mapped onto it, then signed by your X wallet server-side (/api/launch/execute)
- * and recorded (/api/registry). One transaction, a real coin on Robinhood Chain.
+ * theme; the deployment underneath is real. The Pons strategy (v1 or v2) builds
+ * the launch transaction from its verified ABI, your own connected wallet signs
+ * it (non-custodial), and the coin is recorded (/api/registry). One transaction,
+ * a real coin on Robinhood Chain.
  */
 
 const NETWORK = 'robinhood'
@@ -209,7 +209,6 @@ export default function Launch() {
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
   const [retryKey, setRetryKey] = useState(0)
-  const [xWallet, setXWallet] = useState(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [result, setResult] = useState(null)
@@ -305,10 +304,6 @@ export default function Launch() {
         await new Promise((res) => setTimeout(res, 800 * (i + 1)))
       }
     })()
-    fetch(`/api/wallet?network=${NETWORK}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => { if (json?.address) setXWallet(json.address) })
-      .catch(() => {})
     return () => { cancelled = true }
   }, [user, retryKey])
 
@@ -365,7 +360,7 @@ export default function Launch() {
         ticker: (d.ticker || autoTicker(d.name) || 'TICK'),
         imageUri: logo || '',
         description: [d.tagline, d.lore].filter(Boolean).join(' — ').slice(0, 500),
-        twitter: user?.username ? `https://x.com/${user.username}` : '',
+        twitter: (d.twitter || '').trim(),
         telegram: '', website: '',
         launchConfigId: 0,
         initialBuyEth: d.firstBuy && Number(d.firstBuy) > 0 ? String(d.firstBuy) : '',
@@ -477,7 +472,7 @@ export default function Launch() {
         {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} lookBusy={lookBusy} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
-        {step === 4 && <StepReview d={d} set={set} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} xWallet={xWallet} busy={busy} error={error} />}
+        {step === 4 && <StepReview d={d} set={set} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/c/${result?.token || ''}`)} />}
       </div>
     </div>
@@ -719,7 +714,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
 }
 
 /* ---------- 5 · Review & launch (REAL) ---------- */
-function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, xWallet, busy, error }) {
+function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, busy, error }) {
   const fee = meta?.launchFeeEth
   return (
     <div className="flex-1 flex flex-col">

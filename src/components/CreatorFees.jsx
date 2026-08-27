@@ -120,7 +120,7 @@ export default function CreatorFees({ token, symbol }) {
           <div className="eyebrow">Payout wallet</div>
           <div className="font-mono text-sm truncate">{short(status.payoutWallet)}</div>
         </div>
-        <span className="text-xs text-[var(--color-ink-faint)] shrink-0">your X wallet</span>
+        <span className="text-xs text-[var(--color-ink-faint)] shrink-0">your connected wallet</span>
       </div>
 
       {msg && (

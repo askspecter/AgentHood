@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { Back, XLogo, Verified } from '../components/icons'
+import { Back, Verified } from '../components/icons'
 
 /**
  * Edit profile — the display name and photo only.
  *
- * The @handle comes from X and can't be changed here (it's the identity the
- * wallet is derived from). Name and photo are local overrides layered on top of
- * the X profile: saved on this device, shown everywhere the app shows "you", and
- * resettable back to whatever X provides.
+ * The username is your wallet address and can't be changed here (it's your
+ * on-chain identity). Name and photo are local overrides layered on top of it:
+ * saved on this device, shown everywhere the app shows "you", and resettable
+ * back to the plain address.
  */
 
 // Shrink any picked image to a small square data URL — keeps localStorage light
@@ -129,13 +129,12 @@ export default function EditProfile() {
         </label>
 
         <div className="mt-5">
-          <span className="eyebrow">Username</span>
+          <span className="eyebrow">Wallet</span>
           <div className="mt-2 flex items-center gap-2 px-3.5 py-2.5 rounded-xl panel-soft">
-            <XLogo size={12} />
             <span className="font-mono text-sm text-[var(--color-ink-soft)] flex-1">{handle}</span>
-            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]"><Verified size={12} /> from X</span>
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]"><Verified size={12} /> connected</span>
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">Your username comes from X and can't be changed here.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">This is your connected wallet address — your identity on-chain.</p>
         </div>
       </div>
 
@@ -144,7 +143,7 @@ export default function EditProfile() {
       <div className="flex items-center gap-2">
         <button onClick={save} disabled={!dirty || saved} className="btn btn-primary flex-1 justify-center">{saved ? 'Saved ✓' : 'Save changes'}</button>
         {(!usingXName || !usingXPhoto) && (
-          <button onClick={resetToX} className="btn btn-secondary">Reset to X</button>
+          <button onClick={resetToX} className="btn btn-secondary">Reset</button>
         )}
       </div>
     </div>

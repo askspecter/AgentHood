@@ -9,8 +9,8 @@ import { primeHoldings, cachedHoldings } from '../lib/holdings'
 /**
  * Portfolio — real, on-chain.
  *
- * Everything here is read from the wallet minted for your X account: the ETH
- * balance and every coin it holds, priced live. The `portfolio` command's own
+ * Everything here is read from your connected wallet: the ETH balance and every
+ * coin it holds, priced live. The `portfolio` command's own
  * endpoint (/api/terminal) is the single source, so the numbers here and in the
  * terminal can never disagree.
  */
