@@ -1,4 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
+import { parseEventLogs } from 'viem'
+import { getStrategy } from '../lib/pons'
+import { tokenLaunchedEvent } from '../lib/pons/abis'
+import { v2TokenLaunchedEvent } from '../lib/pons/abisV2'
+import { robinhoodChain } from '../lib/chain'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar, { TONES } from '../components/CharmAvatar'
@@ -192,7 +198,13 @@ export default function Launch() {
 
   const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
-  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false, version: 'v1' })
+
+  // Non-custodial deploy — the connected wallet signs the Pons launch tx.
+  const { address, chainId } = useAccount()
+  const publicClient = usePublicClient()
+  const { switchChainAsync } = useSwitchChain()
+  const { writeContractAsync } = useWriteContract()
 
   const [meta, setMeta] = useState(null)
   const [metaError, setMetaError] = useState(null)
@@ -322,53 +334,90 @@ export default function Launch() {
   ].filter(Boolean).join(' · ').slice(0, 280)
 
   const doLaunch = useCallback(async () => {
-    if (!user) return connect()
+    if (!user || !address) return connect()
     if (!canLaunch) return
-    if (d.pairing === 'stock' && !d.pairedStock) {
-      setError('Pick a stock to pair with, or switch pool pairing back to WETH.')
-      return
-    }
+    const version = d.version === 'v2' ? 'v2' : 'v1'
     setBusy(true); setError(null)
     try {
-      // Ensure the logo is a durable, self-hosted URL before it goes on-chain —
-      // never a temporary fal URL or a huge data URL.
+      // Ensure the logo is a durable, short URL before it goes on-chain — a huge
+      // data URL makes the factory revert with MetadataTooLong().
       let logo = d.logo
       if (logo && !/\/api\/logo\?id=/.test(logo)) {
         const stable = await persistLogo(logo)
         if (stable) { logo = stable; set('logo', stable) }
       }
-      // Launch through Bankr on Robinhood Chain. The server sets the fee
-      // recipient to your ESKA wallet and deploys the token + its pool.
-      const res = await fetch('/api/launch/bankr', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: d.name,
-          symbol: d.ticker || d.name,
-          logo: logo || '',
-          network: NETWORK,
-          disableVesting: Boolean(d.noVesting),
-          quoteOnlyFees: Boolean(d.quoteOnly),
-          pairedStock: d.pairing === 'stock' && d.pairedStock ? d.pairedStock : '',
-        }),
-      })
-      const json = await res.json()
-      if (!res.ok) { setError(json.hint ? `${json.error} ${json.hint}` : json.error || 'The launch failed.'); return }
 
-      setResult({ txHash: json.hash, token: json.token })
-      setStep(5)
-      if (json.token) {
-        fetch('/api/registry', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: json.token, txHash: json.hash, deployer: json.owner, xUsername: user.username }),
-        }).catch(() => {})
+      // The connected wallet must be on Robinhood Chain to sign the launch.
+      if (chainId !== robinhoodChain.id) {
+        try { await switchChainAsync({ chainId: robinhoodChain.id }) }
+        catch {
+          setError(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) — this is an EVM chain, not Solana — then try again.`)
+          return
+        }
       }
-    } catch {
-      setError('Could not reach the create endpoint.')
+
+      const strategy = getStrategy(version)
+      if (!strategy.info().ready) { setError(`Deploy for ${version} is currently unavailable.`); return }
+
+      const input = {
+        version,
+        name: d.name,
+        ticker: (d.ticker || autoTicker(d.name) || 'TICK'),
+        imageUri: logo || '',
+        description: [d.tagline, d.lore].filter(Boolean).join(' — ').slice(0, 500),
+        twitter: user?.username ? `https://x.com/${user.username}` : '',
+        telegram: '', website: '',
+        launchConfigId: 0,
+        initialBuyEth: d.firstBuy && Number(d.firstBuy) > 0 ? String(d.firstBuy) : '',
+        buybackEnabled: true, // v2 only; ignored by v1
+      }
+
+      // Prepare the version-specific launch plan (may read on-chain for v2).
+      const plan = await strategy.prepareLaunch(input, address)
+
+      // Pre-flight simulate to surface the exact revert reason (no gas spent).
+      if (publicClient) {
+        try {
+          await publicClient.simulateContract({
+            account: address, address: plan.address, abi: plan.abi,
+            functionName: plan.functionName, args: plan.args, value: plan.value,
+          })
+        } catch (simErr) {
+          setError('This launch would revert on-chain: ' + (simErr?.shortMessage || simErr?.message?.split('\n')[0] || 'unknown reason'))
+          return
+        }
+      }
+
+      // Sign + send from the user's own wallet — non-custodial.
+      const hash = await writeContractAsync({
+        address: plan.address, abi: plan.abi, functionName: plan.functionName,
+        args: plan.args, value: plan.value, chainId: robinhoodChain.id,
+      })
+
+      // Read the new token address out of the receipt.
+      let token = ''
+      try {
+        const receipt = await publicClient.waitForTransactionReceipt({ hash })
+        const logs = [
+          ...parseEventLogs({ abi: [v2TokenLaunchedEvent], logs: receipt.logs }),
+          ...parseEventLogs({ abi: [tokenLaunchedEvent], logs: receipt.logs }),
+        ]
+        token = logs.find((l) => l.args?.token)?.args?.token || ''
+      } catch {}
+
+      setResult({ txHash: hash, token, version })
+      setStep(5)
+
+      // Best-effort feed + registry record so the coin shows up right away.
+      const body = { token, version, name: d.name, symbol: input.ticker, logo, deployer: address, txHash: hash }
+      fetch('/api/launches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {})
+      if (token) fetch('/api/registry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, txHash: hash, deployer: address }) }).catch(() => {})
+    } catch (err) {
+      setError(err?.shortMessage || err?.message?.split('\n')[0] || 'The launch failed.')
     } finally {
       setBusy(false)
     }
-  }, [user, canLaunch, d])
+  }, [user, address, chainId, canLaunch, d, publicClient])
 
   // "Generating the look": kick off FLUX.1 [schnell] on fal.ai and animate the
   // progress. The bar eases toward ~94% while the image renders, then snaps to
@@ -695,46 +744,56 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
         </div>
       </div>
 
-      <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
-        <Row k="Network" v="Robinhood Chain · Bankr" />
-        <Row k="Supply" v="100,000,000,000 (fixed)" />
-        <Row k="Pool" v={d.pairing === 'stock' && d.pairedStock ? `Uniswap V4 · $${d.pairedStock} pair` : 'Uniswap V4 · WETH pair'} />
-        <Row k="Creator fees" v="95% of the swap fee" />
-        {xWallet && <Row k="Fees →" v={short(xWallet)} />}
+      {/* Launch model — Pons v1 or v2 */}
+      <div className="card p-4 mb-6">
+        <span className="text-sm font-medium">Launch model</span>
+        <div className="grid grid-cols-2 gap-2.5 mt-3">
+          <VersionCard active={d.version !== 'v2'} onClick={() => set('version', 'v1')}
+            tag="v1" title="Instant Pool"
+            desc="One tx deploys the token + a locked Uniswap V3 pool (WETH). Tradable at once — open, no whitelist." />
+          <VersionCard active={d.version === 'v2'} onClick={() => set('version', 'v2')}
+            tag="v2" title="Bonding Curve"
+            desc="Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain." />
+        </div>
       </div>
 
-      {/* Bankr launch options */}
-      <div className="card p-4 mb-6 space-y-4">
-        <PoolPairing d={d} set={set} />
-        <OptionRow
-          label="Creator vesting"
-          hint={d.noVesting ? '100% sold into the pool — no allocation preminted.' : '15% vests to you over 1 year (30-day cliff).'}
-          options={[{ k: false, label: '15% vesting' }, { k: true, label: 'No vesting' }]}
-          value={Boolean(d.noVesting)}
-          onChange={(v) => set('noVesting', v)}
-        />
-        <OptionRow
-          label="Fee collection"
-          hint={d.quoteOnly ? 'All creator fees collected in WETH.' : 'Fees in a mix of your token and WETH.'}
-          options={[{ k: false, label: 'Both tokens' }, { k: true, label: 'Quote only' }]}
-          value={Boolean(d.quoteOnly)}
-          onChange={(v) => set('quoteOnly', v)}
-        />
+      <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
+        <Row k="Network" v="Robinhood Chain · Pons" />
+        <Row k="Supply" v="1,000,000,000 (fixed)" />
+        <Row k="Liquidity" v={d.version === 'v2' ? 'Bonding curve → Uniswap V4' : 'Uniswap V3 · WETH · 1%'} />
+        <Row k="Launch fee" v={d.version === 'v2' ? 'Read live from factory' : '0.0005 ETH'} />
+        {user && <Row k="Signs with" v={user.username} />}
       </div>
 
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
       <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {busy ? 'Launching…' : !user ? 'Connect Wallet to launch' : `Launch ${preview.name}`}
+        {busy ? 'Launching…' : !user ? 'Connect Wallet to launch' : `Deploy · ${(d.version === 'v2' ? 'v2' : 'v1').toUpperCase()}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Real launch on Robinhood Chain via Bankr — deployed to your ESKA wallet, tradeable instantly.
+        Non-custodial launch on Robinhood Chain via Pons — signed by your own wallet.
       </p>
     </div>
   )
 }
 function Row({ k, v }) {
   return <div className="flex items-center justify-between"><span>{k}</span><span className="font-mono num text-[var(--color-ink)]">{v}</span></div>
+}
+
+/* One of the two Pons launch models (v1 / v2) in the review step. */
+function VersionCard({ active, onClick, tag, title, desc }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`text-left rounded-2xl p-3.5 border transition ${active ? 'border-transparent card-glow' : 'hairline hover:bg-[var(--color-paper-2)]'}`}
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <span className={`chip !px-2 !py-0.5 ${active ? 'chip-brand' : ''}`}>{tag}</span>
+        <span className="text-sm font-semibold">{title}</span>
+      </div>
+      <p className="text-[11px] leading-snug text-[var(--color-ink-soft)]">{desc}</p>
+    </button>
+  )
 }
 
 /* A two-choice segmented option row (matches Bankr's launch options). */
