@@ -122,7 +122,7 @@ export default function CharmDetail() {
       </div>
 
       {/* trade — pons-style */}
-      <TradePanel token={addr} symbol={charm.ticker} name={charm.name} logo={charm.logo} />
+      <TradePanel token={addr} symbol={charm.ticker} priceInWeth={charm.priceInWeth} />
 
       {/* price + chart */}
       <div className="card p-6">

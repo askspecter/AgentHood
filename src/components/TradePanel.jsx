@@ -1,240 +1,144 @@
-import { useCallback, useEffect, useState } from 'react'
-import { parseUnits } from 'ethers'
+import { useMemo, useState } from 'react'
+import { useAccount, useBalance, useReadContract, useWriteContract, useSwitchChain } from 'wagmi'
+import { formatEther, formatUnits, parseEther, parseUnits } from 'viem'
+import { v3SwapRouterAbi, erc20MiniAbi } from '../lib/pons/abis'
+import { PONS_V1 } from '../lib/pons'
+import { robinhoodChain, explorerTx } from '../lib/chain'
 import { useStore } from '../lib/store'
-import { XGlyph } from './icons'
 
 /**
- * pons-style inline swap.
- *
- * A Sell box over a Buy box with a flip control between them, percentage
- * shortcuts, a slippage adjuster and one action button — the same shape as the
- * pons trade sheet. All real: live quote (/api/quote), balances (/api/wallet),
- * and execution signed by the X wallet (/api/terminal/execute).
+ * Non-custodial in-app trading for v1 tokens via the Uniswap V3 SwapRouter,
+ * signed by the connected wallet (ported from Launchpad-Base's V3TradeWidget):
+ *   • Buy:  ETH → token in one tx (router wraps the ETH).
+ *   • Sell: token → WETH (approve, then swap).
+ * Min-out is estimated from the current spot price with a slippage buffer.
  */
-
-const NETWORK = 'robinhood'
-const SLIPPAGE_OPTIONS = [1, 5, 15]
-const isAddr = (t) => /^0x[a-fA-F0-9]{40}$/.test((t || '').trim())
-const friendly = (m) =>
-  /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
-    ? '' : String(m || '')
-
-function EthMark({ size = 22 }) {
-  return (
-    <span className="grid place-items-center rounded-full" style={{ width: size, height: size, background: '#627eea' }}>
-      <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="#fff"><path d="M12 2l6 10-6 3.5L6 12z" opacity=".9" /><path d="M12 16.5L18 13l-6 9-6-9z" opacity=".65" /></svg>
-    </span>
-  )
-}
-
-export default function TradePanel({ token, symbol = 'TOKEN', name, logo, editableToken = false, bare = false, onDone }) {
-  const { wallet, connect, ethUsd } = useStore()
-  const user = wallet ? { username: (wallet.handle || '').replace(/^@/, '') } : null
-
-  const [tok, setTok] = useState(token || '')
-  useEffect(() => { if (token) setTok(token) }, [token])
-
-  const [meta, setMeta] = useState(null)
+export default function TradePanel({ token, symbol = 'TOKEN', priceInWeth = null, decimals = 18, poolFee = 0, bare = false }) {
+  const { wallet, connect } = useStore()
+  const { address, isConnected, chainId } = useAccount()
+  const { writeContractAsync } = useWriteContract()
+  const { switchChainAsync } = useSwitchChain()
   const [side, setSide] = useState('buy')
   const [amount, setAmount] = useState('')
-  const [slippage, setSlippage] = useState(5)
-
-  const [quote, setQuote] = useState(null)
-  const [quoting, setQuoting] = useState(false)
-  const [status, setStatus] = useState(null)
+  const [slippage, setSlippage] = useState(10)
+  const [status, setStatus] = useState('idle') // idle | busy | done | error
+  const [txHash, setTxHash] = useState(null)
   const [error, setError] = useState(null)
-  const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState(null)
 
-  const [ethBalance, setEthBalance] = useState(null)
-  const [tokBalance, setTokBalance] = useState(null)
+  const router = PONS_V1.swapRouter
+  const weth = PONS_V1.weth
+  const fee = poolFee || PONS_V1.poolFee || 10000
+  const sym = (symbol || 'TOKEN').replace(/^\$/, '')
 
-  const tradeable = isAddr(tok)
-  // WETH is the pair asset itself — there is no WETH/WETH pool. Selecting it is a
-  // 1:1 wrap (ETH→WETH on "buy") or unwrap (WETH→ETH on "sell"), which is what a
-  // holder of leftover WETH actually wants. Handle it without touching the pool.
-  const wethAddr = meta?.weth
-  const isWeth = tradeable && !!wethAddr && tok.toLowerCase() === String(wethAddr).toLowerCase()
+  const { data: ethBal, refetch: refetchEth } = useBalance({ address, chainId: robinhoodChain.id, query: { enabled: !!address } })
+  const { data: tokenBalRaw, refetch: refetchToken } = useReadContract({
+    address: token, abi: erc20MiniAbi, functionName: 'balanceOf',
+    args: address ? [address] : undefined, query: { enabled: !!address && !!token },
+  })
 
-  useEffect(() => {
-    fetch(`/api/factory?network=${NETWORK}`).then((r) => r.json()).then((j) => !j.error && setMeta(j)).catch(() => {})
-  }, [])
+  const ethBalance = ethBal ? Number(formatEther(ethBal.value)) : 0
+  const tokenBalance = tokenBalRaw !== undefined ? Number(formatUnits(tokenBalRaw, decimals)) : 0
+  const balance = side === 'buy' ? ethBalance : tokenBalance
+  const balanceSymbol = side === 'buy' ? 'ETH' : sym
+  const insufficient = !!amount && Number(amount) > 0 && Number(amount) > balance
 
-  useEffect(() => {
-    if (!user) { setEthBalance(null); return }
-    let c = false
-    fetch(`/api/wallet?network=${NETWORK}`).then((r) => r.json()).then((j) => { if (!c && j?.balance) setEthBalance(Number(j.balance.formatted)) }).catch(() => {})
-    return () => { c = true }
-  }, [user, done])
-
-  useEffect(() => {
-    if (!user || !tradeable) { setTokBalance(null); return }
-    let c = false
-    fetch(`/api/wallet?network=${NETWORK}&token=${tok}`).then((r) => r.json()).then((j) => { if (!c) setTokBalance(j?.token || null) }).catch(() => {})
-    return () => { c = true }
-  }, [tok, user, tradeable, done])
-
-  const getQuote = useCallback(async () => {
-    setError(null)
-    if (!tradeable || !amount || Number(amount) <= 0) { setQuote(null); return }
-    // Wrap/unwrap is 1:1 — no pool, no network quote.
-    if (isWeth) {
-      let raw
-      try { raw = parseUnits(amount, 18).toString() } catch { setQuote(null); return }
-      const outSym = side === 'buy' ? 'WETH' : 'ETH'
-      setQuote({ amountInRaw: raw, amountOutRaw: raw, amountOutLabel: `${amount} ${outSym}`, symbol: outSym })
-      return
-    }
-    setQuoting(true)
-    try {
-      const res = await fetch('/api/quote', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tok, side, amount, network: NETWORK, slippage }),
-      })
-      const j = await res.json()
-      if (!res.ok) { setError(friendly(j.error)); setQuote(null) } else setQuote(j)
-    } catch { setError('') } finally { setQuoting(false) }
-  }, [tok, tradeable, amount, side, slippage, isWeth])
-
-  useEffect(() => {
-    if (!tradeable || !amount || Number(amount) <= 0) { setQuote(null); return }
-    const id = setTimeout(getQuote, isWeth ? 0 : 450)
-    return () => clearTimeout(id)
-  }, [amount, side, slippage, tradeable, isWeth, getQuote])
-
-  const sellIsEth = side === 'buy'
-  const sellAvail = sellIsEth ? ethBalance : (tokBalance?.formatted != null ? Number(tokBalance.formatted) : null)
-  const setPctOf = (p) => {
-    if (sellAvail == null) return
-    let v = sellAvail * p
-    if (sellIsEth) v = Math.max(0, v - 0.0002) // gas headroom
-    // Floor, never round — rounding up produces an amount a hair above the real
-    // balance, which the sell then rejects as "holds less than that".
-    v = Math.floor(v * 1e6) / 1e6
-    setAmount(v > 0 ? String(v) : '')
+  function fmtBal(x) {
+    if (!x) return '0'
+    if (x >= 1) return x.toLocaleString(undefined, { maximumFractionDigits: 4 })
+    return x.toFixed(8).replace(/0+$/, '').replace(/\.$/, '')
+  }
+  function setMax() {
+    if (side === 'buy') setAmount(String(Math.max(0, ethBalance - 0.0005)))
+    else setAmount(tokenBalRaw !== undefined ? formatUnits(tokenBalRaw, decimals) : '0')
   }
 
-  const doTrade = useCallback(async () => {
-    if (!user) return connect()
-    if (!quote || !tradeable) return
-    setBusy(true); setError(null); setDone(null); setStatus('Signing with your X wallet…')
-    try {
-      const res = await fetch('/api/terminal/execute', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: tok, side, amountInRaw: quote.amountInRaw, expectedOutRaw: quote.amountOutRaw, slippage, network: NETWORK }),
-      })
-      const j = await res.json()
-      if (!res.ok) setError(friendly(j.hint ? `${j.error} ${j.hint}` : j.error) || 'The trade failed.')
-      else { setDone({ hash: j.hash }); onDone?.() }
-      setStatus(null)
-    } catch { setError('The trade failed.'); setStatus(null) } finally { setBusy(false) }
-  }, [user, quote, tradeable, tok, side, slippage])
+  const estimate = useMemo(() => {
+    if (!priceInWeth || priceInWeth <= 0 || !amount || Number(amount) <= 0) return null
+    const a = Number(amount)
+    if (side === 'buy') return `≈ ${(a / priceInWeth).toLocaleString(undefined, { maximumFractionDigits: 2 })} ${sym}`
+    return `≈ ${(a * priceInWeth).toPrecision(4)} WETH`
+  }, [priceInWeth, amount, side, sym])
 
-  const sym = (quote?.symbol || symbol || 'TOKEN').replace(/^\$/, '')
-  const outLabel = quote ? quote.amountOutLabel : '0'
-  // The trade's worth in dollars, from the ETH leg × the live rate. On a buy the
-  // ETH leg is what you spend; on a sell it's what you receive (from the quote).
-  const ethLeg = side === 'buy' ? (Number(amount) || 0) : (quote ? parseFloat(quote.amountOutLabel) || 0 : 0)
-  const worthUsd = ethUsd && ethLeg > 0 ? `$${(ethLeg * ethUsd).toLocaleString('en-US', { maximumFractionDigits: 2 })}` : '$0.00'
-  // A token sell now settles in WETH (we no longer auto-unwrap to ETH — that
-  // burn scared holders). The unwrap path (isWeth) genuinely outputs native ETH.
-  const nativeRecv = isWeth ? 'ETH' : 'WETH'
-  const sellChip = sellIsEth
-    ? <><EthMark /> <span className="font-semibold">ETH</span></>
-    : <><Logo logo={logo} sym={sym} /> <span className="font-semibold">{sym}</span></>
-  const buyChip = sellIsEth
-    ? <><Logo logo={logo} sym={sym} /> <span className="font-semibold">{sym}</span></>
-    : <><EthMark /> <span className="font-semibold">{nativeRecv}</span></>
-  const sellAvailLabel = sellIsEth
-    ? (ethBalance != null ? `ETH ${ethBalance.toLocaleString('en-US', { maximumFractionDigits: 6 })} available` : 'ETH — available')
-    : (tokBalance ? `${Number(tokBalance.formatted).toLocaleString('en-US', { maximumFractionDigits: 4 })} available` : `${sym} — available`)
+  function floatToUnits(x, dec) {
+    return parseUnits(Math.max(0, x).toFixed(Math.min(dec, 12)), dec)
+  }
+
+  async function trade() {
+    setError(null)
+    if (!isConnected || !address) return connect()
+    if (!priceInWeth || priceInWeth <= 0) { setError('No price available to estimate this trade.'); return }
+    const factor = (100 - slippage) / 100
+    try {
+      setStatus('busy')
+      if (chainId !== robinhoodChain.id) {
+        try { await switchChainAsync({ chainId: robinhoodChain.id }) }
+        catch { setStatus('error'); setError(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) — an EVM chain, not Solana — then try again.`); return }
+      }
+      let hash
+      if (side === 'buy') {
+        const amountIn = parseEther(amount)
+        const minTokens = floatToUnits((Number(amount) / priceInWeth) * factor, decimals)
+        hash = await writeContractAsync({
+          address: router, abi: v3SwapRouterAbi, functionName: 'exactInputSingle',
+          args: [{ tokenIn: weth, tokenOut: token, fee, recipient: address, amountIn, amountOutMinimum: minTokens, sqrtPriceLimitX96: 0n }],
+          value: amountIn, chainId: robinhoodChain.id,
+        })
+      } else {
+        const tokensIn = parseUnits(amount, decimals)
+        const minWeth = parseEther((Number(amount) * priceInWeth * factor).toFixed(18))
+        await writeContractAsync({
+          address: token, abi: erc20MiniAbi, functionName: 'approve', args: [router, tokensIn], chainId: robinhoodChain.id,
+        })
+        hash = await writeContractAsync({
+          address: router, abi: v3SwapRouterAbi, functionName: 'exactInputSingle',
+          args: [{ tokenIn: token, tokenOut: weth, fee, recipient: address, amountIn: tokensIn, amountOutMinimum: minWeth, sqrtPriceLimitX96: 0n }],
+          chainId: robinhoodChain.id,
+        })
+      }
+      setTxHash(hash); setStatus('done'); setAmount('')
+      setTimeout(() => { refetchEth(); refetchToken() }, 3000)
+    } catch (err) {
+      setStatus('error')
+      setError(err?.shortMessage || err?.message?.split('\n')[0] || 'Trade failed.')
+    }
+  }
+
+  const busy = status === 'busy'
 
   return (
-    <div className={bare ? '' : 'card p-4'}>
-      {editableToken && (
-        <label className="block mb-3">
-          <span className="text-xs text-[var(--color-ink-soft)]">Token address</span>
-          <input value={tok} onChange={(e) => { setTok(e.target.value.trim()); setQuote(null) }}
-            placeholder="0x… paste a coin to trade" spellCheck={false} className="input mt-1" />
-        </label>
-      )}
-      {/* Sell box */}
-      <div className="rounded-2xl p-3 bg-[var(--color-paper-2)]">
-        <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Sell</div>
-        <input
-          value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-          placeholder="0" inputMode="decimal"
-          className="w-full bg-transparent outline-none text-2xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{worthUsd}</div>
-        <div className="flex items-center justify-between mt-2">
-          <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{sellChip}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-[var(--color-ink-soft)]">{sellAvailLabel}</span>
-            <button onClick={() => setPctOf(1)} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: 'var(--holo)', color: '#0b0a12' }}>Max</button>
-          </div>
-        </div>
+    <section className={bare ? '' : 'card p-4'}>
+      <div className="seg w-full mb-3">
+        <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 ${side === 'buy' ? 'on' : ''}`}>Buy</button>
+        <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 ${side === 'sell' ? 'on' : ''}`}>Sell</button>
       </div>
 
-      {/* flip */}
-      <div className="relative h-0">
-        <button onClick={() => { setSide((s) => (s === 'buy' ? 'sell' : 'buy')); setAmount(''); setQuote(null) }}
-          aria-label="Flip"
-          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-0 z-10 grid place-items-center w-10 h-10 rounded-xl border hairline bg-[var(--color-paper)] hover:bg-[var(--color-paper-2)]">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4v16l-3-3M17 20V4l3 3" /></svg>
-        </button>
+      <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)] mb-1">
+        <span>{side === 'buy' ? 'Amount in ETH' : `Amount in ${sym}`}</span>
+        {isConnected && <span>Balance <span className="font-mono num text-[var(--color-ink)]">{fmtBal(balance)}</span> {balanceSymbol}</span>}
       </div>
-
-      {/* Buy box */}
-      <div className="rounded-2xl p-3 bg-[var(--color-paper-2)] mt-1.5">
-        <div className="text-sm text-[var(--color-ink-soft)] mb-0.5">Buy</div>
-        <div className="text-2xl font-bold tracking-tight truncate">{quoting ? '…' : (outLabel?.replace(/\s*[A-Za-z$].*$/, '') || '0')}</div>
-        <div className="text-xs text-[var(--color-ink-faint)] mt-0.5">{worthUsd}</div>
-        <div className="flex items-center justify-between mt-3">
-          <span className="inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full border hairline">{buyChip}</span>
-        </div>
+      <div className="flex items-stretch gap-2">
+        <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.0" inputMode="decimal" className="input font-mono" />
+        {isConnected && <button onClick={setMax} className="btn btn-secondary shrink-0 !px-3 text-xs" disabled={balance <= 0}>Max</button>}
       </div>
+      {estimate && <p className="mt-2 text-xs text-[var(--color-ink-soft)]">{estimate}</p>}
+      {insufficient && <p className="mt-2 text-xs text-[var(--color-down)]">Insufficient {balanceSymbol} balance.</p>}
 
-      {/* percentages */}
-      <div className="grid grid-cols-4 gap-2 mt-3">
-        {[0.25, 0.5, 0.75, 1].map((p) => (
-          <button key={p} onClick={() => setPctOf(p)} className="py-2 rounded-full border hairline text-sm hover:bg-[var(--color-paper-2)]">{p * 100}%</button>
+      <div className="mt-3 flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
+        <span>Slippage</span>
+        {[1, 5, 10, 25].map((s) => (
+          <button key={s} onClick={() => setSlippage(s)} className={`chip cursor-pointer ${slippage === s ? 'chip-brand' : ''}`}>{s}%</button>
         ))}
       </div>
 
-      {/* slippage — meaningless for a 1:1 wrap/unwrap, so show a note instead */}
-      {isWeth ? (
-        <div className="flex items-center justify-between mt-3 text-sm">
-          <span className="text-[var(--color-ink-soft)]">Rate</span>
-          <span className="text-[var(--color-ink)]">1 : 1 · {side === 'buy' ? 'wrap ETH → WETH' : 'unwrap WETH → ETH'}</span>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between mt-3">
-          <span className="text-[var(--color-ink-soft)]">Slippage</span>
-          <button onClick={() => setSlippage((s) => SLIPPAGE_OPTIONS[(SLIPPAGE_OPTIONS.indexOf(s) + 1) % SLIPPAGE_OPTIONS.length])}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border hairline text-sm">
-            {slippage}% <span className="text-[var(--color-ink-soft)]">⚙ Adjust</span>
-          </button>
-        </div>
-      )}
-
-      {/* action */}
-      <button onClick={doTrade} disabled={busy || quoting || (user && (!quote || !tradeable))}
-        className="btn btn-holo static w-full !py-3 mt-3">
-        {busy ? 'Working…' : !user ? 'Connect Wallet' : quoting ? 'Pricing…' : !amount || Number(amount) <= 0 ? 'Enter amount' : isWeth ? (side === 'buy' ? 'Wrap to WETH' : 'Unwrap to ETH') : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
+      <button className="btn btn-holo w-full mt-3 !py-3" disabled={busy || (isConnected && (!amount || insufficient))} onClick={trade}>
+        {busy ? 'Confirm in wallet…' : !isConnected ? 'Connect Wallet' : insufficient ? `Insufficient ${balanceSymbol}` : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
       </button>
 
-      {error && <div className="chip chip-down w-full mt-3">{error}</div>}
-      {status && <div className="chip w-full mt-3">{status}</div>}
-      {done && (
-        <div className="chip chip-up w-full mt-3">
-          Swap confirmed. {meta?.explorer && <a href={`${meta.explorer}/tx/${done.hash}`} target="_blank" rel="noopener noreferrer" className="underline">View ↗</a>}
-        </div>
+      {status === 'done' && txHash && (
+        <a className="mt-2 block text-xs text-center underline text-[var(--color-ink-soft)]" href={explorerTx(txHash)} target="_blank" rel="noreferrer">Trade sent — view on explorer ↗</a>
       )}
-    </div>
+      {side === 'sell' && <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">Selling returns WETH; unwrap to ETH in your wallet.</p>}
+      {error && <p className="mt-2 whitespace-pre-wrap text-xs text-[var(--color-down)]">{error}</p>}
+    </section>
   )
-}
-
-function Logo({ logo, sym }) {
-  if (logo) return <img src={logo} alt="" className="w-[22px] h-[22px] rounded-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
-  return <span className="w-[22px] h-[22px] rounded-full grid place-items-center text-[11px] font-bold" style={{ background: 'var(--holo)', color: '#0b0a12' }}>{(sym || '?')[0]}</span>
 }
