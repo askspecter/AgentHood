@@ -22,7 +22,6 @@ const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
 const NETWORK = 'robinhood'
 const CHAT_KEY = 'eska.chats.v1'
 const FEED_KEY = 'eska.feed.v1'
-const WALLET_KEY = 'eska.wallet.v1'
 const THEME_KEY = 'eska.theme'
 const PROFILE_KEY = 'eska.profile.v1'
 const REF_KEY = 'eska.ref.v1'
@@ -32,16 +31,8 @@ function loadChats() {
   try { return JSON.parse(localStorage.getItem(CHAT_KEY)) || {} } catch { return {} }
 }
 
-// Last-known wallet address + ETH balance, keyed by X user id. Painting it the
-// instant the session resolves means the balance and total value show at once on
-// a reload, then refresh quietly behind the (slower) RPC read — instead of
-// sitting on "—" every visit while getBalance crawls on a busy public node.
-function loadWalletCache() {
-  try { const j = JSON.parse(localStorage.getItem(WALLET_KEY)); return j && j.id ? j : null } catch { return null }
-}
-
-// Local profile edits (display name + photo) layered over the X identity. The
-// handle always stays whatever X says; only the name and avatar can be changed.
+// Local profile edits (display name + photo) layered over the wallet identity.
+// The handle always stays the connected address; only name and avatar change.
 function loadProfile() {
   try { return JSON.parse(localStorage.getItem(PROFILE_KEY)) || {} } catch { return {} }
 }
@@ -111,8 +102,8 @@ export function StoreProvider({ children }) {
     try { localStorage.setItem(CHAT_KEY, JSON.stringify(chats)) } catch {}
   }, [chats])
 
-  // Capture a referral code from ?ref= the moment someone lands, and keep it
-  // until they sign in — connect() then forwards it so the referrer is credited.
+  // Capture a referral code from ?ref= the moment someone lands, and keep it in
+  // local storage so a later wallet-based referral credit can read it.
   useEffect(() => {
     if (typeof window === 'undefined') return
     try {
