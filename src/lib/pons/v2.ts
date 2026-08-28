@@ -14,7 +14,7 @@ import { V2_QUOTE_ASSETS, type LaunchInput, type LaunchPlan, type VersionInfo } 
  * pins economics with previewLaunchEconomics, reads launchFee() live, and
  * derives CREATE2 addresses from a fresh salt.
  *
- * ⚠️ v2 is deployed but UNAUDITED and public launches are closed (whitelist
+ * v2 is deployed but UNAUDITED and public launches are closed (whitelist
  * only) - prepareLaunch checks canLaunch() and surfaces both warnings.
  */
 export class PonsV2Adapter implements LaunchStrategy {

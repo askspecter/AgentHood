@@ -5,7 +5,7 @@ import { parseAbi, parseAbiItem } from "viem";
  *  Pons v2 - VERIFIED ABIs (from official docs.ponsfamily.com/v2).
  *  Covers BOTH read and the write launch path (launchToken / launchAndBuy).
  *
- *  ⚠️ Per official docs: v2 is deployed but UNAUDITED, and public launches are
+ *  Per official docs: v2 is deployed but UNAUDITED, and public launches are
  *  closed - only whitelisted addresses can create a token. Always check
  *  canLaunch(address) before offering deploy.
  * ─────────────────────────────────────────────────────────────────────────

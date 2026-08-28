@@ -11,10 +11,10 @@ import { Verified } from '../components/icons'
  */
 
 const TABS = [
-  { key: 'trending', label: 'Trending', icon: '📈' },
-  { key: 'stock', label: 'Stock Paired', icon: '🪙' },
-  { key: 'gainers', label: 'Top Gainers', icon: '▲' },
-  { key: 'new', label: 'New', icon: '✦' },
+  { key: 'trending', label: 'Trending' },
+  { key: 'stock', label: 'Stock Paired' },
+  { key: 'gainers', label: 'Top Gainers' },
+  { key: 'new', label: 'New' },
 ]
 
 const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
@@ -64,7 +64,7 @@ export default function Explore() {
           {TABS.map((t) => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`chip cursor-pointer shrink-0 !px-3.5 !py-2 !text-[13px] ${tab === t.key ? 'chip-brand' : ''}`}>
-              <span className="opacity-80">{t.icon}</span> {t.label}
+              {t.label}
             </button>
           ))}
           <div className="relative shrink-0 ml-1">

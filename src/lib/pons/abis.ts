@@ -5,7 +5,7 @@ import { parseAbi, parseAbiItem } from "viem";
  *  Pons v1 - VERIFIED ABIs (from official docs.ponsfamily.com).
  *  These are READ + EVENT interfaces, authoritative for indexing/pricing.
  *
- *  ⚠️ The token-creating write function `launch()` is NOT part of the public
+ *  The token-creating write function `launch()` is NOT part of the public
  *  read docs, so it is intentionally absent here. See registry.ts /
  *  ponsV1LaunchAbi for the deploy path (gated until the real ABI is added).
  * ─────────────────────────────────────────────────────────────────────────

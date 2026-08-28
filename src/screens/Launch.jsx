@@ -76,9 +76,9 @@ const STYLE_DEFS = [
 const STYLES = STYLE_DEFS.map((s, i) => ({ ...s, tone: TONES[i % TONES.length] }))
 
 const GENDERS = [
-  { key: 'masc', label: 'He', glyph: '♂' },
-  { key: 'fem', label: 'She', glyph: '♀' },
-  { key: 'neutral', label: 'They', glyph: '⬦' },
+  { key: 'masc', label: 'He' },
+  { key: 'fem', label: 'She' },
+  { key: 'neutral', label: 'They' },
 ]
 
 /* Personality traits offered on the Soul step. The "more" button reshuffles which
@@ -492,7 +492,7 @@ function StepName({ d, setName, setTicker, onNext, nameIdea, nameBusy }) {
         <div className="flex items-end gap-3">
           <input autoFocus value={d.name} onChange={(e) => setName(e.target.value)} placeholder="Vanta"
             className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-          <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : '✦ Idea'}</button>
+          <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : 'Idea'}</button>
         </div>
         <span className="absolute left-0 bottom-0 h-[3px] w-full rounded-full" style={{ background: 'var(--holo-line)', opacity: 0.9 }} />
       </div>
@@ -560,13 +560,13 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
         {/* chips */}
         <div className="flex flex-wrap gap-2 mb-3">
           <ChipBtn active={open === 'gender'} onClick={() => toggle('gender')}>
-            {open === 'gender' ? '✕' : '☺'} {d.gender ? GENDERS.find((g) => g.key === d.gender)?.label : 'Gender'}
+            {d.gender ? GENDERS.find((g) => g.key === d.gender)?.label : 'Gender'}
           </ChipBtn>
           <ChipBtn active={open === 'style'} onClick={() => toggle('style')}>
-            {open === 'style' ? '✕' : '◐'} {d.style ? STYLES.find((s) => s.key === d.style)?.label : 'Style'}
+            {d.style ? STYLES.find((s) => s.key === d.style)?.label : 'Style'}
           </ChipBtn>
           <ChipBtn active={open === 'image' || !!d.logo} onClick={() => toggle('image')}>
-            {d.logo ? '✓' : '⌾'} Image
+            {d.logo ? 'Image ✓' : 'Image'}
           </ChipBtn>
         </div>
 
@@ -576,7 +576,7 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
             {GENDERS.map((g) => (
               <button key={g.key} onClick={() => { set('gender', d.gender === g.key ? '' : g.key) }}
                 className={`chip ${d.gender === g.key ? 'chip-brand' : 'hover:bg-[var(--color-line)]'}`}>
-                <span className="mr-0.5">{g.glyph}</span> {g.label}
+                {g.label}
               </button>
             ))}
           </div>
@@ -604,7 +604,7 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
           <textarea value={d.look} onChange={(e) => set('look', e.target.value.slice(0, 240))} rows={3}
             placeholder={`Pick a style, then describe ${d.name || 'it'}: colors, symbol, mood, details.`}
             className="input resize-none pr-20" />
-          <button onClick={lookIdea} disabled={lookBusy} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">{lookBusy ? '…' : '✦ Idea'}</button>
+          <button onClick={lookIdea} disabled={lookBusy} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">{lookBusy ? '…' : 'Idea'}</button>
         </div>
       </div>
 
@@ -686,7 +686,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
       {/* Personality — up to three trait cards */}
       <div className="flex items-center justify-between mb-2">
         <label className="eyebrow">Personality <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 3</span></label>
-        <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : '✦ more'}</button>
+        <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : 'more'}</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
         {traits.map((p) => {
@@ -704,7 +704,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
       {/* Extra soul detail */}
       <div className="flex items-center justify-between mb-1.5">
         <label className="eyebrow">Anything else <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
-        <button onClick={idea} disabled={soulBusy} className="chip chip-brand !py-1">{soulBusy ? '…' : '✦ Idea'}</button>
+        <button onClick={idea} disabled={soulBusy} className="chip chip-brand !py-1">{soulBusy ? '…' : 'Idea'}</button>
       </div>
       <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder={`Add any extra traits, behaviours or details that define ${d.name || 'it'}.`} className="input resize-none mb-5" />
 
