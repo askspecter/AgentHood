@@ -13,7 +13,7 @@ export default function About() {
       lead="AURN is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own — from your pocket. AURN operates at eska.fun."
     >
       <Sec n={1} title="What AURN is">
-        <p>AURN turns tokens into characters. It is a consumer interface to a decentralized token protocol (“Bankr”) on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
+        <p>AURN turns tokens into characters. It is a consumer interface to a decentralized token protocol on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
         <p>Through AURN you can discover coins, chat with them, view live market data, launch your own coin, and swap coins that live in public liquidity pools — with your own self-custodial wallet, so your keys and your funds stay entirely in your hands.</p>
       </Sec>
 

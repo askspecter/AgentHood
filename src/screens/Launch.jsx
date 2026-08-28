@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
 import { parseEventLogs } from 'viem'
 import { getStrategy } from '../lib/pons'
+import { V2_QUOTE_TOKENS } from '../lib/pons/registry'
 import { tokenLaunchedEvent } from '../lib/pons/abis'
 import { v2TokenLaunchedEvent } from '../lib/pons/abisV2'
 import { robinhoodChain } from '../lib/chain'
@@ -359,9 +360,11 @@ export default function Launch() {
         name: d.name,
         ticker: (d.ticker || autoTicker(d.name) || 'TICK'),
         imageUri: logo || '',
-        description: [d.tagline, d.lore].filter(Boolean).join(' — ').slice(0, 500),
+        description: (d.description?.trim() || [d.tagline, d.lore].filter(Boolean).join(' — ')).slice(0, 500),
         twitter: (d.twitter || '').trim(),
-        telegram: '', website: '',
+        telegram: (d.telegram || '').trim(),
+        website: (d.website || '').trim(),
+        pairToken: version === 'v2' && d.pairToken ? d.pairToken : undefined,
         launchConfigId: 0,
         initialBuyEth: d.firstBuy && Number(d.firstBuy) > 0 ? String(d.firstBuy) : '',
         buybackEnabled: true, // v2 only; ignored by v1
@@ -750,6 +753,28 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
             tag="v2" title="Bonding Curve"
             desc="Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain." />
         </div>
+        {d.version === 'v2' && <PairedAssetPicker d={d} set={set} />}
+      </div>
+
+      {/* Description + links */}
+      <div className="card p-4 mb-6 space-y-3">
+        <div>
+          <span className="text-sm font-medium">Description</span>
+          <textarea
+            value={d.description ?? ''} onChange={(e) => set('description', e.target.value.slice(0, 500))}
+            rows={3} placeholder="What is this coin about? (shown on its page)"
+            className="input mt-2 resize-none" />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-2.5">
+          <label className="block">
+            <span className="text-xs text-[var(--color-ink-soft)]">X / Twitter</span>
+            <input value={d.twitter ?? ''} onChange={(e) => set('twitter', e.target.value)} placeholder="@handle or link" spellCheck={false} className="input mt-1.5" />
+          </label>
+          <label className="block">
+            <span className="text-xs text-[var(--color-ink-soft)]">Telegram</span>
+            <input value={d.telegram ?? ''} onChange={(e) => set('telegram', e.target.value)} placeholder="t.me/…" spellCheck={false} className="input mt-1.5" />
+          </label>
+        </div>
       </div>
 
       <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
@@ -791,7 +816,44 @@ function VersionCard({ active, onClick, tag, title, desc }) {
   )
 }
 
-/* A two-choice segmented option row (matches Bankr's launch options). */
+/* v2 paired asset — the quote token the bonding curve is priced in. ETH (native)
+   by default, or one of the factory-approved RWA/quote tokens. */
+function PairedAssetPicker({ d, set }) {
+  const [q, setQ] = useState('')
+  const paired = !!d.pairToken
+  const needle = q.trim().toLowerCase()
+  const list = V2_QUOTE_TOKENS.filter((t) => !needle || t.symbol.toLowerCase().includes(needle) || t.name.toLowerCase().includes(needle))
+  return (
+    <div className="mt-4 pt-4 border-t hairline">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-sm font-medium">Paired asset</span>
+        <div className="seg shrink-0">
+          <button onClick={() => { set('pairToken', ''); set('pairSymbol', '') }} className={`!px-2.5 !text-[13px] ${!paired ? 'on' : ''}`}>ETH</button>
+          <button onClick={() => { if (!d.pairToken) { set('pairToken', V2_QUOTE_TOKENS[0].address); set('pairSymbol', V2_QUOTE_TOKENS[0].symbol) } }} className={`!px-2.5 !text-[13px] ${paired ? 'on' : ''}`}>Token</button>
+        </div>
+      </div>
+      {!paired ? (
+        <p className="text-[11px] text-[var(--color-ink-faint)]">The curve is quoted in ETH (native). Creators are paid in ETH.</p>
+      ) : (
+        <div className="mt-1">
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search asset…" className="input mb-2" />
+          <div className="max-h-40 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
+            {list.map((t) => (
+              <button key={t.address} onClick={() => { set('pairToken', t.address); set('pairSymbol', t.symbol) }}
+                className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-[var(--color-paper-2)] ${d.pairToken === t.address ? 'bg-[var(--color-paper-2)]' : ''}`}>
+                <span className="min-w-0"><span className="font-medium">${t.symbol}</span> <span className="text-xs text-[var(--color-ink-faint)] truncate">{t.name}</span></span>
+                {d.pairToken === t.address && <span className="text-[var(--color-accent)] text-xs shrink-0">✓</span>}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in ${d.pairSymbol || '—'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* A two-choice segmented option row. */
 function OptionRow({ label, hint, options, value, onChange }) {
   return (
     <div>
@@ -808,7 +870,7 @@ function OptionRow({ label, hint, options, value, onChange }) {
   )
 }
 
-/* Stocks Bankr supports as a pool-pairing quote asset on Robinhood Chain. */
+/* Stock quote assets available as a pool-pairing asset on Robinhood Chain. */
 const PAIR_STOCKS = [
   ['NVDA', 'NVIDIA'], ['TSLA', 'Tesla'], ['AAPL', 'Apple'], ['MSFT', 'Microsoft'],
   ['AMZN', 'Amazon'], ['GOOGL', 'Alphabet Class A'], ['META', 'Meta Platforms'],
@@ -823,7 +885,7 @@ const PAIR_STOCKS = [
 ]
 
 /* Pool pairing — quote the new pool in WETH (default) or in a tokenized stock,
-   mirroring Bankr's own launch flow. */
+   the launch flow. */
 function PoolPairing({ d, set }) {
   const [q, setQ] = useState('')
   const mode = d.pairing === 'stock' ? 'stock' : 'weth'
@@ -875,7 +937,7 @@ function StepDone({ charm, result, meta, onTrade }) {
     <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
       <div className="eyebrow mb-2">Live on Robinhood Chain</div>
       <h1 className="display text-4xl sm:text-5xl mb-2"><span className="holo-text">{charm.name}</span> is live.</h1>
-      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Bankr on Robinhood Chain — tradeable now, with creator fees flowing to your wallet.</p>
+      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Pons on Robinhood Chain — tradeable now, with creator fees flowing to your wallet.</p>
 
       <div className="glass card-glow rounded-3xl p-8 w-full max-w-sm relative overflow-hidden mb-7">
         <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">AURN</span>

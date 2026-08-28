@@ -8,7 +8,7 @@ export default function Terms() {
       lead="Welcome to AURN. These Terms of Service (“Terms”) govern your access to and use of the AURN website, app, and related services (together, the “Service”), operated at eska.fun. By signing in, connecting a wallet, or otherwise using the Service, you agree to these Terms. If you do not agree, do not use the Service."
     >
       <Sec n={1} title="What AURN is">
-        <p>AURN is an interface to a decentralized token protocol (“Bankr”) on Robinhood Chain. Through AURN you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. AURN is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
+        <p>AURN is an interface to a decentralized token protocol on Robinhood Chain. Through AURN you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. AURN is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
         <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We never take custody of your funds — your self-custodial wallet always holds them — we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
       </Sec>
 

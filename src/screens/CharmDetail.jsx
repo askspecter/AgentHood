@@ -102,8 +102,9 @@ export default function CharmDetail() {
               <span>Robinhood Chain</span>
               {addr && <><span className="opacity-40">·</span><CopyCA addr={addr} /></>}
             </div>
-            <div className="flex flex-wrap gap-1.5 mt-3">
+            <div className="flex flex-wrap items-center gap-1.5 mt-3">
               {charm.vibe.map((v) => <span key={v} className="chip">{v}</span>)}
+              <SocialLinks socials={charm.socials} />
             </div>
           </div>
         </div>
@@ -156,6 +157,41 @@ export default function CharmDetail() {
         )}
       </div>
     </div>
+  )
+}
+
+/* Small X / Telegram / website links, from the coin's on-chain socials. */
+function SocialLinks({ socials }) {
+  if (!socials) return null
+  const tw = socials.twitter?.trim()
+  const tg = socials.telegram?.trim()
+  const web = socials.website?.trim()
+  const twUrl = tw ? (tw.startsWith('http') ? tw : `https://x.com/${tw.replace(/^@/, '')}`) : null
+  const tgUrl = tg ? (tg.startsWith('http') ? tg : `https://t.me/${tg.replace(/^@/, '')}`) : null
+  const webUrl = web ? (web.startsWith('http') ? web : `https://${web}`) : null
+  if (!twUrl && !tgUrl && !webUrl) return null
+  const cls = 'chip inline-flex items-center gap-1 hover:text-[var(--color-ink)] hover:border-[var(--color-line-2)] transition'
+  return (
+    <>
+      {twUrl && (
+        <a href={twUrl} target="_blank" rel="noopener noreferrer" className={cls} title="X">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M18.9 2H22l-7.5 8.6L23 22h-6.8l-5.3-6.9L4.8 22H1.7l8-9.2L1 2h7l4.8 6.3L18.9 2Zm-1.2 18h1.9L6.4 4H4.4l13.3 16Z" /></svg>
+          X
+        </a>
+      )}
+      {tgUrl && (
+        <a href={tgUrl} target="_blank" rel="noopener noreferrer" className={cls} title="Telegram">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M21.9 4.3 18.6 20c-.2 1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.3-4.9 8.9-8c.4-.3-.1-.5-.6-.2L6.7 13 1.9 11.5c-1-.3-1-1 .2-1.5L20.6 2.9c.9-.3 1.6.2 1.3 1.4Z" /></svg>
+          TG
+        </a>
+      )}
+      {webUrl && (
+        <a href={webUrl} target="_blank" rel="noopener noreferrer" className={cls} title="Website">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></svg>
+          Site
+        </a>
+      )}
+    </>
   )
 }
 

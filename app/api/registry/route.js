@@ -81,7 +81,9 @@ export async function GET(request) {
           logo: entry.logo || l.logo || null,
           xUsername: entry.xUsername || mine || null,
           official: entry.official || false,
-          socials: entry.socials || null,
+          // Prefer the coin's own on-chain socials; the official pin's entry
+          // socials only fill in when the token has none.
+          socials: l.socials || entry.socials || null,
         };
       });
       ethUsd = rate?.usd ?? null;

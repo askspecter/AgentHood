@@ -87,7 +87,7 @@ export function tokenToAgent(t, ethUsd = null) {
     official: t.official ?? false,
     holders: t.holders ?? null,
     supply: t.supplyTokens ?? 1_000_000_000,
-    creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'bankr'),
+    creator: t.xUsername ? '@' + String(t.xUsername).replace(/^@/, '') : (t.deployer ? short(t.deployer) : 'anon'),
     followers: (hash(t.token) % 90000) + 200, // stable flavour number
     graduated: t.graduated ?? null,
     graduationProgress: t.graduationProgress ?? null,
@@ -96,6 +96,11 @@ export function tokenToAgent(t, ethUsd = null) {
     vibe: vibeFor(t.token),
     voice: 'a coin with opinions',
     online: true,
+    socials: {
+      twitter: t.socials?.twitter || t.twitter || '',
+      telegram: t.socials?.telegram || t.telegram || '',
+      website: t.socials?.website || t.website || '',
+    },
     // Chart line in the same (USD) scale as the displayed price, sloped toward
     // the real 24h direction so it isn't a scale-mismatched spike.
     history: history(t.token, priceUsd || 1, Number.isFinite(t.change24) ? t.change24 : 0),
