@@ -406,7 +406,7 @@ export default function Launch() {
       // Best-effort feed + registry record so the coin shows up right away.
       const body = { token, version, name: d.name, symbol: input.ticker, logo, deployer: address, txHash: hash }
       fetch('/api/launches', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {})
-      if (token) fetch('/api/registry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, txHash: hash, deployer: address }) }).catch(() => {})
+      if (token) fetch('/api/registry', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, txHash: hash, deployer: address, logo }) }).catch(() => {})
     } catch (err) {
       setError(err?.shortMessage || err?.message?.split('\n')[0] || 'The launch failed.')
     } finally {

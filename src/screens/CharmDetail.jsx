@@ -7,7 +7,7 @@ import PriceChart from '../components/PriceChart'
 import TradePanel from '../components/TradePanel'
 import CreatorFees from '../components/CreatorFees'
 import { usd, num, pct } from '../lib/format'
-import { Verified, XLogo, Back } from '../components/icons'
+import { Verified, Back } from '../components/icons'
 
 /**
  * Agent page — a real pons coin, dressed as a character. Chat with it, and trade
@@ -23,6 +23,7 @@ export default function CharmDetail() {
   // page always resolves instead of showing "Agent not found".
   const [fallback, setFallback] = useState(null)
   const [fetching, setFetching] = useState(false)
+  const [shared, setShared] = useState(false)
   useEffect(() => {
     if (feedCharm || fallback) return
     let cancelled = false
@@ -70,11 +71,14 @@ export default function CharmDetail() {
   const grad = charm.graduated
   const addr = charm.token
 
-  // Share to X. The coin's link unfurls with its branded card (per-URL OG meta).
-  const shareCoin = () => {
-    const text = `$${charm.ticker} on AURN — ${charm.name}. a real coin and a living AI agent on Robinhood Chain.`
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`https://eska.fun/c/${addr}`)}`
-    window.open(url, '_blank', 'noopener,noreferrer')
+  // Share = copy the coin's link. Uses the native share sheet when available,
+  // otherwise copies to the clipboard. No third-party (X) involved.
+  const shareCoin = async () => {
+    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://eska.fun'}/c/${addr || charm.id}`
+    try {
+      if (navigator.share) { await navigator.share({ title: charm.name, text: `$${charm.ticker} on AURN`, url }) }
+      else { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500) }
+    } catch { /* user dismissed the share sheet */ }
   }
 
   return (
@@ -95,7 +99,7 @@ export default function CharmDetail() {
               {grad === true && <span className="chip chip-up">Graduated</span>}
             </div>
             <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-1 flex-wrap">
-              <XLogo size={10} /><span>{charm.creator}</span>
+              <span>Robinhood Chain</span>
               {addr && <><span className="opacity-40">·</span><CopyCA addr={addr} /></>}
             </div>
             <div className="flex flex-wrap gap-1.5 mt-3">
@@ -105,9 +109,9 @@ export default function CharmDetail() {
         </div>
         <div className="mt-5 flex gap-2">
           <Link to={`/chat/${charm.id}`} className="btn btn-primary flex-1 justify-center">Chat with {charm.name}</Link>
-          <button onClick={shareCoin} title="Share on X" className="btn btn-secondary shrink-0 inline-flex items-center gap-1.5">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden><path d="M18.9 2H22l-7.5 8.6L23 22h-6.8l-5.3-6.9L4.8 22H1.7l8-9.2L1 2h7l4.8 6.3L18.9 2Zm-1.2 18h1.9L6.4 4H4.4l13.3 16Z" /></svg>
-            Share
+          <button onClick={shareCoin} title="Copy link" className="btn btn-secondary shrink-0 inline-flex items-center gap-1.5">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
+            {shared ? 'Copied' : 'Share'}
           </button>
         </div>
       </div>

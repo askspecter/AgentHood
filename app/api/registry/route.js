@@ -132,13 +132,13 @@ export async function POST(request) {
     return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
   }
 
-  const { token, txHash, deployer, xUsername } = body || {};
+  const { token, txHash, deployer, xUsername, logo } = body || {};
   if (!token) {
     return NextResponse.json({ error: "Provide a `token` address." }, { status: 400 });
   }
 
   try {
-    const result = await recordLaunch(token, { txHash, deployer, xUsername });
+    const result = await recordLaunch(token, { txHash, deployer, xUsername, logo });
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

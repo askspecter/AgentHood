@@ -14,6 +14,12 @@ function normalizeLogo(raw) {
   if (!raw || typeof raw !== 'string') return null
   const s = raw.trim()
   if (!s) return null
+  // Our own logo store: always serve it from THIS origin, whatever origin it was
+  // saved under. A coin whose logo was recorded as https://eska.fun/api/logo?id=…
+  // must still load on any deployment (the image bytes live in shared KV), so we
+  // strip the origin and keep the same-origin path.
+  const mine = s.match(/\/api\/logo\?id=[A-Za-z0-9_-]+/)
+  if (mine) return mine[0]
   if (s.startsWith('ipfs://')) {
     const path = s.replace(/^ipfs:\/\/(ipfs\/)?/, '')
     return `https://ipfs.io/ipfs/${path}`
@@ -88,7 +94,7 @@ export function tokenToAgent(t, ethUsd = null) {
     graduated: t.graduated ?? null,
     graduationProgress: t.graduationProgress ?? null,
     tagline: t.description || `$${symbol} — a coin living on Robinhood Chain.`,
-    lore: t.description || `${name} was launched through Bankr on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and it's tradeable the moment it's live. It has opinions about its own market cap.`,
+    lore: t.description || `${name} was launched on AURN on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and it's tradeable the moment it's live. It has opinions about its own market cap.`,
     vibe: vibeFor(t.token),
     voice: 'a coin with opinions',
     online: true,
