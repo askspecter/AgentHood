@@ -18,6 +18,9 @@ import { DURATIONS, getLocks, addLock, removeLock, fmtCountdown, fmtDate } from 
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 const isAddr = (s) => /^0x[a-fA-F0-9]{40}$/.test(String(s || '').trim())
+// Load a remote logo through the same-origin image proxy (small WebP, never
+// blocked on mobile like a raw IPFS gateway can be). Same-origin/data URLs pass.
+const proxied = (u) => (u && /^https?:\/\//.test(u) ? `/api/img?src=${encodeURIComponent(u)}` : u)
 
 export default function Locked() {
   const nav = useNavigate()
@@ -75,14 +78,14 @@ export default function Locked() {
       if (id !== reqRef.current) return
       const t = j?.token
       setSel((s) => (s && s.token?.toLowerCase() === token.toLowerCase()
-        ? { ...s, balance: t?.formatted ?? null, decimals: t?.decimals ?? s.decimals, symbol: t?.symbol || s.symbol, name: t?.name || s.name }
+        ? { ...s, balance: t?.formatted ?? null, decimals: t?.decimals ?? s.decimals, symbol: t?.symbol || s.symbol, name: t?.name || s.name, logo: s.logo || t?.logo || '' }
         : s))
     } catch { /* leave balance null */ } finally { if (id === reqRef.current) setBalBusy(false) }
   }, [wallet])
 
   const pickAgent = (a) => {
     const token = a.token || a.id
-    setSel({ token, symbol: a.ticker, name: a.name, logo: a.logo, tone: a.tone, decimals: 18, balance: null })
+    setSel({ token, symbol: a.ticker, name: a.name, logo: proxied(a.logo), tone: a.tone, decimals: 18, balance: null })
     setPicker(false); setQ(''); setError(null); setAmount(''); readBalance(token)
   }
   const pickPasted = () => {
@@ -164,8 +167,7 @@ export default function Locked() {
     if (!a) return l
     // Load a known coin's image through the same-origin proxy too (a.logo is a
     // raw IPFS/remote URL that can be blocked on mobile).
-    const fallback = a.logo && /^https?:\/\//.test(a.logo) ? `/api/img?src=${encodeURIComponent(a.logo)}` : a.logo
-    return { ...l, logo: l.logo || fallback, tone: l.tone ?? a.tone, symbol: l.symbol || a.ticker, name: l.name || a.name }
+    return { ...l, logo: l.logo || proxied(a.logo), tone: l.tone ?? a.tone, symbol: l.symbol || a.ticker, name: l.name || a.name }
   }, [byToken])
 
   // The list to show as "locked tokens": on-chain public locks (live) or local.

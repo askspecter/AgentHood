@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { formatUnits, getAddress, isAddress } from "ethers";
 import { deriveAddress, getChain, nativeBalance, tokenBalance, tokenMeta, rpcProvider } from "@/lib/engine";
 import { getSession } from "@/lib/session";
+import { resolveTokenLogo, proxifyLogo } from "@/lib/tokenLogo";
 
 /**
  * Short-lived native-balance cache, keyed by network:address.
@@ -111,8 +112,12 @@ export async function GET(request) {
     ? (async () => {
         try {
           const provider = rpcProvider(chain);
-          const [raw, meta] = await raceTimeout(
-            Promise.all([tokenBalance(provider, tokenParam, address), tokenMeta(provider, tokenParam)]),
+          const [raw, meta, logo] = await raceTimeout(
+            Promise.all([
+              tokenBalance(provider, tokenParam, address),
+              tokenMeta(provider, tokenParam),
+              resolveTokenLogo(provider, chain.explorer, getAddress(tokenParam)),
+            ]),
             RPC_TIMEOUT_MS
           );
           return {
@@ -122,6 +127,7 @@ export async function GET(request) {
             symbol: meta.symbol,
             name: meta.name || null,
             decimals: meta.decimals,
+            logo: proxifyLogo(logo),
           };
         } catch {
           /* a token balance is a nice-to-have; never fail the wallet read over it */

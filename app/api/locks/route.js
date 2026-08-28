@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, formatUnits, getAddress } from "ethers";
 import { getChain } from "@/lib/engine";
+import { resolveTokenLogo, proxifyLogo } from "@/lib/tokenLogo";
 
 /**
  * GET /api/locks?network=robinhood[&owner=0x..]
@@ -20,53 +21,7 @@ const META_ABI = [
   "function symbol() view returns (string)",
   "function name() view returns (string)",
   "function decimals() view returns (uint8)",
-  "function logo() view returns (string)",
 ];
-
-function normLogo(raw) {
-  if (!raw || typeof raw !== "string") return null;
-  const s = raw.trim();
-  if (!s) return null;
-  if (s.startsWith("ipfs://")) return `https://ipfs.io/ipfs/${s.replace(/^ipfs:\/\/(ipfs\/)?/, "")}`;
-  const m = s.match(/\/api\/logo\?id=[A-Za-z0-9_-]+/);
-  if (m) return m[0];
-  if (/^https?:\/\//.test(s) || s.startsWith("data:")) return s;
-  return null;
-}
-
-/**
- * Route a resolved logo through the same-origin image proxy so mobile clients
- * never have to reach a public IPFS gateway (often blocked/slow on cellular) and
- * only load a small WebP. Same-origin paths and data URLs are already fine.
- */
-function proxify(url) {
-  if (!url) return null;
-  if (url.startsWith("data:") || url.startsWith("/api/")) return url;
-  if (/^https?:\/\//.test(url)) return `/api/img?src=${encodeURIComponent(url)}`;
-  return url;
-}
-
-/**
- * The token's icon from the block explorer (Blockscout), used when the token has
- * no usable on-chain logo(). This is how a Pons/Doppler token's real image shows
- * up in the feed instead of a placeholder, so the locked list matches it.
- */
-async function explorerTokenIcon(explorer, token) {
-  if (!explorer || !token) return null;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const url = `${String(explorer).replace(/\/+$/, "")}/api/v2/tokens/${token}`;
-    const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", signal: controller.signal });
-    if (!res.ok) return null;
-    const j = await res.json();
-    return j?.icon_url || j?.image_url || null;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 export async function GET(request) {
   const url = new URL(request.url);
@@ -119,20 +74,16 @@ export async function GET(request) {
           c.symbol().catch(() => "TOKEN"),
           c.name().catch(() => null),
           c.decimals().then((d) => Number(d)).catch(() => 18),
-          c.logo().catch(() => null),
+          resolveTokenLogo(provider, chain.explorer, getAddress(addr)),
         ]);
-        // Prefer the token's own on-chain logo(); fall back to the block-explorer
-        // icon so tokens without one (Pons/Doppler) still show their real image.
-        let resolved = normLogo(logo);
-        if (!resolved) resolved = normLogo(await explorerTokenIcon(chain.explorer, getAddress(addr)));
-        meta[addr] = { symbol: (symbol || "TOKEN").replace(/^\$/, ""), name, decimals, logo: resolved };
+        meta[addr] = { symbol: (symbol || "TOKEN").replace(/^\$/, ""), name, decimals, logo };
       } catch { meta[addr] = { symbol: "TOKEN", name: null, decimals: 18, logo: null }; }
     }));
 
     const locks = rows.map((r) => {
       const m = meta[r.token.toLowerCase()] || { symbol: "TOKEN", name: null, decimals: 18, logo: null };
       const amount = (() => { try { return formatUnits(r.amountRaw, m.decimals); } catch { return null; } })();
-      return { ...r, symbol: m.symbol, name: m.name || m.symbol, decimals: m.decimals, logo: proxify(m.logo), amount };
+      return { ...r, symbol: m.symbol, name: m.name || m.symbol, decimals: m.decimals, logo: proxifyLogo(m.logo), amount };
     });
 
     return NextResponse.json({ live: true, address: LOCKER_ADDRESS, count, locks });
