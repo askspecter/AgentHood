@@ -136,8 +136,8 @@ td b{color:var(--ink);font-weight:600}
   .side.open{transform:none}
   .scrim{position:fixed;inset:0;z-index:39;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
   .scrim.open{opacity:1;pointer-events:auto}
-  .topbar{display:flex}
-  .hero{padding:26px 0 22px}
+  .topbar{display:flex;margin-left:calc(-1 * clamp(20px,5vw,64px));margin-right:calc(-1 * clamp(20px,5vw,64px));padding:14px clamp(20px,5vw,64px);margin-bottom:18px;background:var(--paper)}
+  .hero{padding:8px 0 22px}
   h1{font-size:clamp(38px,10vw,52px)}
   .stats{grid-template-columns:1fr}
 }
@@ -372,11 +372,11 @@ td b{color:var(--ink);font-weight:600}
       <!-- MCP / AI ACCESS -->
       <section id="mcp" class="sec">
         <h2><span class="num">12</span>AI access (MCP)</h2>
-        <p>AURN runs a <strong>Model Context Protocol</strong> server, so you can drive it from an AI client &mdash; Claude, Cursor, or anything that speaks MCP. Browse coins, get quotes, check your wallet, and (with your key) trade and launch, all by asking.</p>
+        <p>AURN runs a <strong>read-only Model Context Protocol</strong> server, so you can drive it from an AI client &mdash; Claude, Cursor, or anything that speaks MCP. Browse coins, get quotes, and read your portfolio, all by asking. It's non-custodial: the server can never move your funds &mdash; you sign trades and launches in your own wallet in the app.</p>
 
         <div class="stats">
           <div class="stat"><div class="n holo">1</div><div class="k">endpoint to connect</div></div>
-          <div class="stat"><div class="n">8</div><div class="k">tools</div></div>
+          <div class="stat"><div class="n">6</div><div class="k">read-only tools</div></div>
           <div class="stat"><div class="n">MCP</div><div class="k">streamable HTTP</div></div>
         </div>
 
@@ -385,9 +385,9 @@ td b{color:var(--ink);font-weight:600}
         <div class="codeblock">https://aurn.fun/api/mcp</div>
 
         <h3>Get your key</h3>
-        <p>Read tools work with no key. To trade or launch, generate a personal <strong>AURN API key</strong> in the app at <strong>Settings &rarr; AI access</strong>. Send it on every request as a bearer token:</p>
+        <p>Most tools work with no key. To read your own portfolio, generate a personal <strong>read-only AURN API key</strong> in the app at <strong>Settings &rarr; AI access</strong> (it's tied to your connected wallet). Send it on every request as a bearer token:</p>
         <div class="codeblock">Authorization: Bearer aurn_mcp_&hellip;</div>
-        <div class="note warn"><div class="t">Treat your key like a password</div><p>The key lets an AI client trade and launch through your AURN session &mdash; anyone holding it can act as you. It's shown once, isn't stored, and should only ever go into an AI client you trust. Never paste it publicly.</p></div>
+        <div class="note warn"><div class="t">Treat your key like a password</div><p>The key is read-only &mdash; it can't move funds &mdash; but it does expose your portfolio to whoever holds it. It's shown once, isn't stored, and should only ever go into an AI client you trust. Never paste it publicly.</p></div>
 
         <h3>Connect (Claude Desktop)</h3>
         <p>Add AURN under <code>mcpServers</code> in your client config, with the key in the auth header:</p>
@@ -409,19 +409,17 @@ td b{color:var(--ink);font-weight:600}
           <tr><td><code>quote_trade</code></td><td>Price a buy/sell without executing</td><td>&mdash;</td></tr>
           <tr><td><code>aurn_burned</code></td><td>Live $AURN burn total</td><td>&mdash;</td></tr>
           <tr><td><code>leaderboard</code></td><td>Top creator / volume / referral</td><td>&mdash;</td></tr>
-          <tr><td><code>wallet</code></td><td>Your wallet address &amp; balances</td><td>&#10003;</td></tr>
-          <tr><td><code>trade</code></td><td>Buy or sell &mdash; spends real funds</td><td>&#10003;</td></tr>
-          <tr><td><code>launch_coin</code></td><td>Launch a new coin &mdash; spends real funds</td><td>&#10003;</td></tr>
+          <tr><td><code>portfolio</code></td><td>Your wallet address &amp; balances (read-only)</td><td>&#10003;</td></tr>
         </table></div>
 
         <h3>Try it</h3>
         <p>Once connected, just talk to your AI:</p>
         <ul>
           <li>&ldquo;List the top coins on AURN and quote me 0.05 ETH into the biggest one.&rdquo;</li>
-          <li>&ldquo;Launch a coin called Nova, ticker $NOVA, and buy 0.01 of it.&rdquo;</li>
+          <li>&ldquo;What's in my AURN portfolio right now?&rdquo;</li>
           <li>&ldquo;How much $AURN has been burned?&rdquo;</li>
         </ul>
-        <div class="note"><div class="t">Safety</div><p>Every trade is still re-quoted, slippage-guarded and dry-run before it's sent, exactly as in the app. Fees always route to your own wallet. Start with tiny amounts while you get comfortable.</p></div>
+        <div class="note"><div class="t">Non-custodial by design</div><p>The MCP server is read-only &mdash; it can quote and inform, but it can never sign or move funds. When you're ready to trade or launch, do it in the app, where your own wallet signs the transaction.</p></div>
       </section>
 
       <!-- FAQ -->

@@ -26,9 +26,14 @@ export default function AiAccess() {
   }
 
   const generate = async () => {
+    if (!wallet?.address) { setErr('Connect your wallet first.'); return }
     setBusy(true); setErr(null)
     try {
-      const res = await fetch('/api/keys', { method: 'POST' })
+      const res = await fetch('/api/keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: wallet.address }),
+      })
       const j = await res.json()
       if (res.ok && j.key) setKey(j.key)
       else setErr(j.error || 'Could not generate a key.')

@@ -1,32 +1,26 @@
 import { NextResponse } from "next/server";
-import crypto from "node:crypto";
-import { sign } from "@/lib/session";
 import { verifyKey } from "@/lib/apikey";
 
 /**
  * The AURN MCP server — a Model Context Protocol endpoint so any AI client
- * (Claude, Cursor, …) can discover, quote, launch and trade coins on aurn.fun.
+ * (Claude, Cursor, …) can discover coins, get quotes, and read a portfolio on
+ * aurn.fun.
  *
  * Transport: stateless Streamable HTTP. Clients POST JSON-RPC 2.0; we answer with
  * a single JSON response (no SSE session needed for a request/response server).
  *
  * ── Auth & safety ────────────────────────────────────────────────────────────
- * Read tools (list/get/quote/burned/leaderboard) are open — public on-chain data.
- * Spending tools (wallet/trade/launch_coin) require BOTH:
- *   • a valid AURN API key in `Authorization: Bearer …` (minted in Settings while
- *     signed in; it maps to the caller's custodial wallet), and
- *   • AURN_MCP_WRITE=on — an operator master switch, OFF by default.
- * A spending tool authenticates via the key, then reuses the app's own tested
- * launch/trade endpoints by minting a short-lived session for that user — so all
- * the existing guards (re-quote, slippage floor, dry-run) still apply.
+ * AURN is non-custodial, so the MCP server is READ-ONLY — it can never move
+ * funds. Read tools (list/get/quote/burned/leaderboard) are open (public on-chain
+ * data). The `portfolio` tool needs a valid AURN API key in
+ * `Authorization: Bearer …` (minted in Settings → AI access for a connected
+ * wallet); the key carries only that wallet address and grants read access to its
+ * public balances. To trade or launch, the owner signs in their own wallet in the
+ * app — the MCP server has no way to sign for them.
  */
 
 const NAME = "AURN";
 const VERSION = "1.0.0";
-
-function writeEnabled() {
-  return String(process.env.AURN_MCP_WRITE || "").trim().toLowerCase() === "on";
-}
 
 /* ── JSON-RPC helpers ──────────────────────────────────────────────────────── */
 const rpcResult = (id, result) => ({ jsonrpc: "2.0", id, result });
@@ -43,17 +37,6 @@ async function postJson(url, body, cookie) {
   if (cookie) headers.cookie = cookie;
   const r = await fetch(url, { method: "POST", cache: "no-store", headers, body: JSON.stringify(body) });
   return r.json().catch(() => ({ error: `HTTP ${r.status}` }));
-}
-
-/** Mint a short-lived session cookie for a key's owner, to call the app's own
- *  authenticated endpoints server-to-server. */
-function mintCookie(user) {
-  const token = sign({ id: user.id, username: user.username, exp: Date.now() + 120_000 });
-  return `pons_session=${token}`;
-}
-
-function randomSalt() {
-  return "0x" + crypto.randomBytes(32).toString("hex");
 }
 
 /* ── Tool catalogue ────────────────────────────────────────────────────────── */
@@ -92,38 +75,9 @@ const TOOLS = [
     inputSchema: { type: "object", properties: { board: { type: "string", enum: ["creator", "volume", "referral"] } } },
   },
   {
-    name: "wallet",
-    description: "Your AURN custodial wallet address and balances. Requires your AURN API key.",
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
-    name: "trade",
-    description: "Buy or sell a coin from your AURN wallet. SPENDS REAL FUNDS. Requires your AURN API key and operator-enabled writes. Re-quoted and dry-run before sending.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        token: { type: "string", description: "Token address to trade." },
-        side: { type: "string", enum: ["buy", "sell"] },
-        amount: { type: "string", description: "Input amount (ETH for buy, tokens for sell), e.g. \"0.05\"." },
-        slippage: { type: "number", description: "Max slippage %, default 5." },
-      },
-      required: ["token", "side", "amount"],
-    },
-  },
-  {
-    name: "launch_coin",
-    description: "Launch a new coin on aurn.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your AURN API key and operator-enabled writes.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        name: { type: "string", description: "Coin name." },
-        symbol: { type: "string", description: "Ticker, e.g. MOON." },
-        description: { type: "string", description: "Optional short description." },
-        imageUrl: { type: "string", description: "Optional logo image URL." },
-        firstBuyEth: { type: "string", description: "Optional ETH amount to buy of your own coin at launch, e.g. \"0.01\"." },
-      },
-      required: ["name", "symbol"],
-    },
+    name: "portfolio",
+    description: "Read-only: your connected wallet's address, ETH balance, and (optionally) one token's balance. Requires your AURN API key. Public on-chain data — it can't move funds.",
+    inputSchema: { type: "object", properties: { token: { type: "string", description: "Optional token address to also read your balance of (0x…)." } } },
   },
 ];
 
@@ -134,16 +88,13 @@ async function callTool(params, ctx) {
   const origin = ctx.origin;
   const net = "robinhood";
 
-  // Auth gate for spending tools.
-  const needsKey = ["wallet", "trade", "launch_coin"].includes(name);
-  const needsWrite = ["trade", "launch_coin"].includes(name);
+  // The one tool that needs a key: read-only portfolio, scoped to the wallet the
+  // key was minted for. Everything else is public on-chain data.
+  const needsKey = name === "portfolio";
   let user = null;
   if (needsKey) {
     user = ctx.key ? verifyKey(ctx.key) : null;
     if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on aurn.fun and send it as `Authorization: Bearer aurn_mcp_…`.");
-  }
-  if (needsWrite && !writeEnabled()) {
-    return asErr("Trading and launching over MCP are disabled by the operator. They stay off until AURN_MCP_WRITE=on is set on the deployment (test with tiny amounts first).");
   }
 
   try {
@@ -187,48 +138,16 @@ async function callTool(params, ctx) {
         const j = await getJson(`${origin}/api/leaderboard?board=${board}&network=${net}`);
         return asText({ board, rows: j.rows || [] });
       }
-      case "wallet": {
-        const cookie = mintCookie(user);
-        const w = await getJson(`${origin}/api/wallet?network=${net}`, cookie);
+      case "portfolio": {
+        const q = args.token ? `&token=${encodeURIComponent(args.token)}` : "";
+        const w = await getJson(`${origin}/api/wallet?network=${net}&address=${user.address}${q}`);
         if (w.error) return asErr(w.error);
-        return asText({ address: w.address || null, eth: w?.balance?.formatted ?? null, tokens: w.tokens || w.holdings || [] });
-      }
-      case "trade": {
-        const q = await postJson(`${origin}/api/quote`, { token: args.token, side: args.side, amount: args.amount, network: net });
-        if (q.error || !q.amountInRaw) return asErr(`Couldn't quote the trade: ${q.error || "no route"}`);
-        const cookie = mintCookie(user);
-        const ex = await postJson(`${origin}/api/terminal/execute`, {
-          token: args.token, side: args.side, amountInRaw: q.amountInRaw, expectedOutRaw: q.amountOutRaw,
-          slippage: Number(args.slippage) || 5, network: net,
-        }, cookie);
-        if (ex.error) return asErr(`${ex.error}${ex.hint ? " — " + ex.hint : ""}`);
-        return asText({ ok: true, side: args.side, token: args.token, spent: q.amountInLabel, received: q.amountOutLabel, hash: ex.hash, explorer: ex.explorer });
-      }
-      case "launch_coin": {
-        if (!args.name || !args.symbol) return asErr("Provide at least `name` and `symbol`.");
-        const meta = await getJson(`${origin}/api/factory?network=${net}`);
-        if (meta.error || !meta.chosen) return asErr(`Couldn't read the launch factory: ${meta.error || "no launch function found"}`);
-        const fields = meta.chosen.fields || [];
-        const values = {};
-        let feePath = null;
-        for (const f of fields) {
-          const key = Array.isArray(f.path) ? f.path.join(".") : (f.name || "");
-          const n = f.name || "";
-          if (/^(name|tokenname)$/i.test(n)) values[key] = args.name;
-          else if (/^(symbol|ticker)$/i.test(n)) values[key] = args.symbol;
-          else if (/(logo|image|icon|avatar|uri)/i.test(n)) { if (args.imageUrl) values[key] = args.imageUrl; }
-          else if (/(description|desc|bio)/i.test(n)) { if (args.description) values[key] = args.description; }
-          else if (/(feewallet|feerecipient|feeto|payout|creator)/i.test(n)) { feePath = feePath || key; /* execute forces this to the owner */ }
-          else if (/(initialbuy|devbuy|firstbuy|buyamount)/i.test(n)) { values[key] = String(args.firstBuyEth ?? 0); values[`${key}__isEth`] = true; }
-          else if (/^salt$/i.test(n)) values[key] = randomSalt();
-        }
-        const cookie = mintCookie(user);
-        const ex = await postJson(`${origin}/api/launch/execute`, {
-          fnName: meta.chosen.name, fnInputs: meta.chosen.inputs, values, feePath,
-          buyEth: Number(args.firstBuyEth || 0), network: net,
-        }, cookie);
-        if (ex.error) return asErr(`${ex.error}${ex.hint ? " — " + ex.hint : ""}`);
-        return asText({ ok: true, name: args.name, symbol: args.symbol, token: ex.token || ex.address || null, hash: ex.hash, explorer: ex.explorer });
+        return asText({
+          address: w.address || user.address,
+          eth: w?.balance?.formatted ?? null,
+          token: w.token || null,
+          note: "Read-only. To trade or launch, sign in your own wallet on aurn.fun.",
+        });
       }
       default:
         return asErr(`Unknown tool: ${name}`);
@@ -246,7 +165,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "AURN MCP — discover, quote, launch and trade coins on aurn.fun (Robinhood Chain). Spending tools need an AURN API key.",
+      instructions: "AURN MCP (read-only) — discover coins, quote trades, and read a portfolio on aurn.fun (Robinhood Chain). The `portfolio` tool needs an AURN API key. AURN is non-custodial: to trade or launch, the user signs in their own wallet in the app.",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response
