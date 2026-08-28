@@ -20,8 +20,12 @@ export function bal(n) {
 
 export function num(n) {
   if (n == null) return '0'
-  if (Math.abs(n) >= 1_000_000) return (n / 1e6).toFixed(1) + 'M'
-  if (Math.abs(n) >= 1_000) return (n / 1e3).toFixed(1) + 'K'
+  const a = Math.abs(n)
+  // Whole magnitudes read cleaner without a trailing .0 — 1,000,000,000 → "1B".
+  const compact = (v, suffix) => (Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1)) + suffix
+  if (a >= 1_000_000_000) return compact(n / 1e9, 'B')
+  if (a >= 1_000_000) return compact(n / 1e6, 'M')
+  if (a >= 1_000) return (n / 1e3).toFixed(1) + 'K'
   return String(Math.round(n))
 }
 
