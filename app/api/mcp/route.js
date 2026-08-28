@@ -15,7 +15,7 @@ import { verifyKey } from "@/lib/apikey";
  * Spending tools (wallet/trade/launch_coin) require BOTH:
  *   • a valid AURN API key in `Authorization: Bearer …` (minted in Settings while
  *     signed in; it maps to the caller's custodial wallet), and
- *   • ESKA_MCP_WRITE=on — an operator master switch, OFF by default.
+ *   • AURN_MCP_WRITE=on — an operator master switch, OFF by default.
  * A spending tool authenticates via the key, then reuses the app's own tested
  * launch/trade endpoints by minting a short-lived session for that user — so all
  * the existing guards (re-quote, slippage floor, dry-run) still apply.
@@ -25,7 +25,7 @@ const NAME = "AURN";
 const VERSION = "1.0.0";
 
 function writeEnabled() {
-  return String(process.env.ESKA_MCP_WRITE || "").trim().toLowerCase() === "on";
+  return String(process.env.AURN_MCP_WRITE || "").trim().toLowerCase() === "on";
 }
 
 /* ── JSON-RPC helpers ──────────────────────────────────────────────────────── */
@@ -82,7 +82,7 @@ const TOOLS = [
     },
   },
   {
-    name: "eska_burned",
+    name: "aurn_burned",
     description: "The live total of $AURN bought back and burned on-chain (deflationary). Public.",
     inputSchema: { type: "object", properties: {} },
   },
@@ -140,10 +140,10 @@ async function callTool(params, ctx) {
   let user = null;
   if (needsKey) {
     user = ctx.key ? verifyKey(ctx.key) : null;
-    if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on aurn.fun and send it as `Authorization: Bearer eska_mcp_…`.");
+    if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on aurn.fun and send it as `Authorization: Bearer aurn_mcp_…`.");
   }
   if (needsWrite && !writeEnabled()) {
-    return asErr("Trading and launching over MCP are disabled by the operator. They stay off until ESKA_MCP_WRITE=on is set on the deployment (test with tiny amounts first).");
+    return asErr("Trading and launching over MCP are disabled by the operator. They stay off until AURN_MCP_WRITE=on is set on the deployment (test with tiny amounts first).");
   }
 
   try {
@@ -177,8 +177,8 @@ async function callTool(params, ctx) {
         if (q.error) return asErr(`Couldn't quote: ${q.error}`);
         return asText({ side: args.side, spend: q.amountInLabel, receive: q.amountOutLabel, amountInRaw: q.amountInRaw, amountOutRaw: q.amountOutRaw });
       }
-      case "eska_burned": {
-        const j = await getJson(`${origin}/api/eska/burned?network=${net}`);
+      case "aurn_burned": {
+        const j = await getJson(`${origin}/api/aurn/burned?network=${net}`);
         if (j.error) return asErr(j.error);
         return asText({ symbol: j.symbol || "AURN", burned: j.burned });
       }

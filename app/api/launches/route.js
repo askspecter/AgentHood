@@ -294,7 +294,7 @@ export async function GET(request) {
 
     // The Discover feed shows ONLY coins launched through aurn.fun (the registry)
     // plus the official $AURN pin. The wider pons universe — curated featured
-    // coins and auto-discovered launches — is included only when ESKA_FEED_PONS=on.
+    // coins and auto-discovered launches — is included only when AURN_FEED_PONS=on.
     // Off by default: our feed is our own launches.
     // AURN never auto-discovers other coins on the chain — the Market is only
     // what launched through AURN. Discovery/curation stays permanently off.
@@ -402,7 +402,7 @@ export async function GET(request) {
         }
       }
       // Auto-discovered pons coins (not launched here) — included only when
-      // ESKA_FEED_PONS=on. Off by default, so nothing outside our own launches
+      // AURN_FEED_PONS=on. Off by default, so nothing outside our own launches
       // enters the feed. When on, they must be real pons launches with a priced
       // pool, so no-liquidity spam and non-pons ERC-20s are dropped.
       const extra = includePons

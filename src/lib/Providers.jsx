@@ -11,7 +11,7 @@ import { robinhoodChain } from './chain'
 // the connector barrel eagerly imports is stubbed in next.config.mjs.
 const wagmiConfig = getDefaultConfig({
   appName: 'AURN',
-  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'eska_missing_wc_project_id',
+  projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'aurn_missing_wc_project_id',
   chains: [robinhoodChain],
   transports: { [robinhoodChain.id]: http() },
   ssr: false,

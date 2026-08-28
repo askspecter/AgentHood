@@ -5,7 +5,7 @@ import { ImageResponse } from "next/og";
  *
  * A branded 1200x630 share card for the $AURN burn total — the "deflationary
  * milestone" image. The client passes the already-formatted number as `n`; if
- * it's absent, we read the live total from /api/eska/burned so the card is still
+ * it's absent, we read the live total from /api/aurn/burned so the card is still
  * correct when a link unfurls with no params.
  */
 
@@ -25,7 +25,7 @@ async function resolveBurn(request) {
   if (given) return String(given).slice(0, 16);
   try {
     const origin = new URL(request.url).origin;
-    const r = await fetch(`${origin}/api/eska/burned?network=robinhood`, { cache: "no-store" });
+    const r = await fetch(`${origin}/api/aurn/burned?network=robinhood`, { cache: "no-store" });
     const j = await r.json();
     // Only a real, positive on-chain total earns the number; otherwise the card
     // reads "live" rather than a hollow zero (e.g. between an old and new token).

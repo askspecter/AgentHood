@@ -386,16 +386,16 @@ td b{color:var(--ink);font-weight:600}
 
         <h3>Get your key</h3>
         <p>Read tools work with no key. To trade or launch, generate a personal <strong>AURN API key</strong> in the app at <strong>Settings &rarr; AI access</strong>. Send it on every request as a bearer token:</p>
-        <div class="codeblock">Authorization: Bearer eska_mcp_&hellip;</div>
+        <div class="codeblock">Authorization: Bearer aurn_mcp_&hellip;</div>
         <div class="note warn"><div class="t">Treat your key like a password</div><p>The key carries spend authority over your custodial wallet &mdash; anyone holding it can trade and launch as you. It's shown once, isn't stored, and should only ever go into an AI client you trust. Never paste it publicly.</p></div>
 
         <h3>Connect (Claude Desktop)</h3>
         <p>Add AURN under <code>mcpServers</code> in your client config, with the key in the auth header:</p>
         <div class="codeblock">{
   "mcpServers": {
-    "eska": {
+    "aurn": {
       "url": "https://aurn.fun/api/mcp",
-      "headers": { "Authorization": "Bearer eska_mcp_&hellip;" }
+      "headers": { "Authorization": "Bearer aurn_mcp_&hellip;" }
     }
   }
 }</div>
@@ -407,7 +407,7 @@ td b{color:var(--ink);font-weight:600}
           <tr><td><code>list_coins</code></td><td>Live coins on AURN with market cap &amp; 24h</td><td>&mdash;</td></tr>
           <tr><td><code>get_coin</code></td><td>Details for one coin by address</td><td>&mdash;</td></tr>
           <tr><td><code>quote_trade</code></td><td>Price a buy/sell without executing</td><td>&mdash;</td></tr>
-          <tr><td><code>eska_burned</code></td><td>Live $AURN burn total</td><td>&mdash;</td></tr>
+          <tr><td><code>aurn_burned</code></td><td>Live $AURN burn total</td><td>&mdash;</td></tr>
           <tr><td><code>leaderboard</code></td><td>Top creator / volume / referral</td><td>&mdash;</td></tr>
           <tr><td><code>wallet</code></td><td>Your wallet address &amp; balances</td><td>&#10003;</td></tr>
           <tr><td><code>trade</code></td><td>Buy or sell &mdash; spends real funds</td><td>&#10003;</td></tr>
@@ -448,7 +448,7 @@ td b{color:var(--ink);font-weight:600}
         <h2><span class="num">14</span>Links</h2>
         <ul>
           <li><strong>App</strong> &mdash; aurn.fun</li>
-          <li><strong>X</strong> &mdash; @eskafun</li>
+          <li><strong>X</strong> &mdash; @aurnfun</li>
           <li><strong>MCP server</strong> &mdash; aurn.fun/api/mcp</li>
           <li><strong>Chain</strong> &mdash; Robinhood Chain (ID 4663)</li>
         </ul>
@@ -492,7 +492,7 @@ td b{color:var(--ink);font-weight:600}
   }
   function paintBurn(){
     var el=document.getElementById('burnStat'); if(!el) return;
-    var urls=['/api/eska/burned?network=robinhood','https://aurn.fun/api/eska/burned?network=robinhood'];
+    var urls=['/api/aurn/burned?network=robinhood','https://aurn.fun/api/aurn/burned?network=robinhood'];
     (function tryAt(i){
       if(i>=urls.length) return;
       fetch(urls[i]).then(function(r){return r.ok?r.json():null;}).then(function(j){
