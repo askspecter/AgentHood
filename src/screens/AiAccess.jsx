@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
-import { Back, XLogo } from '../components/icons'
+import { Back } from '../components/icons'
 
 /**
  * AI access — connect ESKA to your AI through the MCP server.
  *
- * Generates a personal API key (spend authority over your custodial wallet) and
- * shows how to wire eska.fun/api/mcp into a client like Claude or Cursor.
+ * Generates a personal read-only API key (browse coins, quotes, your portfolio)
+ * and shows how to wire eska.fun/api/mcp into a client like Claude or Cursor.
+ * It carries no spend authority — your own wallet signs every transaction, so an
+ * AI can prepare a trade but can never move your funds.
  */
 const ENDPOINT = 'https://eska.fun/api/mcp'
 
@@ -53,7 +55,7 @@ export default function AiAccess() {
       <div className="card p-6 mb-4">
         <div className="font-semibold">Connect ESKA to your AI</div>
         <p className="text-sm text-[var(--color-ink-soft)] mt-1">
-          ESKA runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, and — with your key — trade and launch on your behalf.
+          ESKA runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, and read your portfolio. It's read-only: your wallet signs every trade and launch itself, so your AI can never move your funds.
         </p>
 
         <div className="mt-5">
@@ -72,12 +74,12 @@ export default function AiAccess() {
             <div className="px-3.5 py-3 rounded-xl panel-soft font-mono text-xs break-all">{key}</div>
             <button onClick={() => copy(key, 'key')} className="btn btn-primary w-full justify-center mt-3">{copied === 'key' ? 'Copied ✓' : 'Copy key'}</button>
             <p className="text-xs text-[var(--color-down)] mt-3">
-              Copy it now — it isn't shown again. This key can trade and launch from your wallet; treat it like a password and never paste it publicly.
+              Copy it now — it isn't shown again. This key gives read access to your ESKA account; treat it like a password and never paste it publicly.
             </p>
           </>
         ) : (
           <>
-            <p className="text-sm text-[var(--color-ink-soft)] mb-4">Generate a personal key. It carries spend authority over your ESKA wallet, so only paste it into an AI client you trust.</p>
+            <p className="text-sm text-[var(--color-ink-soft)] mb-4">Generate a personal read-only key for browsing, quotes, and your portfolio. It can't move funds, but only paste it into an AI client you trust.</p>
             <button onClick={generate} disabled={busy} className="btn btn-primary w-full justify-center">{busy ? 'Generating…' : 'Generate API key'}</button>
             {err && <p className="text-sm text-[var(--color-down)] mt-3">{err}</p>}
           </>
@@ -89,8 +91,8 @@ export default function AiAccess() {
         <ol className="space-y-3 text-sm text-[var(--color-ink-soft)]">
           <Step n={1}>Add <span className="font-mono">{ENDPOINT}</span> as an MCP server in your client (Claude, Cursor, …).</Step>
           <Step n={2}>Set the auth header <span className="font-mono">Authorization: Bearer &lt;your key&gt;</span>.</Step>
-          <Step n={3}>Ask your AI to list coins or quote a trade. Read tools work immediately.</Step>
-          <Step n={4}>Trading &amp; launching stay off until the operator enables writes — test with tiny amounts first.</Step>
+          <Step n={3}>Ask your AI to list coins, quote a trade, or read your portfolio.</Step>
+          <Step n={4}>To actually trade or launch, come back to ESKA and sign in your own wallet — the key never can.</Step>
         </ol>
       </div>
     </div>

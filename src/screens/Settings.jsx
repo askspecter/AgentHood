@@ -37,7 +37,7 @@ export default function Settings() {
       <div className="card overflow-hidden mb-4">
         <button onClick={() => { disconnect(); nav('/') }} className="w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)]">
           <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-down-soft)]"><RowIcon name="logout" stroke="var(--color-down)" /></span>
-          <span className="font-medium text-[var(--color-down)]">Sign out</span>
+          <span className="font-medium text-[var(--color-down)]">Disconnect wallet</span>
         </button>
       </div>
 
