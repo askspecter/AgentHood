@@ -18,11 +18,15 @@ export default function PriceChart({ seed = [], live, up = true, height = 220 })
   const data = series.length >= 2 ? series : [1, 1]
   const min = Math.min(...data)
   const max = Math.max(...data)
-  const flat = max === min
-  const range = max - min || 1
+  const span = max - min
+  // Floor the range so a nearly-flat series (tiny % moves) reads as a calm line
+  // rather than having its noise amplified to fill the whole chart. A real swing
+  // (span bigger than the floor) still uses its own full detail.
+  const range = Math.max(span, Math.abs(max) * 0.18) || 1
+  const mid = (min + max) / 2
   const step = width / (data.length - 1)
-  // A flat series draws through the middle; otherwise scale into the band.
-  const pts = data.map((v, i) => [i * step, flat ? height / 2 : height - ((v - min) / range) * (height - 24) - 12])
+  // Center the band around the series midpoint so a gentle line sits mid-height.
+  const pts = data.map((v, i) => [i * step, height / 2 - ((v - mid) / range) * (height - 28)])
   const d = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
   const color = up ? 'var(--color-up)' : 'var(--color-down)'
   const last = pts[pts.length - 1]

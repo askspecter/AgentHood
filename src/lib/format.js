@@ -4,7 +4,12 @@ export function usd(n, opts = {}) {
   if (Math.abs(n) >= 1_000_000_000) return '$' + (n / 1e9).toFixed(2) + 'B'
   if (Math.abs(n) >= 1_000_000) return '$' + (n / 1e6).toFixed(2) + 'M'
   if (Math.abs(n) >= 1_000) return '$' + (n / 1e3).toFixed(1) + 'K'
-  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: n < 1 ? 4 : 2, maximumFractionDigits: n < 1 ? 4 : max })
+  if (n !== 0 && Math.abs(n) < 1) {
+    // Tiny prices ($0.0000047) need extra precision or they collapse to $0.00.
+    const digits = Math.min(18, Math.max(4, 2 - Math.floor(Math.log10(Math.abs(n)))))
+    return '$' + n.toFixed(digits).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
+  }
+  return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: max })
 }
 
 // account balances — clean dollars, no forced 4-decimal prices

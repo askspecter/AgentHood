@@ -49,18 +49,20 @@ function history(seed, base = 1, changePct = 0) {
   const b = base || 1
   // Where the price sat ~24h ago, from the real change, clamped so a wild figure
   // can't distort the line.
-  const startFactor = Math.min(3, Math.max(0.3, 1 / (1 + (changePct || 0) / 100)))
-  const start = b * startFactor
-  const drift = (b - start) / n
-  let v = start
+  const startFactor = Math.min(2.2, Math.max(0.5, 1 / (1 + (changePct || 0) / 100)))
+  let v = b * startFactor
   let momentum = 0
   for (let i = 0; i < n; i++) {
-    momentum += (rnd() - 0.5) * 0.006
-    momentum *= 0.86
-    v = Math.max(b * 0.2, v * (1 + momentum) + drift)
+    const t = i / (n - 1)
+    // Gentle noise + a growing pull toward the current price, so the line
+    // trends smoothly to `base` and never snaps or dives to the floor.
+    momentum += (rnd() - 0.5) * 0.004
+    momentum *= 0.82
+    const pull = (b - v) * (0.06 + 0.22 * t)
+    v = Math.max(b * 0.4, v * (1 + momentum) + pull)
     out.push(v)
   }
-  out[n - 1] = b // end exactly at the current price
+  out[n - 1] = b // land exactly on the current price (pull keeps this seamless)
   return out
 }
 
