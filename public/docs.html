@@ -481,7 +481,7 @@ td b{color:var(--ink);font-weight:600}
   secs.forEach(function(s){obs.observe(s);});
 
   // Live $AURN burn total. The API is CORS-open, so this works whether the docs
-  // are served same-origin (docs.eska.fun) or from anywhere else. Falls back to
+  // are served same-origin (docs.aurn.fun) or from anywhere else. Falls back to
   // the apex domain, and keeps the printed figure if neither can be reached.
   function fmt(n){
     if(!isFinite(n)) return null;

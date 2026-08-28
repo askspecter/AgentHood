@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 /**
  * Serve the docs on the docs.* subdomain.
  *
- * docs.eska.fun points at this same Vercel project, so by default it would show
+ * docs.aurn.fun points at this same Vercel project, so by default it would show
  * the app. This rewrites any request on a `docs.` host to the static docs page
  * (public/docs.html) — the page is fully self-contained (inline CSS/JS, embedded
  * fonts), so a single rewrite covers every path. The main domain is untouched.

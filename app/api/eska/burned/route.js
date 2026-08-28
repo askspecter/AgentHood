@@ -8,7 +8,7 @@ import { eskaToken, DEAD, ZERO, burnBaseline } from "@/lib/eska";
  *
  * The live $AURN burn total, read straight off-chain: the balance held at the
  * burn addresses (which can only ever go up), plus an optional baseline for any
- * burn done outside them. CORS-open so docs.eska.fun can show it too.
+ * burn done outside them. CORS-open so docs.aurn.fun can show it too.
  */
 
 const ERC20 = [
