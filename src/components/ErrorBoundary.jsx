@@ -20,7 +20,7 @@ export default class ErrorBoundary extends Component {
   componentDidCatch(error, info) {
     // Leave a breadcrumb for the browser console without crashing the app.
     // eslint-disable-next-line no-console
-    console.error('ESKA client exception:', error, info?.componentStack)
+    console.error('AURN client exception:', error, info?.componentStack)
   }
 
   reset = () => this.setState({ error: null })

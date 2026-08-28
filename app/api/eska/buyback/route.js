@@ -4,11 +4,11 @@ import { getChain, rpcProvider, deriveSigner, deriveAddress, quote as quoteSwap 
 import { eskaToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/eska";
 
 /**
- * $ESKA buyback-and-burn.
+ * $AURN buyback-and-burn.
  *
  * The collector wallet (derived from BUYBACK_ID, server-controlled) holds the
- * WETH earmarked from the ESKA fee share. This swaps that WETH for $ESKA through
- * the pons/Uniswap pool and sends the $ESKA straight to the burn address — a real
+ * WETH earmarked from the AURN fee share. This swaps that WETH for $AURN through
+ * the pons/Uniswap pool and sends the $AURN straight to the burn address — a real
  * buy-and-burn in one path.
  *
  * ── SAFETY ──────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ export async function POST(request) {
     return NextResponse.json({ ok: false, skipped: "reserve below minimum", wethReserve: formatUnits(balance, 18), collector: from });
   }
 
-  // Quote WETH -> $ESKA and set a slippage floor.
+  // Quote WETH -> $AURN and set a slippage floor.
   const q = await quoteSwap(provider, quoter, { tokenIn: weth, tokenOut: token, amountIn, fee: poolFee });
   if (!q.ok) {
     return NextResponse.json({ error: `Could not quote the buyback: ${q.reason}` }, { status: 400 });
@@ -147,7 +147,7 @@ export async function POST(request) {
     return NextResponse.json({ error: `Approval failed: ${error?.shortMessage || error?.message}` }, { status: 502 });
   }
 
-  // Build the swap (send $ESKA straight to the burn address), try both router
+  // Build the swap (send $AURN straight to the burn address), try both router
   // shapes, dry-run, then send whichever the chain accepts.
   const base = { tokenIn: weth, tokenOut: token, fee: poolFee, recipient: DEAD, amountIn, amountOutMinimum: minOut, sqrtPriceLimitX96: 0n };
   const variants = [

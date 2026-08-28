@@ -68,23 +68,23 @@ export async function GET(request) {
   const holders = Number(base.holders);
   const official = p.get("official") === "1" || p.get("official") === "true";
 
-  const ink = "#F1EEF8";
-  const soft = "#9a92b8";
-  const holo = "#cdbcff";
+  const ink = "#EEF2FB";
+  const soft = "#929bb6";
+  const holo = "#bcd0f4";
 
   return new ImageResponse(
     (
-      <div style={{ width: "1200px", height: "630px", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "72px", background: "#0a0910", color: ink, fontFamily: "sans-serif" }}>
+      <div style={{ width: "1200px", height: "630px", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "72px", background: "#06070d", color: ink, fontFamily: "sans-serif" }}>
         {/* top row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "26px", letterSpacing: "4px", color: soft }}>
-          <div style={{ display: "flex", color: holo, fontWeight: 700 }}>ESKA</div>
+          <div style={{ display: "flex", color: holo, fontWeight: 700 }}>AURN</div>
           <div style={{ display: "flex" }}>ROBINHOOD CHAIN</div>
         </div>
 
         {/* center */}
         <div style={{ display: "flex", flexDirection: "column" }}>
           {official && (
-            <div style={{ display: "flex", alignSelf: "flex-start", fontSize: "22px", letterSpacing: "3px", color: "#0b0a12", background: holo, padding: "8px 18px", borderRadius: "999px", marginBottom: "22px", fontWeight: 700 }}>
+            <div style={{ display: "flex", alignSelf: "flex-start", fontSize: "22px", letterSpacing: "3px", color: "#0a0c15", background: holo, padding: "8px 18px", borderRadius: "999px", marginBottom: "22px", fontWeight: 700 }}>
               OFFICIAL
             </div>
           )}
@@ -104,7 +104,7 @@ export async function GET(request) {
               <div style={{ display: "flex", fontSize: "40px", color: soft }}>live on eska.fun</div>
             )}
             {change != null ? (
-              <div style={{ display: "flex", fontSize: "44px", fontWeight: 700, color: change >= 0 ? "#5ad19a" : "#ff6b81", paddingBottom: "4px" }}>
+              <div style={{ display: "flex", fontSize: "44px", fontWeight: 700, color: change >= 0 ? "#5fe3c0" : "#ff8aa0", paddingBottom: "4px" }}>
                 {change >= 0 ? "+" : ""}{change.toFixed(1)}%
               </div>
             ) : null}

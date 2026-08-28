@@ -1,5 +1,5 @@
 export function Verified({ size = 16, gold = false }) {
-  // Gold seal with a white check for the official token ($ESKA); the plain ink
+  // Gold seal with a white check for the official token ($AURN); the plain ink
   // seal (with a paper-coloured check cut out) for everyone else.
   const seal = gold ? '#f5b81c' : 'var(--color-ink)'
   const check = gold ? '#0b0a12' : 'var(--color-paper)'

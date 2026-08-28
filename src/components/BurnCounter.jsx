@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
 /**
- * Live $ESKA burn counter.
+ * Live $AURN burn counter.
  *
  * Reads the on-chain burn total from /api/eska/burned (balance held at the burn
  * addresses, which can only ever climb) and shows it counting up — the visible
  * proof behind the deflationary story. Every creator claim tops up the buyback
- * reserve; the buyback swaps it for $ESKA and sends it here to burn.
+ * reserve; the buyback swaps it for $AURN and sends it here to burn.
  */
 
 const NETWORK = 'robinhood'
@@ -62,7 +62,7 @@ export default function BurnCounter() {
   // Share the current burn total to X. eska.fun unfurls with the live burn card.
   const shareBurn = () => {
     const n = fmtBurn(data?.burned ?? 0)
-    const text = `🔥 ${n} $ESKA burned and counting — bought back & burned on-chain, forever. deflationary by design.`
+    const text = `🔥 ${n} $AURN burned and counting — bought back & burned on-chain, forever. deflationary by design.`
     const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://eska.fun')}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
@@ -88,10 +88,10 @@ export default function BurnCounter() {
         </span>
 
         <div className="flex-1 min-w-0">
-          <div className="eyebrow">$ESKA burned · deflationary</div>
+          <div className="eyebrow">$AURN burned · deflationary</div>
           <div className="flex items-baseline gap-2 mt-0.5">
             <span className="display text-2xl sm:text-3xl num tabular-nums leading-none">{fmtBurn(shown)}</span>
-            <span className="font-mono text-sm text-[var(--color-ink-faint)]">{data.symbol || 'ESKA'}</span>
+            <span className="font-mono text-sm text-[var(--color-ink-faint)]">{data.symbol || 'AURN'}</span>
           </div>
         </div>
 

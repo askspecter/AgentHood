@@ -113,7 +113,7 @@ export function StoreProvider({ children }) {
   }, [])
 
   // Real pons feed → agents. The discovery feed (/api/launches) plus the
-  // launched-here registry (/api/registry), unioned so a coin launched on ESKA
+  // launched-here registry (/api/registry), unioned so a coin launched on AURN
   // always shows the moment it's recorded — even if the discovery feed missed it.
   const loadAgents = useCallback((fresh = false) => {
     setAgentsLoading(true)

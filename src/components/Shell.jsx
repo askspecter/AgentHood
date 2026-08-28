@@ -12,10 +12,10 @@ const TABS = [
 function Wordmark({ className = '' }) {
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <img src="/eska-logo.png" alt="ESKA" width="28" height="28"
+      <img src="/aurn-logo.png" alt="AURN" width="28" height="28"
         className="w-7 h-7 rounded-[9px] object-cover shrink-0"
-        style={{ boxShadow: '0 0 18px -6px rgba(180,150,255,0.7), inset 0 1px 0 rgba(255,255,255,0.4)' }} />
-      <span className="eska-type" role="img" aria-label="ESKA" style={{ fontSize: 17 }} />
+        style={{ boxShadow: '0 0 20px -5px rgba(170,200,245,0.7), inset 0 1px 0 rgba(255,255,255,0.25)' }} />
+      <span aria-label="AURN" className="text-[17px] font-bold tracking-[0.22em] text-[var(--color-ink)] select-none">AURN</span>
     </span>
   )
 }
@@ -84,7 +84,7 @@ export default function Shell() {
                   <>
                     {isActive && (
                       <span className="absolute inset-0 rounded-[18px] pointer-events-none"
-                        style={{ background: 'var(--pill-active)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(180,150,255,0.55)' }} />
+                        style={{ background: 'var(--pill-active)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(160,192,240,0.55)' }} />
                     )}
                     <span className="relative h-6 grid place-items-center"><Icon active={isActive} /></span>
                     <span className="relative leading-none">{t.label}</span>
@@ -98,7 +98,7 @@ export default function Shell() {
             className="flex flex-col items-center justify-center gap-1 w-[56px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-faint)] active:scale-95 transition-transform">
             <span className="relative h-6 grid place-items-center">
               <span className="orb-spin grid place-items-center w-6 h-6 rounded-full"
-                style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 14px -3px rgba(180,150,255,0.85)' }}>
+                style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55), 0 0 14px -3px rgba(170,200,245,0.85)' }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="3.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               </span>
             </span>

@@ -3,7 +3,7 @@ import { getSession } from "@/lib/session";
 import { createKey } from "@/lib/apikey";
 
 /**
- * POST /api/keys — mint an ESKA API key for the signed-in user.
+ * POST /api/keys — mint an AURN API key for the signed-in user.
  *
  * The key is a stateless signed token (no server storage), so it can't be listed
  * or revoked individually — generating a new one doesn't invalidate an old one.

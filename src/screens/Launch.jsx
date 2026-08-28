@@ -49,7 +49,7 @@ const LOOK_IDEAS = [
 ]
 
 /* Visual styles for the look step. Each sets the coin's tone (its aura/glow) and
-   a matching vibe. Deliberately ESKA's own set, not a copy of anyone else's. */
+   a matching vibe. Deliberately AURN's own set, not a copy of anyone else's. */
 /* The style gallery — each tile shows an AI preview (via /api/ai/style-preview)
    and its prompt fragment (p) steers the coin's own logo generation. Keys must
    match STYLE_PROMPTS in the style-preview endpoint. */
@@ -878,7 +878,7 @@ function StepDone({ charm, result, meta, onTrade }) {
       <p className="text-[var(--color-ink-soft)] mb-9">Launched via Bankr on Robinhood Chain — tradeable now, with creator fees flowing to your wallet.</p>
 
       <div className="glass card-glow rounded-3xl p-8 w-full max-w-sm relative overflow-hidden mb-7">
-        <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">ESKA</span>
+        <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">AURN</span>
         <div className="relative flex flex-col items-center">
           <div className="absolute w-48 h-48 rounded-full blur-3xl opacity-50 pointer-events-none" style={{ background: `radial-gradient(circle, ${charm.tone?.[0] ?? '#8b7bff'}, transparent 65%)` }} />
           <div className="floaty relative"><CharmAvatar charm={{ ...charm, online: false }} size={128} ring square /></div>

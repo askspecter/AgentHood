@@ -6,7 +6,7 @@ import { eskaToken, DEAD, ZERO, burnBaseline } from "@/lib/eska";
 /**
  * GET /api/eska/burned?network=robinhood
  *
- * The live $ESKA burn total, read straight off-chain: the balance held at the
+ * The live $AURN burn total, read straight off-chain: the balance held at the
  * burn addresses (which can only ever go up), plus an optional baseline for any
  * burn done outside them. CORS-open so docs.eska.fun can show it too.
  */
@@ -48,11 +48,11 @@ export async function GET(request) {
   // No official token set (e.g. between launches) — nothing to read. The UI hides
   // the burn counter when `token` is null rather than showing a hollow zero.
   if (!token) {
-    const v = { token: null, symbol: "ESKA", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: false };
+    const v = { token: null, symbol: "AURN", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: false };
     cache = { at: Date.now(), value: v };
     return cors(NextResponse.json(v));
   }
-  const out = { token, symbol: "ESKA", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: true };
+  const out = { token, symbol: "AURN", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: true };
   try {
     const provider = rpcProvider(chain);
     const c = new Contract(token, ERC20, provider);
@@ -60,10 +60,10 @@ export async function GET(request) {
       c.balanceOf(DEAD).catch(() => 0n),
       c.balanceOf(ZERO).catch(() => 0n),
       c.decimals().catch(() => 18),
-      c.symbol().catch(() => "ESKA"),
+      c.symbol().catch(() => "AURN"),
     ]);
     out.decimals = Number(dec) || 18;
-    out.symbol = String(sym || "ESKA").replace(/^\$/, "");
+    out.symbol = String(sym || "AURN").replace(/^\$/, "");
     out.onchain = Number(formatUnits(dead + zero, out.decimals));
     out.burned = out.onchain + out.baseline;
   } catch {

@@ -35,7 +35,7 @@ export default function WalletActions() {
           <button key={a.key} onClick={a.onClick}
             className="group flex flex-col items-center gap-2 py-3 rounded-2xl border hairline bg-[var(--color-paper-2)] hover:bg-[var(--color-line)] active:scale-95 transition">
             <span className="grid place-items-center w-10 h-10 rounded-full"
-              style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5), 0 6px 18px -8px rgba(180,150,255,.9)' }}>
+              style={{ background: 'var(--holo)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.5), 0 6px 18px -8px rgba(170,200,245,.9)' }}>
               <a.icon />
             </span>
             <span className="text-[11px] sm:text-xs font-medium">{a.label}</span>
@@ -58,7 +58,7 @@ function Overlay({ children, onClose, title }) {
   return createPortal(
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 backdrop-blur-md p-4" onClick={onClose}>
       <div className="w-full max-w-[360px] max-h-[86vh] flex flex-col rounded-3xl border border-white/10"
-        style={{ background: '#0e0c16', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.95)' }}
+        style={{ background: '#0b0e16', boxShadow: '0 24px 70px -20px rgba(0,0,0,0.95)' }}
         onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 pt-3.5 pb-1.5 shrink-0">
           <h3 className="font-serif text-xl">{title}</h3>

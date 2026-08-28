@@ -4,7 +4,7 @@ import { sign } from "@/lib/session";
 import { verifyKey } from "@/lib/apikey";
 
 /**
- * The ESKA MCP server — a Model Context Protocol endpoint so any AI client
+ * The AURN MCP server — a Model Context Protocol endpoint so any AI client
  * (Claude, Cursor, …) can discover, quote, launch and trade coins on eska.fun.
  *
  * Transport: stateless Streamable HTTP. Clients POST JSON-RPC 2.0; we answer with
@@ -13,7 +13,7 @@ import { verifyKey } from "@/lib/apikey";
  * ── Auth & safety ────────────────────────────────────────────────────────────
  * Read tools (list/get/quote/burned/leaderboard) are open — public on-chain data.
  * Spending tools (wallet/trade/launch_coin) require BOTH:
- *   • a valid ESKA API key in `Authorization: Bearer …` (minted in Settings while
+ *   • a valid AURN API key in `Authorization: Bearer …` (minted in Settings while
  *     signed in; it maps to the caller's custodial wallet), and
  *   • ESKA_MCP_WRITE=on — an operator master switch, OFF by default.
  * A spending tool authenticates via the key, then reuses the app's own tested
@@ -21,7 +21,7 @@ import { verifyKey } from "@/lib/apikey";
  * the existing guards (re-quote, slippage floor, dry-run) still apply.
  */
 
-const NAME = "ESKA";
+const NAME = "AURN";
 const VERSION = "1.0.0";
 
 function writeEnabled() {
@@ -60,7 +60,7 @@ function randomSalt() {
 const TOOLS = [
   {
     name: "list_coins",
-    description: "List the coins on ESKA (launched through eska.fun), with live market cap, price and 24h change. Public data, no key needed.",
+    description: "List the coins on AURN (launched through eska.fun), with live market cap, price and 24h change. Public data, no key needed.",
     inputSchema: { type: "object", properties: { limit: { type: "number", description: "Max coins (1-24), default 20." } } },
   },
   {
@@ -83,22 +83,22 @@ const TOOLS = [
   },
   {
     name: "eska_burned",
-    description: "The live total of $ESKA bought back and burned on-chain (deflationary). Public.",
+    description: "The live total of $AURN bought back and burned on-chain (deflationary). Public.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "leaderboard",
-    description: "ESKA leaderboards. board=creator (market cap created), volume (WETH traded), or referral (friends invited). Public.",
+    description: "AURN leaderboards. board=creator (market cap created), volume (WETH traded), or referral (friends invited). Public.",
     inputSchema: { type: "object", properties: { board: { type: "string", enum: ["creator", "volume", "referral"] } } },
   },
   {
     name: "wallet",
-    description: "Your ESKA custodial wallet address and balances. Requires your ESKA API key.",
+    description: "Your AURN custodial wallet address and balances. Requires your AURN API key.",
     inputSchema: { type: "object", properties: {} },
   },
   {
     name: "trade",
-    description: "Buy or sell a coin from your ESKA wallet. SPENDS REAL FUNDS. Requires your ESKA API key and operator-enabled writes. Re-quoted and dry-run before sending.",
+    description: "Buy or sell a coin from your AURN wallet. SPENDS REAL FUNDS. Requires your AURN API key and operator-enabled writes. Re-quoted and dry-run before sending.",
     inputSchema: {
       type: "object",
       properties: {
@@ -112,7 +112,7 @@ const TOOLS = [
   },
   {
     name: "launch_coin",
-    description: "Launch a new coin on eska.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your ESKA API key and operator-enabled writes.",
+    description: "Launch a new coin on eska.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your AURN API key and operator-enabled writes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -140,7 +140,7 @@ async function callTool(params, ctx) {
   let user = null;
   if (needsKey) {
     user = ctx.key ? verifyKey(ctx.key) : null;
-    if (!user) return asErr("This tool needs your ESKA API key. Generate one in Settings → AI access on eska.fun and send it as `Authorization: Bearer eska_mcp_…`.");
+    if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on eska.fun and send it as `Authorization: Bearer eska_mcp_…`.");
   }
   if (needsWrite && !writeEnabled()) {
     return asErr("Trading and launching over MCP are disabled by the operator. They stay off until ESKA_MCP_WRITE=on is set on the deployment (test with tiny amounts first).");
@@ -163,7 +163,7 @@ async function callTool(params, ctx) {
         const j = await getJson(`${origin}/api/launches?network=${net}&limit=24`);
         const key = String(args.token).toLowerCase();
         const l = (j.launches || []).find((c) => String(c.token).toLowerCase() === key);
-        if (!l) return asErr("That token isn't in the ESKA feed. Only coins launched on eska.fun are listed.");
+        if (!l) return asErr("That token isn't in the AURN feed. Only coins launched on eska.fun are listed.");
         return asText({
           token: l.token, symbol: l.symbol, name: l.name,
           marketCapUsd: l.marketCapWeth && j.ethUsd ? Math.round(l.marketCapWeth * j.ethUsd) : (l.explorerMcapUsd || null),
@@ -180,7 +180,7 @@ async function callTool(params, ctx) {
       case "eska_burned": {
         const j = await getJson(`${origin}/api/eska/burned?network=${net}`);
         if (j.error) return asErr(j.error);
-        return asText({ symbol: j.symbol || "ESKA", burned: j.burned });
+        return asText({ symbol: j.symbol || "AURN", burned: j.burned });
       }
       case "leaderboard": {
         const board = ["creator", "volume", "referral"].includes(args.board) ? args.board : "creator";
@@ -246,7 +246,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "ESKA MCP — discover, quote, launch and trade coins on eska.fun (Robinhood Chain). Spending tools need an ESKA API key.",
+      instructions: "AURN MCP — discover, quote, launch and trade coins on eska.fun (Robinhood Chain). Spending tools need an AURN API key.",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response

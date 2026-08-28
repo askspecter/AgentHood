@@ -25,15 +25,15 @@ import { resolveLaunch, v2Config, ESCROW_ABI } from "@/lib/engine/ponsV2";
  *
  * Only the token's creator (per the launch registry) may claim.
  *
- * ── The ESKA split (ESKA_FEE_SPLIT=on) ──────────────────────────────────────
+ * ── The AURN split (ESKA_FEE_SPLIT=on) ──────────────────────────────────────
  * pons' 30% protocol cut is fixed on-chain; the remaining 70% is the creator's
  * share and lands in the creator's OWN wallet here (recipient is forced to that
- * wallet at both launch and claim). When the split is on, ESKA re-splits that
- * 70% AFTER it has landed: it skims 10/70 to the ESKA ops wallet, leaving the
+ * wallet at both launch and claim). When the split is on, AURN re-splits that
+ * 70% AFTER it has landed: it skims 10/70 to the AURN ops wallet, leaving the
  * creator 60/70. (Any burn is done manually from the ops wallet, not here.)
  * Skimming after the claim — out of the creator's own wallet, which the server
  * custodially controls — means the creator's 60% never leaves their control, and
- * if the skim fails the creator simply keeps that slice (ESKA under-collects;
+ * if the skim fails the creator simply keeps that slice (AURN under-collects;
  * nobody is underpaid or stranded). Native ETH is never skimmed: the claim's gas
  * is paid in ETH, so an ETH balance delta is ambiguous. Only the token and WETH
  * (both ERC-20) are.
@@ -131,7 +131,7 @@ async function waitForCredit(provider, { token, weth, wallet, before }, tries = 
 }
 
 /**
- * Skim ESKA's 10% out of the ~70% that just landed in the creator's wallet, to
+ * Skim AURN's 10% out of the ~70% that just landed in the creator's wallet, to
  * the ops wallet. `received` is the measured balance delta (raw units) for the
  * token and WETH. Sequential (one wallet, one nonce line) and best-effort.
  */
@@ -143,7 +143,7 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
     return { status: "config-error", detail: error?.message };
   }
   // Where the buyback WETH accumulates (server-controlled). Absent if wallets
-  // aren't configured — then ESKA's whole cut just goes to ops.
+  // aren't configured — then AURN's whole cut just goes to ops.
   let buybackTo = null;
   try {
     buybackTo = getAddress(deriveAddress(BUYBACK_ID));
@@ -172,9 +172,9 @@ async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) 
   const transfers = [];
   for (const a of assets) {
     if (a.recv <= 0n) continue;
-    // 70% landed → ESKA's cut is 10/70; the creator keeps the other 60/70. WETH
+    // 70% landed → AURN's cut is 10/70; the creator keeps the other 60/70. WETH
     // splits 5/70 to ops + 5/70 to the buyback reserve (later buys & burns
-    // $ESKA); the launched token has no buyback use, so its whole 10/70 goes to
+    // $AURN); the launched token has no buyback use, so its whole 10/70 goes to
     // ops. If no buyback reserve is configured, everything goes to ops.
     const slices =
       a.key === "weth" && buybackTo
@@ -311,11 +311,11 @@ export async function POST(request) {
 
   const provider = rpcProvider(chain);
 
-  // The ESKA split skims a slice of what the claim credits the creator's wallet,
+  // The AURN split skims a slice of what the claim credits the creator's wallet,
   // so read the baseline BEFORE claiming — with retries, so a transient RPC blip
   // can't silently disable the split. If it genuinely can't be read, refuse to
   // claim yet (fail closed) rather than pay the creator their full 70% and leave
-  // ESKA's slice stranded with no way to recover it.
+  // AURN's slice stranded with no way to recover it.
   const weth = chain.pons?.weth;
   const doSplit = eskaCutEnabled() && weth && isAddress(weth);
   let before = null;
@@ -328,7 +328,7 @@ export async function POST(request) {
     } catch {
       return NextResponse.json(
         {
-          error: "The network is busy, so the ESKA split couldn't be prepared. Nothing was claimed — try again in a moment.",
+          error: "The network is busy, so the AURN split couldn't be prepared. Nothing was claimed — try again in a moment.",
           retryable: true,
         },
         { status: 503 }
@@ -361,7 +361,7 @@ export async function POST(request) {
     return NextResponse.json({ error: error?.shortMessage || error?.message || "The claim failed to send." }, { status: 502 });
   }
 
-  // Skim ESKA's 10% once the fees have landed (ESKA_FEE_SPLIT=on only). Poll for
+  // Skim AURN's 10% once the fees have landed (ESKA_FEE_SPLIT=on only). Poll for
   // the credited amount first to beat read-after-write lag. Best effort: the
   // claim already paid the creator, so a skim problem never fails it — it's
   // reported as pending so the UI can show it plainly instead of hiding it.
@@ -375,14 +375,14 @@ export async function POST(request) {
       } else {
         distribution = {
           status: "pending",
-          note: "Couldn't confirm the claimed amount in time, so ESKA's 10% wasn't sent.",
+          note: "Couldn't confirm the claimed amount in time, so AURN's 10% wasn't sent.",
           opsWallet: opsWallet(),
         };
       }
     } catch (error) {
       distribution = {
         status: "pending",
-        note: "ESKA's 10% couldn't be sent.",
+        note: "AURN's 10% couldn't be sent.",
         detail: error?.shortMessage || error?.message,
         opsWallet: opsWallet(),
       };

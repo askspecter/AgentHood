@@ -44,7 +44,7 @@ export default function WalletButton() {
           <img src={wallet.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
         ) : (
           <span className="w-6 h-6 rounded-full grid place-items-center"
-            style={{ background: 'linear-gradient(180deg,#9789ff,#6f5cf2)' }}>
+            style={{ background: 'linear-gradient(180deg,#5f79c6,#43589f)' }}>
             <WalletGlyph size={12} color="#fff" />
           </span>
         )}

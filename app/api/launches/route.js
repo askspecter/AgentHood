@@ -120,11 +120,11 @@ const KNOWN_SYMBOLS = Object.fromEntries(
   FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
 );
 
-// The official $ESKA token — always pinned to the top of Discover and
-// gold-checked, no matter the env/registry state, so ESKA's own coin is
+// The official $AURN token — always pinned to the top of Discover and
+// gold-checked, no matter the env/registry state, so AURN's own coin is
 // unmistakable. OFFICIAL_TOKEN env can still override the address if it moves.
 const OFFICIAL_ESKA_TOKEN = "0x8e7d62f76df1ffc369ab90967c92d7d68009dba3";
-KNOWN_SYMBOLS[OFFICIAL_ESKA_TOKEN] = "ESKA";
+KNOWN_SYMBOLS[OFFICIAL_ESKA_TOKEN] = "AURN";
 
 /**
  * Discover launch token addresses from the block explorer's own index.
@@ -324,7 +324,7 @@ export async function GET(request) {
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
     // The Discover feed shows ONLY coins launched through eska.fun (the registry)
-    // plus the official $ESKA pin. The wider pons universe — curated featured
+    // plus the official $AURN pin. The wider pons universe — curated featured
     // coins and auto-discovered launches — is included only when ESKA_FEED_PONS=on.
     // Off by default: our feed is our own launches.
     const includePons = String(process.env.ESKA_FEED_PONS || "").trim().toLowerCase() === "on";
@@ -332,7 +332,7 @@ export async function GET(request) {
     const [topTokens, discovered, registry, rate] = await Promise.all([
       includePons ? discoverTopTokens(chain.explorer).catch(() => []) : Promise.resolve([]),
       includePons ? discoverViaExplorer(chain.explorer, factories).catch(() => []) : Promise.resolve([]),
-      // Coins launched through ESKA — always show these, even brand-new with no
+      // Coins launched through AURN — always show these, even brand-new with no
       // liquidity yet, so a creator sees their own coin the moment they refresh.
       listLaunched({ limit: 100 }).catch(() => ({ tokens: [], entries: [] })),
       getEthUsd(),
@@ -344,11 +344,11 @@ export async function GET(request) {
     for (const e of registry.entries || []) {
       if (e?.token && e?.xUsername) handleByToken.set(String(e.token).toLowerCase(), e.xUsername);
     }
-    // The official ($ESKA) token, so the client can gold-check it.
+    // The official ($AURN) token, so the client can gold-check it.
     const officialSet = new Set(
       (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
     );
-    // Always gold-check the official $ESKA token, even if it isn't in the registry.
+    // Always gold-check the official $AURN token, even if it isn't in the registry.
     officialSet.add((process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN).toLowerCase());
 
     const seeds = [
@@ -384,7 +384,7 @@ export async function GET(request) {
         Number(process.env.PONS_ENRICH_CONCURRENCY || 5),
         Number(process.env.PONS_ENRICH_DEADLINE_MS || 4000)
       );
-      // Always show curated featured coins AND anything launched through ESKA —
+      // Always show curated featured coins AND anything launched through AURN —
       // the latter so a creator's brand-new coin appears even before it has a
       // priced pool. Everything else must earn its place with real liquidity.
       const alwaysShow = new Set([
@@ -448,7 +448,11 @@ export async function GET(request) {
         if (h) l.xUsername = h;
         if (officialSet.has(k)) {
           l.official = true;
-          // The official $ESKA token is @eskafun, not the deployer/"bankr" fallback.
+          // The official coin always shows under the AURN brand, whatever its
+          // on-chain symbol/name reads as.
+          l.symbol = KNOWN_SYMBOLS[k] || "AURN";
+          l.name = "AURN";
+          // The official $AURN token is @eskafun, not the deployer/"bankr" fallback.
           if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "eskafun";
         }
       }
@@ -462,7 +466,7 @@ export async function GET(request) {
       // always-shown coin vanish on a transient miss. Then re-rank by USD market
       // cap, falling back to the explorer's figure — so a big coin like PONS
       // still ranks by its real $40M even when the on-chain price read failed and
-      // it would otherwise sink below fresh ESKA launches.
+      // it would otherwise sink below fresh AURN launches.
       launches = stabilize(network, launches, alwaysShow);
       const mcapUsd = (l) => {
         const onchain = Number.isFinite(l.marketCapWeth) && rate?.usd ? l.marketCapWeth * rate.usd : 0;

@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import { Back } from '../components/icons'
 
 /**
- * AI access — connect ESKA to your AI through the MCP server.
+ * AI access — connect AURN to your AI through the MCP server.
  *
  * Generates a personal read-only API key (browse coins, quotes, your portfolio)
  * and shows how to wire eska.fun/api/mcp into a client like Claude or Cursor.
@@ -39,7 +39,7 @@ export default function AiAccess() {
     return (
       <div className="max-w-md mx-auto text-center py-24">
         <h1 className="font-serif text-3xl mb-2">AI access</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to generate your ESKA API key and connect your AI.</p>
+        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to generate your AURN API key and connect your AI.</p>
         <button onClick={connect} className="btn btn-primary mx-auto">Connect Wallet</button>
       </div>
     )
@@ -53,9 +53,9 @@ export default function AiAccess() {
       </div>
 
       <div className="card p-6 mb-4">
-        <div className="font-semibold">Connect ESKA to your AI</div>
+        <div className="font-semibold">Connect AURN to your AI</div>
         <p className="text-sm text-[var(--color-ink-soft)] mt-1">
-          ESKA runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, and read your portfolio. It's read-only: your wallet signs every trade and launch itself, so your AI can never move your funds.
+          AURN runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, and read your portfolio. It's read-only: your wallet signs every trade and launch itself, so your AI can never move your funds.
         </p>
 
         <div className="mt-5">
@@ -74,7 +74,7 @@ export default function AiAccess() {
             <div className="px-3.5 py-3 rounded-xl panel-soft font-mono text-xs break-all">{key}</div>
             <button onClick={() => copy(key, 'key')} className="btn btn-primary w-full justify-center mt-3">{copied === 'key' ? 'Copied ✓' : 'Copy key'}</button>
             <p className="text-xs text-[var(--color-down)] mt-3">
-              Copy it now — it isn't shown again. This key gives read access to your ESKA account; treat it like a password and never paste it publicly.
+              Copy it now — it isn't shown again. This key gives read access to your AURN account; treat it like a password and never paste it publicly.
             </p>
           </>
         ) : (
@@ -92,7 +92,7 @@ export default function AiAccess() {
           <Step n={1}>Add <span className="font-mono">{ENDPOINT}</span> as an MCP server in your client (Claude, Cursor, …).</Step>
           <Step n={2}>Set the auth header <span className="font-mono">Authorization: Bearer &lt;your key&gt;</span>.</Step>
           <Step n={3}>Ask your AI to list coins, quote a trade, or read your portfolio.</Step>
-          <Step n={4}>To actually trade or launch, come back to ESKA and sign in your own wallet — the key never can.</Step>
+          <Step n={4}>To actually trade or launch, come back to AURN and sign in your own wallet — the key never can.</Step>
         </ol>
       </div>
     </div>

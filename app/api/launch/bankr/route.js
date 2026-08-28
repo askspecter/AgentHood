@@ -8,7 +8,7 @@ import { isConfigured, deployToken } from "@/lib/bankr";
  * POST /api/launch/bankr — deploy a token through Bankr on Robinhood Chain.
  *
  * The client sends the coin's identity; the server sets the fee recipient to the
- * caller's own ESKA wallet (so creator fees flow to them) and calls Bankr. Bankr
+ * caller's own AURN wallet (so creator fees flow to them) and calls Bankr. Bankr
  * seeds a Uniswap V4 pool on Robinhood Chain, so the coin is tradeable at once.
  */
 export async function POST(request) {
@@ -51,7 +51,7 @@ export async function POST(request) {
     );
   }
 
-  // The creator's ESKA wallet — creator fees are routed here.
+  // The creator's AURN wallet — creator fees are routed here.
   let wallet;
   try {
     wallet = getAddress(deriveAddress(session.id));

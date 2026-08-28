@@ -22,7 +22,7 @@ import { getSession } from "@/lib/session";
  *    never settle on terms the caller didn't see (reverts instead),
  *  • the launch fee is read from `launchFee()` and sent as the exact value,
  *  • the creator-fee recipient defaults to the caller's own wallet (creator 100%),
- *    overridable to an ESKA splitter/wallet via env for a protocol cut later.
+ *    overridable to an AURN splitter/wallet via env for a protocol cut later.
  *
  * Nothing the client says is trusted for the parts that move money: the wallet
  * is derived from the SESSION, and the recipient/tax/buyback come from server
@@ -86,7 +86,7 @@ export async function POST(request) {
   const factory = new Contract(cfg.factory, FACTORY_ABI, signer);
 
   // Fee routing (server-controlled). Default: the creator keeps 100% — their own
-  // wallet is the recipient. Set PONS_V2_FEE_RECIPIENT (an ESKA splitter/wallet)
+  // wallet is the recipient. Set PONS_V2_FEE_RECIPIENT (an AURN splitter/wallet)
   // and PONS_V2_CREATOR_TAX_BPS to route a protocol/buyback cut later.
   let creatorFeeRecipient = owner;
   if (process.env.PONS_V2_FEE_RECIPIENT) {

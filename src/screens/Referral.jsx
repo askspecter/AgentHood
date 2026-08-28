@@ -41,9 +41,9 @@ export default function Referral() {
   }
 
   const share = async () => {
-    const text = `Trade agents on ESKA — real coins on Robinhood Chain. Join with my code ${code}:`
+    const text = `Trade agents on AURN — real coins on Robinhood Chain. Join with my code ${code}:`
     if (navigator.share) {
-      try { await navigator.share({ title: 'ESKA', text, url: link }) } catch {}
+      try { await navigator.share({ title: 'AURN', text, url: link }) } catch {}
     } else {
       copy(`${text} ${link}`, 'share')
     }

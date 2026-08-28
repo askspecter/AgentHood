@@ -550,7 +550,7 @@ export async function POST(request) {
       );
     }
 
-    // Record ESKA-native trade volume for the leaderboard — WETH-settled trades
+    // Record AURN-native trade volume for the leaderboard — WETH-settled trades
     // only (a launch pair), sized by the WETH leg: the WETH spent on a buy or the
     // WETH received on a sell. Best-effort and awaited so it commits before the
     // function returns; a stats failure never affects the trade result.

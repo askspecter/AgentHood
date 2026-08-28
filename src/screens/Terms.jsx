@@ -5,10 +5,10 @@ export default function Terms() {
     <LegalLayout
       title="Terms of Service"
       updated="July 29, 2026"
-      lead="Welcome to ESKA. These Terms of Service (“Terms”) govern your access to and use of the ESKA website, app, and related services (together, the “Service”), operated at eska.fun. By signing in, connecting a wallet, or otherwise using the Service, you agree to these Terms. If you do not agree, do not use the Service."
+      lead="Welcome to AURN. These Terms of Service (“Terms”) govern your access to and use of the AURN website, app, and related services (together, the “Service”), operated at eska.fun. By signing in, connecting a wallet, or otherwise using the Service, you agree to these Terms. If you do not agree, do not use the Service."
     >
-      <Sec n={1} title="What ESKA is">
-        <p>ESKA is an interface to a decentralized token protocol (“Bankr”) on Robinhood Chain. Through ESKA you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. ESKA is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
+      <Sec n={1} title="What AURN is">
+        <p>AURN is an interface to a decentralized token protocol (“Bankr”) on Robinhood Chain. Through AURN you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. AURN is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
         <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We never take custody of your funds — your self-custodial wallet always holds them — we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
       </Sec>
 
@@ -52,7 +52,7 @@ export default function Terms() {
       </Sec>
 
       <Sec n={7} title="Coins you launch">
-        <p>If you launch a coin, you are its creator and are solely responsible for it, including its name, symbol, image, description, and any promises you make about it. You represent that you have the rights to everything you upload and that it does not violate these Terms or the law. We may remove a coin from the ESKA interface at any time, but we cannot alter or remove anything already recorded on-chain.</p>
+        <p>If you launch a coin, you are its creator and are solely responsible for it, including its name, symbol, image, description, and any promises you make about it. You represent that you have the rights to everything you upload and that it does not violate these Terms or the law. We may remove a coin from the AURN interface at any time, but we cannot alter or remove anything already recorded on-chain.</p>
       </Sec>
 
       <Sec n={8} title="Fees">
@@ -64,7 +64,7 @@ export default function Terms() {
       </Sec>
 
       <Sec n={10} title="Intellectual property">
-        <p>The ESKA name, logo, interface, and original content are owned by us or our licensors and are protected by law. We grant you a limited, revocable, non-exclusive, non-transferable license to use the Service for its intended purpose. You may not copy, resell, or create derivative works from the Service without our permission.</p>
+        <p>The AURN name, logo, interface, and original content are owned by us or our licensors and are protected by law. We grant you a limited, revocable, non-exclusive, non-transferable license to use the Service for its intended purpose. You may not copy, resell, or create derivative works from the Service without our permission.</p>
       </Sec>
 
       <Sec n={11} title="Disclaimers">
@@ -72,11 +72,11 @@ export default function Terms() {
       </Sec>
 
       <Sec n={12} title="Limitation of liability">
-        <p>To the maximum extent permitted by law, ESKA and its operators will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any loss of profits, funds, tokens, or data, arising out of or related to your use of the Service. Our total liability for any claim will not exceed the greater of the fees you paid us in the three months before the claim or USD $100.</p>
+        <p>To the maximum extent permitted by law, AURN and its operators will not be liable for any indirect, incidental, special, consequential, or punitive damages, or for any loss of profits, funds, tokens, or data, arising out of or related to your use of the Service. Our total liability for any claim will not exceed the greater of the fees you paid us in the three months before the claim or USD $100.</p>
       </Sec>
 
       <Sec n={13} title="Indemnity">
-        <p>You agree to indemnify and hold harmless ESKA and its operators from any claims, losses, and expenses (including reasonable legal fees) arising from your use of the Service, your coins, or your breach of these Terms or the law.</p>
+        <p>You agree to indemnify and hold harmless AURN and its operators from any claims, losses, and expenses (including reasonable legal fees) arising from your use of the Service, your coins, or your breach of these Terms or the law.</p>
       </Sec>
 
       <Sec n={14} title="Suspension and changes">

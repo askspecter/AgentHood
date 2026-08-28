@@ -1,6 +1,6 @@
 import { defineChain } from 'viem'
 
-// Robinhood Chain — the network ESKA launches and trades on.
+// Robinhood Chain — the network AURN launches and trades on.
 //  - Chain ID: 4663 (L2 on Arbitrum Orbit)
 //  - Native currency: ETH
 // Ported from Launchpad-Base (Pork) so the wallet + Pons engine share one chain.

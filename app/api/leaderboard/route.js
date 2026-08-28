@@ -6,8 +6,8 @@ import { topTraders, topReferrers } from "@/lib/stats";
 /**
  * GET /api/leaderboard?network=robinhood&board=creator|volume|referral
  *
- * All three boards are built from real, ESKA-native activity — nothing invented:
- *  • creator  — every coin launched through ESKA is priced live and grouped by
+ * All three boards are built from real, AURN-native activity — nothing invented:
+ *  • creator  — every coin launched through AURN is priced live and grouped by
  *               the X account that launched it, ranked by total market cap.
  *  • volume   — cumulative WETH-denominated trade size per trader, recorded at
  *               the trade endpoint as swaps settle.

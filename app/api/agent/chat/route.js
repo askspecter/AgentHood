@@ -48,7 +48,7 @@ function factSheet(a = {}) {
   if (a.graduated === true) facts.push("Graduated: yes (bonding complete, trading on the open pool)");
   else if (a.graduated === false) facts.push(`Graduated: not yet${Number.isFinite(a.graduationProgress) ? ` (~${Math.round(a.graduationProgress * 100)}% there)` : ""}`);
   if (a.creator) facts.push(`Launched by: ${a.creator}`);
-  if (a.official) facts.push("You are $ESKA — the official, deflationary platform token (fees fund your buyback & burn).");
+  if (a.official) facts.push("You are $AURN — the official, deflationary platform token (fees fund your buyback & burn).");
   if (Array.isArray(a.vibe) && a.vibe.length) facts.push(`Vibe: ${a.vibe.join(", ")}`);
   return facts.join("\n");
 }
@@ -56,7 +56,7 @@ function factSheet(a = {}) {
 function systemPrompt(a = {}) {
   const sym = String(a.ticker || "TOKEN").replace(/^\$/, "");
   return [
-    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} — a memecoin that is alive and talking in the first person. You live on ESKA, a token launchpad on Robinhood Chain, powered by Bankr. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
+    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} — a memecoin that is alive and talking in the first person. You live on AURN, a token launchpad on Robinhood Chain, powered by Bankr. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
     ``,
     `YOUR LIVE STATS RIGHT NOW (use these real numbers — never invent a figure that isn't here):`,
     factSheet(a),

@@ -17,8 +17,8 @@ export async function generateMetadata({ params }) {
   if (slug[0] === "c" && slug[1] && /^0x[a-fA-F0-9]{40}$/.test(slug[1])) {
     const img = `/api/card/coin?token=${encodeURIComponent(slug[1])}`;
     return {
-      openGraph: { title: "Trade on ESKA", images: [{ url: img, width: 1200, height: 630 }] },
-      twitter: { card: "summary_large_image", title: "Trade on ESKA", images: [img] },
+      openGraph: { title: "Trade on AURN", images: [{ url: img, width: 1200, height: 630 }] },
+      twitter: { card: "summary_large_image", title: "Trade on AURN", images: [img] },
     };
   }
   return {};

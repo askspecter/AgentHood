@@ -29,7 +29,7 @@ const TABS = [
 // PONS keeps its real $40M rank even when the on-chain WETH cap failed to read
 // and would otherwise sink below fresh launches.
 const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
-// Top: the official token ($ESKA) is the hero, then established (featured) coins,
+// Top: the official token ($AURN) is the hero, then established (featured) coins,
 // then by cap — so the pin always leads and known coins never get demoted below
 // a fresh launch that read a stray cap.
 const byTop = (a, b) =>

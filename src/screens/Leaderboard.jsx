@@ -6,7 +6,7 @@ import { usd, num } from '../lib/format'
 /**
  * Leaderboard — three boards, all live and all real.
  *
- * Every board ranks actual ESKA-native activity, recorded as it happens:
+ * Every board ranks actual AURN-native activity, recorded as it happens:
  *  • Top creator — coins launched here, ranked by the market cap they've created.
  *  • Trade volume — cumulative WETH traded per account.
  *  • Top referral — friends brought in through your ?ref= link.
@@ -27,11 +27,11 @@ const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
 const EMPTY = {
   creator: {
     title: 'Creator board is warming up',
-    body: "This ranks people by the coins they launch on ESKA — measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
+    body: "This ranks people by the coins they launch on AURN — measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
   },
   volume: {
     title: 'Trade volume board is warming up',
-    body: 'This ranks the accounts trading the most on ESKA, by real WETH volume as swaps settle on-chain — no placeholder names. It fills in as trading picks up here.',
+    body: 'This ranks the accounts trading the most on AURN, by real WETH volume as swaps settle on-chain — no placeholder names. It fills in as trading picks up here.',
   },
   referral: {
     title: 'Referral board is warming up',
@@ -106,8 +106,8 @@ export default function Leaderboard() {
 }
 
 const FOOTNOTE = {
-  creator: 'Ranked by total market cap of coins launched on ESKA · priced live on-chain',
-  volume: 'Ranked by cumulative WETH traded on ESKA · updates as swaps settle',
+  creator: 'Ranked by total market cap of coins launched on AURN · priced live on-chain',
+  volume: 'Ranked by cumulative WETH traded on AURN · updates as swaps settle',
   referral: 'Ranked by friends who signed in through your referral link',
 }
 

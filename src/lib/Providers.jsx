@@ -10,7 +10,7 @@ import { robinhoodChain } from './chain'
 // Rainbow / WalletConnect on Robinhood Chain. The Coinbase/base SDK subtree that
 // the connector barrel eagerly imports is stubbed in next.config.mjs.
 const wagmiConfig = getDefaultConfig({
-  appName: 'ESKA',
+  appName: 'AURN',
   projectId: process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'eska_missing_wc_project_id',
   chains: [robinhoodChain],
   transports: { [robinhoodChain.id]: http() },
@@ -20,9 +20,9 @@ const wagmiConfig = getDefaultConfig({
   ],
 })
 
-// ESKA is dark-first; the connect modal follows via data-theme on <html>.
-const rkDark = darkTheme({ accentColor: '#8b7bff', accentColorForeground: '#0a0912', borderRadius: 'large', overlayBlur: 'small', fontStack: 'system' })
-const rkLight = lightTheme({ accentColor: '#7b6cf0', accentColorForeground: '#ffffff', borderRadius: 'large', overlayBlur: 'small', fontStack: 'system' })
+// AURN is dark-first; the connect modal follows via data-theme on <html>.
+const rkDark = darkTheme({ accentColor: '#bcd0f4', accentColorForeground: '#0a0c15', borderRadius: 'large', overlayBlur: 'small', fontStack: 'system' })
+const rkLight = lightTheme({ accentColor: '#4f66b4', accentColorForeground: '#ffffff', borderRadius: 'large', overlayBlur: 'small', fontStack: 'system' })
 
 export default function Providers({ children }) {
   const [queryClient] = useState(() => new QueryClient())

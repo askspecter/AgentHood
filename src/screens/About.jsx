@@ -1,20 +1,20 @@
 import { LegalLayout, Sec, UL } from '../components/LegalPage'
 
 /**
- * About / Company — the official description of ESKA. Kept factual (no invented
+ * About / Company — the official description of AURN. Kept factual (no invented
  * legal claims): what the product is, what it's built on, and the official
  * channels, so anyone verifying the brand can confirm identity from one page.
  */
 export default function About() {
   return (
     <LegalLayout
-      title="About ESKA"
+      title="About AURN"
       updated="August 1, 2026"
-      lead="ESKA is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own — from your pocket. ESKA operates at eska.fun."
+      lead="AURN is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own — from your pocket. AURN operates at eska.fun."
     >
-      <Sec n={1} title="What ESKA is">
-        <p>ESKA turns tokens into characters. It is a consumer interface to a decentralized token protocol (“Bankr”) on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
-        <p>Through ESKA you can discover coins, chat with them, view live market data, launch your own coin, and swap coins that live in public liquidity pools — with your own self-custodial wallet, so your keys and your funds stay entirely in your hands.</p>
+      <Sec n={1} title="What AURN is">
+        <p>AURN turns tokens into characters. It is a consumer interface to a decentralized token protocol (“Bankr”) on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
+        <p>Through AURN you can discover coins, chat with them, view live market data, launch your own coin, and swap coins that live in public liquidity pools — with your own self-custodial wallet, so your keys and your funds stay entirely in your hands.</p>
       </Sec>
 
       <Sec n={2} title="What we're building">
@@ -32,7 +32,7 @@ export default function About() {
       </Sec>
 
       <Sec n={4} title="Official channels">
-        <p>To avoid impersonation, these are the only official ESKA channels. Anything else claiming to be ESKA is not us.</p>
+        <p>To avoid impersonation, these are the only official AURN channels. Anything else claiming to be AURN is not us.</p>
         <UL items={[
           'Website: eska.fun',
           'X (Twitter): @eskafun — x.com/eskafun',
@@ -41,7 +41,7 @@ export default function About() {
       </Sec>
 
       <Sec n={5} title="Safety & transparency">
-        <p>ESKA is a front-end. We do not operate a bank, broker-dealer, exchange, or money transmitter, and we never take custody of your funds — your self-custodial wallet always holds them. Crypto assets are volatile and speculative — nothing in the app is financial advice, and you trade at your own risk.</p>
+        <p>AURN is a front-end. We do not operate a bank, broker-dealer, exchange, or money transmitter, and we never take custody of your funds — your self-custodial wallet always holds them. Crypto assets are volatile and speculative — nothing in the app is financial advice, and you trade at your own risk.</p>
         <p>Read our <a className="text-[var(--color-accent)] hover:underline" href="/terms">Terms of Service</a> and <a className="text-[var(--color-accent)] hover:underline" href="/privacy">Privacy Policy</a> for the full details.</p>
       </Sec>
 

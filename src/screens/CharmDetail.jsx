@@ -72,7 +72,7 @@ export default function CharmDetail() {
 
   // Share to X. The coin's link unfurls with its branded card (per-URL OG meta).
   const shareCoin = () => {
-    const text = `$${charm.ticker} on ESKA — ${charm.name}. a real coin and a living AI agent on Robinhood Chain.`
+    const text = `$${charm.ticker} on AURN — ${charm.name}. a real coin and a living AI agent on Robinhood Chain.`
     const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(`https://eska.fun/c/${addr}`)}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }

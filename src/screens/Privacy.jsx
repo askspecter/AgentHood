@@ -5,7 +5,7 @@ export default function Privacy() {
     <LegalLayout
       title="Privacy Policy"
       updated="July 29, 2026"
-      lead="This Privacy Policy explains what information ESKA collects when you use eska.fun, how we use it, and the choices you have. ESKA is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
+      lead="This Privacy Policy explains what information AURN collects when you use eska.fun, how we use it, and the choices you have. AURN is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
     >
       <Sec n={1} title="A quick summary">
         <UL items={[
@@ -51,7 +51,7 @@ export default function Privacy() {
           'Wallet providers and WalletConnect, to connect your wallet and relay transactions you approve.',
           'Blockchain RPC providers and block explorers, to read public chain data and broadcast the transactions you initiate.',
           'Our hosting and infrastructure providers, to serve the site.',
-          'Where required by law, or to protect the rights, safety, and security of ESKA, our users, or the public.',
+          'Where required by law, or to protect the rights, safety, and security of AURN, our users, or the public.',
         ]} />
         <p>We do not sell or rent your personal information to anyone.</p>
       </Sec>
@@ -81,7 +81,7 @@ export default function Privacy() {
       </Sec>
 
       <Sec n={12} title="International users">
-        <p>ESKA may be operated from, and use providers in, countries other than yours. By using the Service you understand your information may be processed in those countries, which may have different data-protection rules than your own.</p>
+        <p>AURN may be operated from, and use providers in, countries other than yours. By using the Service you understand your information may be processed in those countries, which may have different data-protection rules than your own.</p>
       </Sec>
 
       <Sec n={13} title="Changes to this Policy">
