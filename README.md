@@ -1,4 +1,4 @@
-# ESKA
+# AURN
 
 A market for characters worth owning. Every character has a personality, a
 story, and a tradeable coin — discover them, trade the ones you believe in, or

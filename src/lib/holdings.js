@@ -9,7 +9,7 @@
  * background refresh is cheap too.
  */
 
-const KEY = 'eska.holdings.v1'
+const KEY = 'aurn.holdings.v1'
 const TTL_MS = 60_000
 let mem = null // { at, holdings }
 

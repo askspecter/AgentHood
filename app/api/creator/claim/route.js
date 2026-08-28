@@ -11,8 +11,8 @@ import {
   rpcProvider,
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
-import { eskaCutEnabled, opsWallet } from "@/lib/fees";
-import { BUYBACK_ID } from "@/lib/eska";
+import { aurnCutEnabled, opsWallet } from "@/lib/fees";
+import { BUYBACK_ID } from "@/lib/aurn";
 import { resolveLaunch, v2Config, ESCROW_ABI } from "@/lib/engine/ponsV2";
 
 /**
@@ -25,7 +25,7 @@ import { resolveLaunch, v2Config, ESCROW_ABI } from "@/lib/engine/ponsV2";
  *
  * Only the token's creator (per the launch registry) may claim.
  *
- * ── The AURN split (ESKA_FEE_SPLIT=on) ──────────────────────────────────────
+ * ── The AURN split (AURN_FEE_SPLIT=on) ──────────────────────────────────────
  * pons' 30% protocol cut is fixed on-chain; the remaining 70% is the creator's
  * share and lands in the creator's OWN wallet here (recipient is forced to that
  * wallet at both launch and claim). When the split is on, AURN re-splits that
@@ -135,7 +135,7 @@ async function waitForCredit(provider, { token, weth, wallet, before }, tries = 
  * the ops wallet. `received` is the measured balance delta (raw units) for the
  * token and WETH. Sequential (one wallet, one nonce line) and best-effort.
  */
-async function skimEskaSplit({ chain, xUserId, wallet, token, weth, received }) {
+async function skimAurnSplit({ chain, xUserId, wallet, token, weth, received }) {
   let opsTo;
   try {
     opsTo = getAddress(opsWallet());
@@ -317,7 +317,7 @@ export async function POST(request) {
   // claim yet (fail closed) rather than pay the creator their full 70% and leave
   // AURN's slice stranded with no way to recover it.
   const weth = chain.pons?.weth;
-  const doSplit = eskaCutEnabled() && weth && isAddress(weth);
+  const doSplit = aurnCutEnabled() && weth && isAddress(weth);
   let before = null;
   if (doSplit) {
     try {
@@ -361,7 +361,7 @@ export async function POST(request) {
     return NextResponse.json({ error: error?.shortMessage || error?.message || "The claim failed to send." }, { status: 502 });
   }
 
-  // Skim AURN's 10% once the fees have landed (ESKA_FEE_SPLIT=on only). Poll for
+  // Skim AURN's 10% once the fees have landed (AURN_FEE_SPLIT=on only). Poll for
   // the credited amount first to beat read-after-write lag. Best effort: the
   // claim already paid the creator, so a skim problem never fails it — it's
   // reported as pending so the UI can show it plainly instead of hiding it.
@@ -370,7 +370,7 @@ export async function POST(request) {
     try {
       const received = await waitForCredit(provider, { token, weth, wallet, before });
       if (received.token > 0n || received.weth > 0n) {
-        distribution = await skimEskaSplit({ chain, xUserId: session.id, wallet, token, weth, received });
+        distribution = await skimAurnSplit({ chain, xUserId: session.id, wallet, token, weth, received });
         distribution.received = { token: received.token.toString(), weth: formatUnits(received.weth, 18) };
       } else {
         distribution = {

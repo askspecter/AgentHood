@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, Interface, MaxUint256, formatUnits, parseUnits } from "ethers";
 import { getChain, rpcProvider, deriveSigner, deriveAddress, quote as quoteSwap } from "@/lib/engine";
-import { eskaToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/eska";
+import { aurnToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/aurn";
 
 /**
  * $AURN buyback-and-burn.
@@ -13,8 +13,8 @@ import { eskaToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/
  *
  * ── SAFETY ──────────────────────────────────────────────────────────────────
  * This spends real funds, so it is locked down:
- *   • OFF unless ESKA_BUYBACK=on.
- *   • POST must carry the ESKA_ADMIN_SECRET, so it can't be triggered by anyone.
+ *   • OFF unless AURN_BUYBACK=on.
+ *   • POST must carry the AURN_ADMIN_SECRET, so it can't be triggered by anyone.
  *   • The swap is quoted, slippage-protected, and dry-run before it's sent.
  *   • The collector needs a little ETH for gas — fund the address from GET.
  * GET is safe and open: it reports the collector address, its WETH balance, and
@@ -65,14 +65,14 @@ export async function GET(request) {
     collector: address,
     wethReserve: we,
     gasEth: eth,
-    token: eskaToken(),
+    token: aurnToken(),
     hint: "Send a little ETH to `collector` for gas, then POST with { secret } to buy back and burn its WETH.",
   });
 }
 
 export async function POST(request) {
   if (!buybackEnabled()) {
-    return NextResponse.json({ error: "Buyback is off. Set ESKA_BUYBACK=on to enable." }, { status: 503 });
+    return NextResponse.json({ error: "Buyback is off. Set AURN_BUYBACK=on to enable." }, { status: 503 });
   }
   let body;
   try {
@@ -94,7 +94,7 @@ export async function POST(request) {
   }
 
   const { weth, quoter, swapRouter, poolFee } = chain.pons || {};
-  const token = eskaToken();
+  const token = aurnToken();
   if (!weth || !quoter || !swapRouter) {
     return NextResponse.json({ error: "This network has no pons router configured." }, { status: 400 });
   }
@@ -122,7 +122,7 @@ export async function POST(request) {
     }
   }
   // Dust guard: don't spend gas on a negligible reserve.
-  const MIN = parseUnits(String(process.env.ESKA_BUYBACK_MIN_WETH || "0.0005"), 18);
+  const MIN = parseUnits(String(process.env.AURN_BUYBACK_MIN_WETH || "0.0005"), 18);
   if (amountIn < MIN) {
     return NextResponse.json({ ok: false, skipped: "reserve below minimum", wethReserve: formatUnits(balance, 18), collector: from });
   }
@@ -176,7 +176,7 @@ export async function POST(request) {
       hash: tx.hash,
       block: receipt?.blockNumber ?? null,
       spentWeth: formatUnits(amountIn, 18),
-      minEskaBurned: formatUnits(minOut, 18),
+      minAurnBurned: formatUnits(minOut, 18),
       burnAddress: DEAD,
       explorer: chain.explorer,
     });

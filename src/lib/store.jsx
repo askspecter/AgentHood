@@ -20,11 +20,11 @@ const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
  */
 
 const NETWORK = 'robinhood'
-const CHAT_KEY = 'eska.chats.v1'
-const FEED_KEY = 'eska.feed.v1'
-const THEME_KEY = 'eska.theme'
-const PROFILE_KEY = 'eska.profile.v1'
-const REF_KEY = 'eska.ref.v1'
+const CHAT_KEY = 'aurn.chats.v1'
+const FEED_KEY = 'aurn.feed.v1'
+const THEME_KEY = 'aurn.theme'
+const PROFILE_KEY = 'aurn.profile.v1'
+const REF_KEY = 'aurn.ref.v1'
 const StoreCtx = createContext(null)
 
 function loadChats() {

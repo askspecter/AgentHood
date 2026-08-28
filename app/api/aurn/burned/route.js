@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { Contract, formatUnits } from "ethers";
 import { getChain, rpcProvider } from "@/lib/engine";
-import { eskaToken, DEAD, ZERO, burnBaseline } from "@/lib/eska";
+import { aurnToken, DEAD, ZERO, burnBaseline } from "@/lib/aurn";
 
 /**
- * GET /api/eska/burned?network=robinhood
+ * GET /api/aurn/burned?network=robinhood
  *
  * The live $AURN burn total, read straight off-chain: the balance held at the
  * burn addresses (which can only ever go up), plus an optional baseline for any
@@ -44,7 +44,7 @@ export async function GET(request) {
     return cors(NextResponse.json({ error: error.message }, { status: 400 }));
   }
 
-  const token = eskaToken();
+  const token = aurnToken();
   // No official token set (e.g. between launches) — nothing to read. The UI hides
   // the burn counter when `token` is null rather than showing a hollow zero.
   if (!token) {

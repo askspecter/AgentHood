@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 /**
  * Live $AURN burn counter.
  *
- * Reads the on-chain burn total from /api/eska/burned (balance held at the burn
+ * Reads the on-chain burn total from /api/aurn/burned (balance held at the burn
  * addresses, which can only ever climb) and shows it counting up — the visible
  * proof behind the deflationary story. Every creator claim tops up the buyback
  * reserve; the buyback swaps it for $AURN and sends it here to burn.
@@ -48,7 +48,7 @@ export default function BurnCounter() {
   useEffect(() => {
     let cancelled = false
     const load = () =>
-      fetch(`/api/eska/burned?network=${NETWORK}`)
+      fetch(`/api/aurn/burned?network=${NETWORK}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => { if (!cancelled) { if (j && j.token && j.configured !== false && Number.isFinite(j.burned)) setData(j); else setFailed(true) } })
         .catch(() => { if (!cancelled) setFailed(true) })
