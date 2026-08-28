@@ -34,6 +34,28 @@ function normLogo(raw) {
   return null;
 }
 
+/**
+ * The token's icon from the block explorer (Blockscout), used when the token has
+ * no usable on-chain logo(). This is how a Pons/Doppler token's real image shows
+ * up in the feed instead of a placeholder, so the locked list matches it.
+ */
+async function explorerTokenIcon(explorer, token) {
+  if (!explorer || !token) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const url = `${String(explorer).replace(/\/+$/, "")}/api/v2/tokens/${token}`;
+    const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", signal: controller.signal });
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j?.icon_url || j?.image_url || null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function GET(request) {
   const url = new URL(request.url);
   const network = url.searchParams.get("network") || "robinhood";
@@ -87,7 +109,11 @@ export async function GET(request) {
           c.decimals().then((d) => Number(d)).catch(() => 18),
           c.logo().catch(() => null),
         ]);
-        meta[addr] = { symbol: (symbol || "TOKEN").replace(/^\$/, ""), name, decimals, logo: normLogo(logo) };
+        // Prefer the token's own on-chain logo(); fall back to the block-explorer
+        // icon so tokens without one (Pons/Doppler) still show their real image.
+        let resolved = normLogo(logo);
+        if (!resolved) resolved = normLogo(await explorerTokenIcon(chain.explorer, getAddress(addr)));
+        meta[addr] = { symbol: (symbol || "TOKEN").replace(/^\$/, ""), name, decimals, logo: resolved };
       } catch { meta[addr] = { symbol: "TOKEN", name: null, decimals: 18, logo: null }; }
     }));
 

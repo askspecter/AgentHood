@@ -152,9 +152,22 @@ export default function Locked() {
     finally { setBusy(false); setStep('') }
   }
 
+  // Known AURN coins by token address, so a locked token shows its real logo
+  // (from the app's own metadata) even before/without the on-chain read.
+  const byToken = useMemo(() => {
+    const m = {}
+    for (const a of agents) { const t = String(a.token || a.id || '').toLowerCase(); if (t) m[t] = a }
+    return m
+  }, [agents])
+  const withLogo = useCallback((l) => {
+    const a = byToken[String(l.token || '').toLowerCase()]
+    if (!a) return l
+    return { ...l, logo: l.logo || a.logo, tone: l.tone ?? a.tone, symbol: l.symbol || a.ticker, name: l.name || a.name }
+  }, [byToken])
+
   // The list to show as "locked tokens": on-chain public locks (live) or local.
   const allLocks = lockerLive
-    ? (publicLocks || []).map((l) => ({ ...l, startedAt: l.lockedAt, durationLabel: '', onchain: true }))
+    ? (publicLocks || []).map((l) => withLogo({ ...l, startedAt: l.lockedAt, durationLabel: '', onchain: true }))
     : localLocks.map((l) => ({ ...l, onchain: false }))
   const mine = address ? allLocks.filter((l) => (l.owner || '').toLowerCase() === address.toLowerCase() || !l.owner) : []
 
@@ -268,7 +281,7 @@ export default function Locked() {
       ) : (
         <div className="space-y-2.5">
           {publicLocks.map((l) => (
-            <LockRow key={l.id} lock={{ ...l, startedAt: l.lockedAt, durationLabel: '' }} now={now} showOwner />
+            <LockRow key={l.id} lock={withLogo({ ...l, startedAt: l.lockedAt, durationLabel: '' })} now={now} showOwner />
           ))}
         </div>
       )}
