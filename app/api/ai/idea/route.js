@@ -15,12 +15,12 @@ import { NextResponse } from "next/server";
  */
 
 /**
- * Text model config. Works with OpenAI directly or any OpenAI-compatible gateway
- * (e.g. Bankr LLM Gateway at https://llm.bankr.bot/v1). Switch entirely via env:
+ * Text model config. Works with OpenAI directly or any OpenAI-compatible gateway.
+ * Switch entirely via env:
  *   AI_TEXT_BASE_URL   base, default https://api.openai.com/v1
  *   AI_TEXT_API_KEY    the key (falls back to OPENAI_API_KEY)
  *   AI_TEXT_MODEL      model id, default gpt-4o-mini
- * Auth header is chosen automatically: Bankr keys (bk_…) use X-API-Key, OpenAI
+ * Auth header is chosen automatically: gateway keys (bk_…) use X-API-Key, OpenAI
  * uses Authorization: Bearer. Force it with AI_TEXT_AUTH=x-api-key|bearer.
  */
 function textConfig() {

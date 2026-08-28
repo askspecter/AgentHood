@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, formatEther, formatUnits, parseEther, parseUnits } from "ethers";
 import { getChain, quote as quoteSwap, rpcProvider } from "@/lib/engine";
-import { curveAt, resolveLaunch, resolveBankrPool, phaseBlockedMessage, quoteV4, v2Config } from "@/lib/engine/ponsV2";
+import { curveAt, resolveLaunch, resolvePonsPool, phaseBlockedMessage, quoteV4, v2Config } from "@/lib/engine/ponsV2";
 
 /** A neutral recipient for read-only buy simulations on a curve. */
 const QUOTE_RECIPIENT = "0x000000000000000000000000000000000000dEaD";
@@ -186,22 +186,22 @@ export async function POST(request) {
       return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
     }
   } catch {
-    /* not a resolvable v2 launch — fall through to the Bankr / v1 paths below */
+    /* not a resolvable v2 launch — fall through to the Pons / v1 paths below */
   }
 
-  // Bankr launches trade on an ordinary Uniswap v4 pool (with Bankr's own hook).
+  // Pons launches trade on an ordinary Uniswap v4 pool (with Pons's own hook).
   // Discover it from the pool's Initialize event and quote it via the V4 Quoter,
   // the same code path graduated pons pools use.
   try {
     const v4Provider = rpcProvider(chain);
-    const bankr = await resolveBankrPool(v4Provider, chain, token, chain.explorer);
-    if (bankr && v2Config(chain)?.v4Quoter) {
-      const payload = await quoteV4Payload(v4Provider, chain, bankr, side, amount, slippage);
+    const pons = await resolvePonsPool(v4Provider, chain, token, chain.explorer);
+    if (pons && v2Config(chain)?.v4Quoter) {
+      const payload = await quoteV4Payload(v4Provider, chain, pons, side, amount, slippage);
       QUOTE_CACHE.set(cacheKey, { at: Date.now(), value: payload });
       return NextResponse.json(payload);
     }
   } catch {
-    /* no Bankr v4 pool (or its quote reverted) — fall through to the v1 path */
+    /* no Pons v4 pool (or its quote reverted) — fall through to the v1 path */
   }
 
   try {

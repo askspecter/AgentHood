@@ -425,7 +425,7 @@ export async function GET(request) {
           // on-chain symbol/name reads as.
           l.symbol = KNOWN_SYMBOLS[k] || "AURN";
           l.name = "AURN";
-          // The official $AURN token is @aurnfun, not the deployer/"bankr" fallback.
+          // The official $AURN token is @aurnfun, not the deployer/"pons" fallback.
           if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "aurnfun";
         }
       }

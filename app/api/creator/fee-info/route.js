@@ -38,7 +38,7 @@ export async function GET(request) {
     const provider = rpcProvider(chain);
     const launch = await readLaunch(provider, chain, token);
     if (!launch?.isPonsLaunch || !launch.fees?.locker) {
-      // Not a v1 pons launch with a locker (e.g. a v2 curve or a Bankr coin).
+      // Not a v1 pons launch with a locker (e.g. a v2 curve, or a token with no v1 locker).
       return NextResponse.json({ claimable: false });
     }
 

@@ -16,7 +16,7 @@ import {
   UNIVERSAL_ROUTER_ABI,
   buildV4Swap,
   phaseBlockedMessage,
-  resolveBankrPool,
+  resolvePonsPool,
   resolveLaunch,
   v2Config,
 } from "@/lib/engine/ponsV2";
@@ -26,7 +26,7 @@ import {
  *
  * The custodial /api/terminal/execute derived a wallet from the X session and
  * signed server-side. This route signs nothing: it resolves the token's venue
- * (WETH wrap · v2 curve · graduated/Bankr Uniswap v4 · v1 Uniswap v3 pool) and
+ * (WETH wrap · v2 curve · graduated/Pons Uniswap v4 · v1 Uniswap v3 pool) and
  * returns the ORDERED list of unsigned transactions {to, data, value}. The
  * caller's own wallet (wagmi) signs each step in turn — approvals first, swap
  * last — so the same multi-venue engine now works with RainbowKit.
@@ -116,16 +116,16 @@ export async function POST(request) {
       return NextResponse.json({ ok: true, venue: "weth", steps, explorer: chain.explorer });
     }
 
-    // ---- pons v2 (curve) / graduated v4 / Bankr v4 ----
+    // ---- pons v2 (curve) / graduated v4 / Pons v4 ----
     let launch = await resolveLaunch(provider, chain, token);
-    if (!launch) launch = await resolveBankrPool(provider, chain, token, chain.explorer);
+    if (!launch) launch = await resolvePonsPool(provider, chain, token, chain.explorer);
     if (launch) {
       const slippageBps = slippageBpsOf(slippage);
       let expectedOut = 0n;
       try { expectedOut = BigInt(expectedOutRaw || 0); } catch { /* 0 */ }
       const minOut = expectedOut > 0n ? (expectedOut * (10_000n - slippageBps)) / 10_000n : 0n;
 
-      // ---- Graduated / Bankr Uniswap v4 via the Universal Router ----
+      // ---- Graduated / Pons Uniswap v4 via the Universal Router ----
       if (launch.phase === 2) {
         const cfg = v2Config(chain);
         if (!cfg?.universalRouter) return NextResponse.json({ error: "This coin graduated to Uniswap v4, and v4 trading isn't configured here yet." }, { status: 400 });

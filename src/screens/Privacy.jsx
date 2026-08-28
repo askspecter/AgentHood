@@ -89,7 +89,7 @@ export default function Privacy() {
       </Sec>
 
       <Sec n={14} title="Contact">
-        <p>For any privacy question or request, email <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or reach us on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
+        <p>For any privacy question or request, email <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@aurn.fun">contact@aurn.fun</a> or reach us on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
       </Sec>
     </LegalLayout>
   )

@@ -816,20 +816,45 @@ function VersionCard({ active, onClick, tag, title, desc }) {
   )
 }
 
+/* A small square asset logo with a letter fallback (no image / while loading). */
+function AssetLogo({ src, symbol, size = 24 }) {
+  const [broken, setBroken] = useState(false)
+  if (src && !broken) {
+    return <img src={src} alt="" width={size} height={size} onError={() => setBroken(true)}
+      className="rounded-md object-cover shrink-0 bg-[var(--color-paper-2)]" style={{ width: size, height: size }} />
+  }
+  return (
+    <span className="rounded-md grid place-items-center shrink-0 font-semibold text-[11px] bg-[var(--color-paper-2)] text-[var(--color-ink-soft)]"
+      style={{ width: size, height: size }}>{(symbol || '?')[0]}</span>
+  )
+}
+
 /* v2 paired asset — the quote token the bonding curve is priced in. ETH (native)
-   by default, or one of the factory-approved RWA/quote tokens. */
+   by default, or one of the factory-approved RWA/quote tokens, each shown with
+   its real logo from Robinhood's asset directory. */
 function PairedAssetPicker({ d, set }) {
   const [q, setQ] = useState('')
+  // Curated list as the instant fallback; enriched with real logos/names async.
+  const [assets, setAssets] = useState(() => V2_QUOTE_TOKENS.map((t) => ({ ...t, logo: null })))
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/quote-assets?network=${NETWORK}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled && Array.isArray(j?.assets) && j.assets.length) setAssets(j.assets) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
   const paired = !!d.pairToken
   const needle = q.trim().toLowerCase()
-  const list = V2_QUOTE_TOKENS.filter((t) => !needle || t.symbol.toLowerCase().includes(needle) || t.name.toLowerCase().includes(needle))
+  const list = assets.filter((t) => !needle || t.symbol.toLowerCase().includes(needle) || (t.name || '').toLowerCase().includes(needle))
   return (
     <div className="mt-4 pt-4 border-t hairline">
       <div className="flex items-center justify-between gap-3 mb-2">
         <span className="text-sm font-medium">Paired asset</span>
         <div className="seg shrink-0">
           <button onClick={() => { set('pairToken', ''); set('pairSymbol', '') }} className={`!px-2.5 !text-[13px] ${!paired ? 'on' : ''}`}>ETH</button>
-          <button onClick={() => { if (!d.pairToken) { set('pairToken', V2_QUOTE_TOKENS[0].address); set('pairSymbol', V2_QUOTE_TOKENS[0].symbol) } }} className={`!px-2.5 !text-[13px] ${paired ? 'on' : ''}`}>Token</button>
+          <button onClick={() => { if (!d.pairToken) { set('pairToken', assets[0].address); set('pairSymbol', assets[0].symbol) } }} className={`!px-2.5 !text-[13px] ${paired ? 'on' : ''}`}>Token</button>
         </div>
       </div>
       {!paired ? (
@@ -837,16 +862,19 @@ function PairedAssetPicker({ d, set }) {
       ) : (
         <div className="mt-1">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search asset…" className="input mb-2" />
-          <div className="max-h-40 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
+          <div className="max-h-44 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
             {list.map((t) => (
               <button key={t.address} onClick={() => { set('pairToken', t.address); set('pairSymbol', t.symbol) }}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-[var(--color-paper-2)] ${d.pairToken === t.address ? 'bg-[var(--color-paper-2)]' : ''}`}>
-                <span className="min-w-0"><span className="font-medium">${t.symbol}</span> <span className="text-xs text-[var(--color-ink-faint)] truncate">{t.name}</span></span>
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <AssetLogo src={t.logo} symbol={t.symbol} />
+                  <span className="min-w-0"><span className="font-medium">{t.symbol}</span> <span className="text-xs text-[var(--color-ink-faint)] truncate">{t.name}</span></span>
+                </span>
                 {d.pairToken === t.address && <span className="text-[var(--color-accent)] text-xs shrink-0">✓</span>}
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in ${d.pairSymbol || '—'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in {d.pairSymbol || '—'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
         </div>
       )}
     </div>

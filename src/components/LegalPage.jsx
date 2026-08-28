@@ -22,7 +22,7 @@ export function LegalLayout({ title, updated, lead, children }) {
       </div>
 
       <p className="text-[11px] text-[var(--color-ink-faint)] leading-relaxed mt-4 px-1">
-        This document is provided for transparency about how AURN works and is written in plain language. It is not legal advice. For questions, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a>.
+        This document is provided for transparency about how AURN works and is written in plain language. It is not legal advice. For questions, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@aurn.fun">contact@aurn.fun</a>.
       </p>
     </div>
   )

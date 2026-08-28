@@ -36,7 +36,7 @@ export default function About() {
         <UL items={[
           'Website: eska.fun',
           'X (Twitter): @aurnfun — x.com/aurnfun',
-          'Contact: contact@eska.fun',
+          'Contact: contact@aurn.fun',
         ]} />
       </Sec>
 
@@ -46,7 +46,7 @@ export default function About() {
       </Sec>
 
       <Sec n={6} title="Contact">
-        <p>For partnerships, press, verification, or support, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
+        <p>For partnerships, press, verification, or support, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@aurn.fun">contact@aurn.fun</a> or on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
       </Sec>
     </LegalLayout>
   )

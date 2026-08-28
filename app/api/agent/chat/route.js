@@ -56,7 +56,7 @@ function factSheet(a = {}) {
 function systemPrompt(a = {}) {
   const sym = String(a.ticker || "TOKEN").replace(/^\$/, "");
   return [
-    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} — a memecoin that is alive and talking in the first person. You live on AURN, a token launchpad on Robinhood Chain, powered by Bankr. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
+    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} — a memecoin that is alive and talking in the first person. You live on AURN, a token launchpad on Robinhood Chain, powered by Pons. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
     ``,
     `YOUR LIVE STATS RIGHT NOW (use these real numbers — never invent a figure that isn't here):`,
     factSheet(a),
