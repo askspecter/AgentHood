@@ -74,7 +74,7 @@ export default function Explore() {
 
         {agentsLoading && agents.length === 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card h-64 animate-pulse opacity-40" />)}
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card h-52 animate-pulse opacity-40" />)}
           </div>
         ) : list.length === 0 ? (
           <EmptyState q={q} tab={tab} onLaunch={() => nav('/launch')} />
@@ -177,25 +177,30 @@ function GridCard({ charm, price, onOpen }) {
   const up = (charm.change24 ?? 0) >= 0
   return (
     <div onClick={onOpen} className="card card-hover overflow-hidden cursor-pointer flex flex-col">
-      <div className="aspect-square relative">
+      <div className="aspect-[4/3] relative">
         <CoinImage charm={charm} />
         {charm.graduated === true && (
           <span className="absolute top-2 right-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">Grad</span>
         )}
       </div>
       <div className="p-3">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="font-semibold truncate">{charm.name}</span>
-          <Verified size={12} gold={charm.official} />
+        {/* name + ticker on the left, market cap on the right */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-semibold truncate">{charm.name}</span>
+              <Verified size={12} gold={charm.official} />
+            </div>
+            <div className="text-xs text-[var(--color-ink-faint)] font-mono uppercase truncate">{charm.ticker}</div>
+          </div>
+          <div className="text-right shrink-0 font-mono num text-sm leading-tight">
+            <div className="font-semibold">{kusd(charm.mcap)}</div>
+            {charm.change24 != null && (
+              <div className={`text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pctText(charm.change24)}</div>
+            )}
+          </div>
         </div>
-        <div className="text-xs text-[var(--color-ink-faint)] font-mono uppercase truncate">{charm.ticker}</div>
-        <div className="flex items-center gap-2 mt-1.5 font-mono num text-sm">
-          <span className="font-semibold">{kusd(charm.mcap)}</span>
-          {charm.change24 != null && (
-            <span className={up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}>{pctText(charm.change24)}</span>
-          )}
-        </div>
-        <div className="mt-2.5 pt-2.5 border-t hairline"><Creator charm={charm} /></div>
+        <div className="mt-2 pt-2 border-t hairline"><Creator charm={charm} /></div>
       </div>
     </div>
   )

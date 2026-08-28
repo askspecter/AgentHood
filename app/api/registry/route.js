@@ -80,6 +80,9 @@ export async function GET(request) {
           // whatever logo the token set on-chain.
           logo: entry.logo || l.logo || null,
           xUsername: entry.xUsername || mine || null,
+          // The wallet that deployed the coin — shown as the creator when there's
+          // no X handle, so the card credits the deploying address, not "anon".
+          deployer: l.deployer || entry.deployer || null,
           official: entry.official || false,
           // Prefer the coin's own on-chain socials; the official pin's entry
           // socials only fill in when the token has none.

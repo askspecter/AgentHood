@@ -15,7 +15,6 @@ export default function Settings() {
 
       <Section title="Account">
         <Row icon="editProfile" label="Edit profile" onClick={() => nav('/settings/profile')} />
-        <Row icon="leaderboard" label="Leaderboard" onClick={() => nav('/leaderboard')} />
         <Row icon="appearance" label="Appearance" right={
           <div className="seg shrink-0">
             {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize !px-2.5 !text-[13px] ${theme === k ? 'on' : ''}`}>{k}</button>)}
