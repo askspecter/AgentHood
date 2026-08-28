@@ -4,7 +4,7 @@ export default function Privacy() {
   return (
     <LegalLayout
       title="Privacy Policy"
-      updated="July 29, 2026"
+      updated="August 28, 2026"
       lead="This Privacy Policy explains what information AURN collects when you use aurn.fun, how we use it, and the choices you have. AURN is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
     >
       <Sec n={1} title="A quick summary">
@@ -35,7 +35,7 @@ export default function Privacy() {
         <UL items={[
           'To sign you in and recognize your account and wallet.',
           'To show your balance, holdings, and the live coin feed.',
-          'To execute the swaps, transfers, and launches you initiate.',
+          'To execute the swaps, transfers, locks, and launches you initiate.',
           'To operate, secure, debug, and improve the Service.',
           'To respond to your support requests.',
         ]} />
@@ -58,6 +58,7 @@ export default function Privacy() {
 
       <Sec n={7} title="Blockchain data is permanent and public">
         <p>Transactions you make are recorded on a public blockchain that we do not control and cannot change or erase. Your wallet address and its full transaction history are visible to anyone, and may be retained by third parties indefinitely. Please keep this in mind before transacting.</p>
+        <p>This includes token locks. When you lock tokens, the lock (your wallet address, the token, the amount, and the unlock time) is recorded on-chain and shown in the public Locked registry, which anyone can read without connecting a wallet. That transparency is the point of the feature, so do not lock tokens from an address you wish to keep private.</p>
       </Sec>
 
       <Sec n={8} title="Data retention">

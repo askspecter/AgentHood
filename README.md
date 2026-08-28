@@ -21,6 +21,8 @@ Everything runs client-side with simulated data (persisted to `localStorage`):
 - **Create** — mint your own character (name, ticker, aura, soul, vibe) with a live preview.
 - **Portfolio** — net worth, add cash, Coins / Creations / Activity tabs.
 - **Settings** — account rows, appearance toggle, sign out.
+- **Locked**: time-lock tokens you hold on Robinhood Chain in the on-chain
+  AurnLocker contract, and browse the public registry of locked tokens (see below).
 - **Sign in** — X only (simulated; no real OAuth, wallet, or funds).
 
 ## Run it
@@ -31,6 +33,31 @@ npm run dev      # http://localhost:5173
 npm run build
 npm run preview
 ```
+
+## Locked (on-chain token locks)
+
+Settings → Locked is a non-custodial ERC-20 time-lock backed by the
+`AurnLocker` smart contract (`contracts/AurnLocker.sol`).
+
+- **Lock / unlock** are signed by the token owner's own wallet. Tokens move into
+  the contract for a fixed term, and only the owner can withdraw them, only after
+  the term ends. AURN never takes custody.
+- **The list of locked tokens is public.** The API route `app/api/locks/route.js`
+  reads the contract's views server-side over RPC, so anyone can see which tokens
+  are locked, the amount, the owner, and the unlock time on the Locked page
+  without connecting a wallet.
+
+To make it live:
+
+1. Deploy the contract. Locally with a funded deployer key:
+   `PRIVATE_KEY=0x… node scripts/deploy-locker.mjs`, or run the
+   **Deploy Locker** GitHub Actions workflow (uses the `DEPLOYER_PRIVATE_KEY`
+   repository secret so the key never leaves CI).
+2. Set the printed address as `NEXT_PUBLIC_LOCKER_ADDRESS` in the app env
+   (Vercel → Environment Variables) and redeploy.
+
+Until `NEXT_PUBLIC_LOCKER_ADDRESS` is set, the Locked page falls back to a
+local-only preview and shows a "not deployed yet" note.
 
 ## Stack
 
