@@ -10,7 +10,7 @@ export default function About() {
     <LegalLayout
       title="About AURN"
       updated="August 1, 2026"
-      lead="AURN is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own — from your pocket. AURN operates at eska.fun."
+      lead="AURN is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own — from your pocket. AURN operates at aurn.fun."
     >
       <Sec n={1} title="What AURN is">
         <p>AURN turns tokens into characters. It is a consumer interface to a decentralized token protocol on Robinhood Chain, where every coin is presented as a living “agent” with a face, a voice, and a live on-chain price.</p>
@@ -34,7 +34,7 @@ export default function About() {
       <Sec n={4} title="Official channels">
         <p>To avoid impersonation, these are the only official AURN channels. Anything else claiming to be AURN is not us.</p>
         <UL items={[
-          'Website: eska.fun',
+          'Website: aurn.fun',
           'X (Twitter): @aurnfun — x.com/aurnfun',
           'Contact: contact@aurn.fun',
         ]} />

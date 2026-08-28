@@ -59,11 +59,11 @@ export default function BurnCounter() {
 
   const shown = useCountUp(data?.burned ?? 0)
 
-  // Share the current burn total to X. eska.fun unfurls with the live burn card.
+  // Share the current burn total to X. aurn.fun unfurls with the live burn card.
   const shareBurn = () => {
     const n = fmtBurn(data?.burned ?? 0)
     const text = `${n} $AURN burned and counting — bought back & burned on-chain, forever. deflationary by design.`
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://eska.fun')}`
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://aurn.fun')}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }
 

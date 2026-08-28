@@ -5,7 +5,7 @@ import { verifyKey } from "@/lib/apikey";
 
 /**
  * The AURN MCP server — a Model Context Protocol endpoint so any AI client
- * (Claude, Cursor, …) can discover, quote, launch and trade coins on eska.fun.
+ * (Claude, Cursor, …) can discover, quote, launch and trade coins on aurn.fun.
  *
  * Transport: stateless Streamable HTTP. Clients POST JSON-RPC 2.0; we answer with
  * a single JSON response (no SSE session needed for a request/response server).
@@ -60,7 +60,7 @@ function randomSalt() {
 const TOOLS = [
   {
     name: "list_coins",
-    description: "List the coins on AURN (launched through eska.fun), with live market cap, price and 24h change. Public data, no key needed.",
+    description: "List the coins on AURN (launched through aurn.fun), with live market cap, price and 24h change. Public data, no key needed.",
     inputSchema: { type: "object", properties: { limit: { type: "number", description: "Max coins (1-24), default 20." } } },
   },
   {
@@ -112,7 +112,7 @@ const TOOLS = [
   },
   {
     name: "launch_coin",
-    description: "Launch a new coin on eska.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your AURN API key and operator-enabled writes.",
+    description: "Launch a new coin on aurn.fun. SPENDS REAL FUNDS (launch fee + optional first buy). Requires your AURN API key and operator-enabled writes.",
     inputSchema: {
       type: "object",
       properties: {
@@ -140,7 +140,7 @@ async function callTool(params, ctx) {
   let user = null;
   if (needsKey) {
     user = ctx.key ? verifyKey(ctx.key) : null;
-    if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on eska.fun and send it as `Authorization: Bearer eska_mcp_…`.");
+    if (!user) return asErr("This tool needs your AURN API key. Generate one in Settings → AI access on aurn.fun and send it as `Authorization: Bearer eska_mcp_…`.");
   }
   if (needsWrite && !writeEnabled()) {
     return asErr("Trading and launching over MCP are disabled by the operator. They stay off until ESKA_MCP_WRITE=on is set on the deployment (test with tiny amounts first).");
@@ -163,7 +163,7 @@ async function callTool(params, ctx) {
         const j = await getJson(`${origin}/api/launches?network=${net}&limit=24`);
         const key = String(args.token).toLowerCase();
         const l = (j.launches || []).find((c) => String(c.token).toLowerCase() === key);
-        if (!l) return asErr("That token isn't in the AURN feed. Only coins launched on eska.fun are listed.");
+        if (!l) return asErr("That token isn't in the AURN feed. Only coins launched on aurn.fun are listed.");
         return asText({
           token: l.token, symbol: l.symbol, name: l.name,
           marketCapUsd: l.marketCapWeth && j.ethUsd ? Math.round(l.marketCapWeth * j.ethUsd) : (l.explorerMcapUsd || null),
@@ -246,7 +246,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "AURN MCP — discover, quote, launch and trade coins on eska.fun (Robinhood Chain). Spending tools need an AURN API key.",
+      instructions: "AURN MCP — discover, quote, launch and trade coins on aurn.fun (Robinhood Chain). Spending tools need an AURN API key.",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response

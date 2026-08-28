@@ -148,7 +148,7 @@ td b{color:var(--ink);font-weight:600}
     <div class="brand">
       <b>AURN Docs</b>
     </div>
-    <a class="home" href="https://eska.fun">&larr; Back to eska.fun</a>
+    <a class="home" href="https://aurn.fun">&larr; Back to aurn.fun</a>
     <div class="navgrp">
       <p class="lbl">Overview</p>
       <nav class="nav">
@@ -194,7 +194,7 @@ td b{color:var(--ink);font-weight:600}
     <div class="topbar">
       <button class="menu" id="menu" aria-label="Menu">&#9776;</button>
       <div class="brand" style="margin:0;flex:1"><b>AURN Docs</b></div>
-      <a class="tbhome" href="https://eska.fun">eska.fun &#8599;</a>
+      <a class="tbhome" href="https://aurn.fun">aurn.fun &#8599;</a>
     </div>
 
     <div class="wrap">
@@ -231,7 +231,7 @@ td b{color:var(--ink);font-weight:600}
       <section id="start" class="sec">
         <h2><span class="num">02</span>Getting started</h2>
         <ol class="steps">
-          <li><b>Open eska.fun</b> and tap <b>Sign in with X</b>. That's your only account &mdash; no email, no password.</li>
+          <li><b>Open aurn.fun</b> and tap <b>Sign in with X</b>. That's your only account &mdash; no email, no password.</li>
           <li><b>Get your wallet.</b> Signing in mints a wallet tied to your X account automatically. Nothing to install.</li>
           <li><b>Fund it with ETH.</b> Your wallet needs a little ETH for gas. Copy your address from the <b>Receive</b> tab and send ETH to it on Robinhood Chain.</li>
           <li><b>Launch or trade.</b> You're ready &mdash; create your first coin, or trade any coin on the chain.</li>
@@ -325,7 +325,7 @@ td b{color:var(--ink);font-weight:600}
           <tr><td><b>Chain</b></td><td>Robinhood Chain (ID 4663)</td></tr>
           <tr><td><b>Mechanic</b></td><td>Fee-funded buyback &amp; burn</td></tr>
         </table></div>
-        <div class="note warn"><div class="t">Verify the address</div><p>The official $AURN contract will be published here and on eska.fun at the @bankrbot relaunch. Until then, treat <strong>any</strong> $AURN contract as unofficial &mdash; impersonators are common.</p></div>
+        <div class="note warn"><div class="t">Verify the address</div><p>The official $AURN contract will be published here and on aurn.fun at the @bankrbot relaunch. Until then, treat <strong>any</strong> $AURN contract as unofficial &mdash; impersonators are common.</p></div>
       </section>
 
       <!-- ARCHITECTURE -->
@@ -382,7 +382,7 @@ td b{color:var(--ink);font-weight:600}
 
         <h3>Endpoint</h3>
         <p>Add this as a remote MCP server in your client:</p>
-        <div class="codeblock">https://eska.fun/api/mcp</div>
+        <div class="codeblock">https://aurn.fun/api/mcp</div>
 
         <h3>Get your key</h3>
         <p>Read tools work with no key. To trade or launch, generate a personal <strong>AURN API key</strong> in the app at <strong>Settings &rarr; AI access</strong>. Send it on every request as a bearer token:</p>
@@ -394,7 +394,7 @@ td b{color:var(--ink);font-weight:600}
         <div class="codeblock">{
   "mcpServers": {
     "eska": {
-      "url": "https://eska.fun/api/mcp",
+      "url": "https://aurn.fun/api/mcp",
       "headers": { "Authorization": "Bearer eska_mcp_&hellip;" }
     }
   }
@@ -447,9 +447,9 @@ td b{color:var(--ink);font-weight:600}
       <section id="links" class="sec">
         <h2><span class="num">14</span>Links</h2>
         <ul>
-          <li><strong>App</strong> &mdash; eska.fun</li>
+          <li><strong>App</strong> &mdash; aurn.fun</li>
           <li><strong>X</strong> &mdash; @eskafun</li>
-          <li><strong>MCP server</strong> &mdash; eska.fun/api/mcp</li>
+          <li><strong>MCP server</strong> &mdash; aurn.fun/api/mcp</li>
           <li><strong>Chain</strong> &mdash; Robinhood Chain (ID 4663)</li>
         </ul>
         <div class="foot">
@@ -492,7 +492,7 @@ td b{color:var(--ink);font-weight:600}
   }
   function paintBurn(){
     var el=document.getElementById('burnStat'); if(!el) return;
-    var urls=['/api/eska/burned?network=robinhood','https://eska.fun/api/eska/burned?network=robinhood'];
+    var urls=['/api/eska/burned?network=robinhood','https://aurn.fun/api/eska/burned?network=robinhood'];
     (function tryAt(i){
       if(i>=urls.length) return;
       fetch(urls[i]).then(function(r){return r.ok?r.json():null;}).then(function(j){

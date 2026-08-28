@@ -74,7 +74,7 @@ export default function CharmDetail() {
   // Share = copy the coin's link. Uses the native share sheet when available,
   // otherwise copies to the clipboard. No third-party (X) involved.
   const shareCoin = async () => {
-    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://eska.fun'}/c/${addr || charm.id}`
+    const url = `${typeof window !== 'undefined' ? window.location.origin : 'https://aurn.fun'}/c/${addr || charm.id}`
     try {
       if (navigator.share) { await navigator.share({ title: charm.name, text: `$${charm.ticker} on AURN`, url }) }
       else { await navigator.clipboard.writeText(url); setShared(true); setTimeout(() => setShared(false), 1500) }
