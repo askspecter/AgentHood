@@ -3,7 +3,7 @@ import { useStore } from '../lib/store'
 import LoginButton from './WalletButton'
 
 const TABS = [
-  { to: '/', label: 'Discover', end: true, icon: HomeIcon },
+  { to: '/', label: 'Market', end: true, icon: HomeIcon },
   { to: '/chats', label: 'Chat', icon: ChatIcon },
   { to: '/you', label: 'Portfolio', icon: YouIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon },

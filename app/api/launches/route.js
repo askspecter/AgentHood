@@ -348,13 +348,15 @@ export async function GET(request) {
     const officialSet = new Set(
       (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
     );
-    // Always gold-check the official $AURN token, even if it isn't in the registry.
-    officialSet.add((process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN).toLowerCase());
+    // Gold-check + pin an official token ONLY when one is explicitly configured
+    // via OFFICIAL_TOKEN. By default the front shows nothing but coins launched
+    // through AURN itself — no curated or auto-discovered coins.
+    if (process.env.OFFICIAL_TOKEN) officialSet.add(process.env.OFFICIAL_TOKEN.toLowerCase());
 
     const seeds = [
       ...(includePons ? FEATURED_PONS : []),
       ...launchedHere,
-      process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN,
+      process.env.OFFICIAL_TOKEN || null,
       ...(includePons ? (process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/) : []),
     ].filter(Boolean);
 
@@ -390,7 +392,7 @@ export async function GET(request) {
       const alwaysShow = new Set([
         ...(includePons ? FEATURED_PONS.map((a) => a.toLowerCase()) : []),
         ...launchedHere.map((a) => String(a).toLowerCase()),
-        (process.env.OFFICIAL_TOKEN || OFFICIAL_ESKA_TOKEN).toLowerCase(),
+        ...(process.env.OFFICIAL_TOKEN ? [process.env.OFFICIAL_TOKEN.toLowerCase()] : []),
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
@@ -452,8 +454,8 @@ export async function GET(request) {
           // on-chain symbol/name reads as.
           l.symbol = KNOWN_SYMBOLS[k] || "AURN";
           l.name = "AURN";
-          // The official $AURN token is @eskafun, not the deployer/"bankr" fallback.
-          if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "eskafun";
+          // The official $AURN token is @aurnfun, not the deployer/"bankr" fallback.
+          if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "aurnfun";
         }
       }
       const shown = launches.slice(0, 24);

@@ -29,7 +29,7 @@ export default function Settings() {
         <Row icon="docs" label="About AURN" onClick={() => nav('/about')} />
         <Row icon="tos" label="Terms of service" onClick={() => nav('/terms')} />
         <Row icon="privacy" label="Privacy policy" onClick={() => nav('/privacy')} />
-        <Row icon="x" label="Follow us on X" href="https://x.com/eskafun" external />
+        <Row icon="x" label="Follow us on X" href="https://x.com/aurnfun" external />
         <Row icon="support" label="Support" href="mailto:contact@eska.fun" />
         <Row icon="docs" label="Documentation" href="https://docs.eska.fun" external last />
       </Section>

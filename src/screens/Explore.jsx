@@ -2,142 +2,177 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
-import Ticker from '../components/Ticker'
-import CharmCarousel from '../components/CharmCarousel'
-import BurnCounter from '../components/BurnCounter'
 import { usd, num, pct } from '../lib/format'
-import { Verified, ArrowStat, Mentions } from '../components/icons'
+import { Verified, Mentions } from '../components/icons'
 
 /**
- * Discover — the charms.ai front page, powered by real pons coins.
- *
- * Every "character" here is an agent: a real token launched on pons, dressed in
- * the original look (hero, swipeable rail, ticker, grid). Tapping one opens its
- * agent page where you can chat with it and trade it.
+ * Home — AURN's own front. Not the charms-style spotlight-carousel + ticker +
+ * avatar grid, but an editorial hero over a glacial ring, and below it a market
+ * ledger: coins as ranked rows, the way a terminal lists them. The front is
+ * quiet by default — it fills only with coins launched through AURN.
  */
 
 const TABS = [
-  { key: 'top', label: 'Top' },
+  { key: 'all', label: 'All' },
   { key: 'new', label: 'New' },
   { key: 'graduated', label: 'Graduated' },
 ]
 
-// Rank by the real on-chain market cap (in WETH), which — unlike the USD `mcap`
-// — is present even when the ETH/USD rate is missing, so the order never
-// collapses to "newest coin with any non-zero number first".
-// Rank by USD market cap — it carries the explorer fallback, so a big coin like
-// PONS keeps its real $40M rank even when the on-chain WETH cap failed to read
-// and would otherwise sink below fresh launches.
 const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
-// Top: the official token ($AURN) is the hero, then established (featured) coins,
-// then by cap — so the pin always leads and known coins never get demoted below
-// a fresh launch that read a stray cap.
-const byTop = (a, b) =>
-  (b.official ? 1 : 0) - (a.official ? 1 : 0) ||
-  (b.featured ? 1 : 0) - (a.featured ? 1 : 0) ||
-  capOf(b) - capOf(a)
-// New: freshly-discovered (non-featured) launches first, then by cap.
+const byCap = (a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || capOf(b) - capOf(a)
 const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
 
 export default function Explore() {
-  const { agents, agentsLoading, loadAgents, prices } = useStore()
-  const [tab, setTab] = useState('top')
+  const { agents, agentsLoading, loadAgents, prices, wallet, connect } = useStore()
+  const nav = useNavigate()
+  const [tab, setTab] = useState('all')
   const [q, setQ] = useState('')
-
-  const cast = useMemo(() => [...agents].sort(byTop).slice(0, 6), [agents])
 
   const list = useMemo(() => {
     let l = agents.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.ticker.toLowerCase().includes(q.toLowerCase()))
     if (tab === 'graduated') l = l.filter((c) => c.graduated === true)
-    if (tab === 'top') l = [...l].sort(byTop)
-    else if (tab === 'new') l = [...l].sort(byNew)
+    l = [...l].sort(tab === 'new' ? byNew : byCap)
     return l
   }, [agents, tab, q])
 
   return (
-    <div>
-      {agents.length > 0 && (
-        <div className="fade-up mb-9 pt-2">
-          <CharmCarousel charms={cast} prices={prices} />
+    <div className="space-y-14">
+      {/* ===== hero ===== */}
+      <section className="relative overflow-hidden rounded-[28px] border hairline"
+        style={{ background: 'linear-gradient(160deg, rgba(20,26,44,0.55), rgba(8,10,18,0.4))' }}>
+        <Ring />
+        <div className="relative z-10 px-7 sm:px-12 py-14 sm:py-20 max-w-2xl">
+          <div className="eyebrow mb-5">Robinhood Chain · non-custodial</div>
+          <h1 className="display text-[2.6rem] sm:text-6xl leading-[0.95]">
+            Coins with a<br /><span className="holo-text">soul</span>, on-chain.
+          </h1>
+          <p className="mt-6 text-[var(--color-ink-soft)] text-base sm:text-lg max-w-lg leading-relaxed">
+            Launch a token that lives as an AI agent, trade it from your own wallet,
+            and watch it graduate. No demo markets — every price here settles on-chain.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <button onClick={() => nav('/launch')} className="btn btn-holo !py-3 !px-6">Launch a coin</button>
+            {!wallet && <button onClick={connect} className="btn btn-secondary !py-3 !px-6">Connect wallet</button>}
+            <button onClick={() => nav('/about')} className="btn btn-ghost !py-3 !px-6">How it works</button>
+          </div>
         </div>
-      )}
+      </section>
 
-      {agents.length > 0 && <Ticker charms={agents} prices={prices} />}
-
-      <Section id="index">
-        <BurnCounter />
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+      {/* ===== market ledger ===== */}
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
           <div>
-            <h2 className="display text-3xl">Discover</h2>
-            <p className="text-[var(--color-ink-soft)] text-sm mt-1">Live agents · coins on Robinhood Chain</p>
+            <h2 className="display text-3xl">Market</h2>
+            <p className="text-[var(--color-ink-soft)] text-sm mt-1">
+              {agents.length > 0 ? `${agents.length} coin${agents.length === 1 ? '' : 's'} live on AURN` : 'Every coin launched through AURN, ranked live'}
+            </p>
           </div>
-          <div className="relative w-full sm:w-56">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search agents…" className="input" />
+          <div className="relative w-full sm:w-64">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or ticker…" className="input" />
           </div>
         </div>
 
-        <div className="seg no-scrollbar mb-5 flex overflow-x-auto max-w-full">
-          {TABS.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
-          ))}
-          <button onClick={() => loadAgents(true)} disabled={agentsLoading} className="shrink-0 ml-auto">{agentsLoading ? '…' : '↻'}</button>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="seg no-scrollbar flex overflow-x-auto">
+            {TABS.map((t) => (
+              <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
+            ))}
+          </div>
+          <button onClick={() => loadAgents(true)} disabled={agentsLoading}
+            className="ml-auto chip cursor-pointer" title="Refresh">{agentsLoading ? '…' : '↻ Refresh'}</button>
         </div>
 
         {agentsLoading && agents.length === 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {Array.from({ length: 8 }).map((_, i) => <div key={i} className="card p-4 h-48 animate-pulse opacity-40" />)}
+          <div className="card divide-y divide-[var(--color-line)]">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-16 animate-pulse opacity-40" />)}
           </div>
         ) : list.length === 0 ? (
-          <div className="text-center py-16 text-[var(--color-ink-soft)]">
-            {q ? `No agents match "${q}".` : 'No coins found yet. Launch the first one.'}
-          </div>
+          <EmptyState q={q} onLaunch={() => nav('/launch')} />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-            {list.map((c) => <GridCard key={c.id} charm={c} price={prices[c.id]} />)}
+          <div className="card overflow-hidden">
+            {/* column header — desktop only */}
+            <div className="hidden md:grid grid-cols-[2.5rem_1fr_9rem_6rem_9rem_6rem_5rem] items-center gap-3 px-5 py-3 eyebrow border-b hairline">
+              <span>#</span><span>Coin</span><span className="text-right">Price</span>
+              <span className="text-right">24h</span><span className="text-right">Market cap</span>
+              <span className="text-right">Holders</span><span></span>
+            </div>
+            {list.map((c, i) => <Row key={c.id} charm={c} price={prices[c.id]} rank={i + 1} onOpen={() => nav(`/c/${c.id}`)} />)}
           </div>
         )}
-      </Section>
+      </section>
     </div>
   )
 }
 
-function Section({ children, id }) {
-  return <section id={id} className="mb-12 scroll-mt-24">{children}</section>
+/* The glacial ring motif from the cover art — pure CSS, sits in the hero. */
+function Ring() {
+  return (
+    <div className="pointer-events-none absolute -right-16 -top-10 sm:right-6 sm:top-1/2 sm:-translate-y-1/2 opacity-70">
+      <div className="relative w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] floaty">
+        <div className="absolute inset-0 rounded-full"
+          style={{ background: 'radial-gradient(circle at 50% 42%, transparent 52%, rgba(190,210,250,0.55) 58%, transparent 66%)', filter: 'blur(2px)' }} />
+        <div className="absolute inset-0 rounded-full"
+          style={{ boxShadow: '0 0 120px 10px rgba(160,192,240,0.35)' }} />
+        <div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-[46%] h-[58%] rounded-[50%]"
+          style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(220,232,255,0.14), transparent 70%)', border: '1px solid rgba(200,220,255,0.35)' }} />
+      </div>
+    </div>
+  )
 }
 
-function GridCard({ charm, price }) {
-  const nav = useNavigate()
-  const open = () => nav(`/c/${charm.id}`)
+function EmptyState({ q, onLaunch }) {
+  if (q) return <div className="card text-center py-16 text-[var(--color-ink-soft)]">No coins match “{q}”.</div>
+  return (
+    <div className="card text-center px-6 py-16">
+      <div className="mx-auto mb-5 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)', boxShadow: '0 0 30px -6px rgba(170,200,245,0.7)' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0c15" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+      </div>
+      <h3 className="font-serif text-2xl mb-1.5">The market is empty</h3>
+      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">No coins have launched on AURN yet. Be the first — mint a token that thinks, talks, and trades.</p>
+      <button onClick={onLaunch} className="btn btn-holo !py-3 !px-7 mx-auto">Launch the first coin</button>
+    </div>
+  )
+}
+
+function Row({ charm, price, rank, onOpen }) {
   const up = (charm.change24 ?? 0) >= 0
   return (
-    <div onClick={open} className="card card-hover p-4 flex flex-col items-center text-center cursor-pointer">
-      <div className="relative mb-3 mt-1 grid place-items-center">
-        <div className="relative"><CharmAvatar charm={charm} size={76} ring /></div>
-        {charm.graduated === true && (
-          <span className="absolute -top-1 -right-1 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">Grad</span>
-        )}
+    <div onClick={onOpen}
+      className="trow grid grid-cols-[1.5rem_1fr_auto] md:grid-cols-[2.5rem_1fr_9rem_6rem_9rem_6rem_5rem] items-center gap-3 px-4 md:px-5 py-3.5 cursor-pointer border-b hairline last:border-0">
+      <span className="font-mono num text-sm text-[var(--color-ink-faint)]">{rank}</span>
+
+      <div className="flex items-center gap-3 min-w-0">
+        <CharmAvatar charm={charm} size={40} ring />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-semibold truncate">{charm.name}</span>
+            <Verified size={12} gold={charm.official} />
+            {charm.graduated === true && <span className="chip chip-up !py-0 !text-[10px]">Grad</span>}
+          </div>
+          <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-1.5 min-w-0 max-w-full">
-        <span className="font-semibold truncate">{charm.name}</span>
-        <Verified size={13} gold={charm.official} />
-      </div>
-      <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
-
-      <div className="flex items-center justify-center gap-2 mt-1.5 font-mono num text-xs">
-        <span className="text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</span>
+      {/* mobile: compact price + change stacked at the right */}
+      <div className="md:hidden text-right">
+        <div className="font-mono num text-sm">{price ? usd(price) : '—'}</div>
         {charm.change24 != null && (
-          <span className={charm.change24 >= 0 ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}>{pct(charm.change24)}</span>
-        )}
-        {charm.holders != null && (
-          <span className="inline-flex items-center gap-1 text-[var(--color-ink-faint)]">
-            <Mentions size={12} />{num(charm.holders)}
-          </span>
+          <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pct(charm.change24)}</div>
         )}
       </div>
 
-      <button onClick={(e) => { e.stopPropagation(); open() }}
-        className="btn btn-holo static w-full mt-4 !py-2 text-sm">Open</button>
+      {/* desktop columns */}
+      <div className="hidden md:block text-right font-mono num text-sm">{price ? usd(price) : '—'}</div>
+      <div className={`hidden md:block text-right font-mono num text-sm ${charm.change24 == null ? 'text-[var(--color-ink-faint)]' : up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>
+        {charm.change24 != null ? pct(charm.change24) : '—'}
+      </div>
+      <div className="hidden md:block text-right font-mono num text-sm text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</div>
+      <div className="hidden md:flex items-center justify-end gap-1 font-mono num text-sm text-[var(--color-ink-faint)]">
+        {charm.holders != null ? (<><Mentions size={12} />{num(charm.holders)}</>) : '—'}
+      </div>
+      <div className="hidden md:flex justify-end">
+        <button onClick={(e) => { e.stopPropagation(); onOpen() }} className="btn btn-secondary !py-1.5 !px-3 text-xs">Open</button>
+      </div>
     </div>
   )
 }

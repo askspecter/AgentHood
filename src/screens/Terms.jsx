@@ -84,7 +84,7 @@ export default function Terms() {
       </Sec>
 
       <Sec n={15} title="Contact">
-        <p>Questions about these Terms? Email us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or reach us on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/eskafun" target="_blank" rel="noopener noreferrer">@eskafun</a>.</p>
+        <p>Questions about these Terms? Email us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or reach us on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
       </Sec>
     </LegalLayout>
   )

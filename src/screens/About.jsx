@@ -35,7 +35,7 @@ export default function About() {
         <p>To avoid impersonation, these are the only official AURN channels. Anything else claiming to be AURN is not us.</p>
         <UL items={[
           'Website: eska.fun',
-          'X (Twitter): @eskafun — x.com/eskafun',
+          'X (Twitter): @aurnfun — x.com/aurnfun',
           'Contact: contact@eska.fun',
         ]} />
       </Sec>
@@ -46,7 +46,7 @@ export default function About() {
       </Sec>
 
       <Sec n={6} title="Contact">
-        <p>For partnerships, press, verification, or support, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/eskafun" target="_blank" rel="noopener noreferrer">@eskafun</a>.</p>
+        <p>For partnerships, press, verification, or support, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@eska.fun">contact@eska.fun</a> or on X at <a className="text-[var(--color-accent)] hover:underline" href="https://x.com/aurnfun" target="_blank" rel="noopener noreferrer">@aurnfun</a>.</p>
       </Sec>
     </LegalLayout>
   )
