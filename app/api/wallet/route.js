@@ -44,17 +44,6 @@ export async function GET(request) {
   const url = new URL(request.url);
   const network = url.searchParams.get("network") || "robinhood";
 
-  let session;
-  try {
-    session = await getSession();
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (!session) {
-    return NextResponse.json({ error: "Sign in with X first." }, { status: 401 });
-  }
-
   let chain;
   try {
     chain = getChain(network);
@@ -62,24 +51,38 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  // AURN is non-custodial: pass ?address=0x… to read any wallet's public
+  // balances (used by the read-only MCP key and the coin page). Only when no
+  // address is given do we fall back to the legacy session-derived wallet.
+  const addrParam = url.searchParams.get("address");
   let address;
-  try {
-    address = deriveAddress(session.id);
-  } catch (error) {
-    // Almost always a missing (or too-short) WALLET_DERIVATION_SECRET. The raw
-    // message is a developer note with shell commands in it; the client gets a
-    // clean one plus a code it can render as a setup hint.
-    const missingSecret = /WALLET_DERIVATION_SECRET/.test(error.message || "");
-    return NextResponse.json(
-      {
-        error: missingSecret
-          ? "Wallets are not set up on this deployment yet."
-          : error.message,
-        code: missingSecret ? "wallet_not_configured" : "wallet_error",
-        missing: missingSecret ? ["WALLET_DERIVATION_SECRET"] : [],
-      },
-      { status: 500 }
-    );
+  let session = null;
+  if (addrParam && isAddress(addrParam)) {
+    address = getAddress(addrParam);
+  } else {
+    try {
+      session = await getSession();
+    } catch (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!session) {
+      return NextResponse.json({ error: "Provide a wallet ?address= to read." }, { status: 400 });
+    }
+    try {
+      address = deriveAddress(session.id);
+    } catch (error) {
+      const missingSecret = /WALLET_DERIVATION_SECRET/.test(error.message || "");
+      return NextResponse.json(
+        {
+          error: missingSecret
+            ? "Wallets are not set up on this deployment yet."
+            : error.message,
+          code: missingSecret ? "wallet_not_configured" : "wallet_error",
+          missing: missingSecret ? ["WALLET_DERIVATION_SECRET"] : [],
+        },
+        { status: 500 }
+      );
+    }
   }
 
   const balanceKey = `${network}:${address.toLowerCase()}`;
@@ -131,9 +134,9 @@ export async function GET(request) {
 
   return NextResponse.json({
     address,
-    handle: session.username,
-    name: session.name,
-    avatar: session.avatar,
+    handle: session?.username ?? null,
+    name: session?.name ?? null,
+    avatar: session?.avatar ?? null,
     chain: chain.name,
     chainId: chain.chainId,
     explorer: chain.explorer,
