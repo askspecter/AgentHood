@@ -6,7 +6,15 @@ export const metadata = {
   title: "AURN",
   description:
     "AURN — characters worth owning. Discover living characters, trade their coins, shape their story.",
-  icons: { icon: "/aurn-logo.png", apple: "/aurn-logo.png" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
   // Default share card: the live burn total (deflationary story). Coin pages
   // override this with their own card via generateMetadata.
   openGraph: {
