@@ -144,9 +144,17 @@ export function StoreProvider({ children }) {
         // Rank by market cap so the biggest coins lead (launched-here with no cap
         // yet still appears, just lower down).
         agentsOut.sort((a, b) => (b.mcap || 0) - (a.mcap || 0))
-        if (agentsOut.length) {
+        // Only trust the result when at least one endpoint actually answered.
+        // Then it's authoritative — including "no coins", which must clear the
+        // grid and the cache, not leave a stale coin from a previous visit
+        // showing forever. A total network failure keeps the last good cache.
+        const answered = (feed && !feed.error) || (reg && !reg.error)
+        if (answered) {
           setAgents(agentsOut)
-          try { localStorage.setItem(FEED_KEY, JSON.stringify({ agents: agentsOut, ethUsd: rate, explorer: feed?.explorer ?? null, at: Date.now() })) } catch {}
+          try {
+            if (agentsOut.length) localStorage.setItem(FEED_KEY, JSON.stringify({ agents: agentsOut, ethUsd: rate, explorer: feed?.explorer ?? null, at: Date.now() }))
+            else localStorage.removeItem(FEED_KEY)
+          } catch {}
         }
       })
       .catch(() => {})
