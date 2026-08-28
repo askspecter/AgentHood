@@ -1,0 +1,37 @@
+name: Deploy Locker
+
+# One-off deploy of contracts/AurnLocker.sol to Robinhood Chain.
+#
+# Setup (once):
+#   1. Repo Settings → Secrets and variables → Actions → New repository secret
+#      Name:  DEPLOYER_PRIVATE_KEY
+#      Value: the private key of a wallet that holds a little ETH on Robinhood Chain
+#   2. Actions tab → "Deploy Locker" → Run workflow
+#   3. Copy the printed address from the logs
+#   4. Set NEXT_PUBLIC_LOCKER_ADDRESS=<that address> in Vercel and redeploy
+#
+# The key stays a GitHub secret — it is never printed and never leaves CI.
+
+on:
+  workflow_dispatch:
+    inputs:
+      rpc_url:
+        description: "RPC URL (leave default for Robinhood Chain)"
+        required: false
+        default: "https://rpc.mainnet.chain.robinhood.com"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install ethers
+        run: npm install ethers@^6 --no-audit --no-fund
+      - name: Deploy AurnLocker
+        env:
+          PRIVATE_KEY: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          RPC_URL: ${{ github.event.inputs.rpc_url }}
+        run: node scripts/deploy-locker.mjs
