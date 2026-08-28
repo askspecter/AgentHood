@@ -91,6 +91,8 @@ export function tokenToAgent(t, ethUsd = null) {
     followers: (hash(t.token) % 90000) + 200, // stable flavour number
     graduated: t.graduated ?? null,
     graduationProgress: t.graduationProgress ?? null,
+    pairToken: t.pairToken ?? null,
+    stockPaired: Boolean(t.stockPaired),
     tagline: t.description || `$${symbol} — a coin living on Robinhood Chain.`,
     lore: t.description || `${name} was launched on AURN on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and it's tradeable the moment it's live. It has opinions about its own market cap.`,
     vibe: vibeFor(t.token),

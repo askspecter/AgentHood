@@ -1,101 +1,86 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import CharmAvatar from '../components/CharmAvatar'
-import { usd, num, pct } from '../lib/format'
-import { Verified, Mentions } from '../components/icons'
+import { Verified } from '../components/icons'
 
 /**
- * Home — AURN's own front. Not the charms-style spotlight-carousel + ticker +
- * avatar grid, but an editorial hero over a glacial ring, and below it a market
- * ledger: coins as ranked rows, the way a terminal lists them. The front is
- * quiet by default — it fills only with coins launched through AURN.
+ * Home — a feel.cash-style front: a swipeable hero carousel of top coins, an
+ * "Explore coins" grid of image-forward cards, and quick filter chips. The
+ * market is quiet by default; it fills only with coins launched through AURN.
  */
 
 const TABS = [
-  { key: 'all', label: 'All' },
-  { key: 'new', label: 'New' },
-  { key: 'graduated', label: 'Graduated' },
+  { key: 'trending', label: 'Trending', icon: '📈' },
+  { key: 'stock', label: 'Stock Paired', icon: '🪙' },
+  { key: 'gainers', label: 'Top Gainers', icon: '▲' },
+  { key: 'new', label: 'New', icon: '✦' },
 ]
 
 const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
-const byCap = (a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || capOf(b) - capOf(a)
-const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
+
+/** Compact USD, feel.cash-style: $10.8K, $31.2K, $1.2M. */
+function kusd(n) {
+  if (n == null || !Number.isFinite(n)) return '—'
+  const a = Math.abs(n)
+  if (a >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B'
+  if (a >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M'
+  if (a >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K'
+  if (a >= 1) return '$' + n.toFixed(2)
+  return '$' + n.toPrecision(2)
+}
+const pctText = (c) => (c == null ? null : `${c >= 0 ? '▲' : '▼'} ${Math.abs(c).toFixed(1)}%`)
 
 export default function Explore() {
   const { agents, agentsLoading, loadAgents, prices } = useStore()
   const nav = useNavigate()
-  const [tab, setTab] = useState('all')
+  const [tab, setTab] = useState('trending')
   const [q, setQ] = useState('')
+
+  const featured = useMemo(() => [...agents].sort((a, b) => capOf(b) - capOf(a)).slice(0, 6), [agents])
 
   const list = useMemo(() => {
     let l = agents.filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.ticker.toLowerCase().includes(q.toLowerCase()))
-    if (tab === 'graduated') l = l.filter((c) => c.graduated === true)
-    l = [...l].sort(tab === 'new' ? byNew : byCap)
+    if (tab === 'stock') l = l.filter((c) => c.stockPaired)
+    else if (tab === 'gainers') l = [...l].filter((c) => c.change24 != null).sort((a, b) => (b.change24 ?? 0) - (a.change24 ?? 0))
+    else if (tab === 'new') l = [...l].sort((a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a))
+    else l = [...l].sort((a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || capOf(b) - capOf(a))
     return l
   }, [agents, tab, q])
 
   return (
-    <div className="space-y-14">
-      {/* ===== hero ===== */}
-      <section className="relative overflow-hidden rounded-[28px] border hairline"
-        style={{ background: 'linear-gradient(160deg, rgba(20,26,44,0.55), rgba(8,10,18,0.4))' }}>
-        <Ring />
-        <div className="relative z-10 px-7 sm:px-12 py-14 sm:py-20 max-w-2xl">
-          <div className="eyebrow mb-5">Robinhood Chain · non-custodial</div>
-          <h1 className="display text-[2.6rem] sm:text-6xl leading-[0.95]">
-            Coins with a<br /><span className="holo-text">soul</span>, on-chain.
-          </h1>
-          <p className="mt-6 text-[var(--color-ink-soft)] text-base sm:text-lg max-w-lg leading-relaxed">
-            Launch a token that lives as an AI agent, trade it from your own wallet,
-            and watch it graduate.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button onClick={() => nav('/launch')} className="btn btn-holo !py-3 !px-6">Launch a coin</button>
-            <button onClick={() => nav('/about')} className="btn btn-ghost !py-3 !px-6">How it works</button>
-          </div>
-        </div>
-      </section>
+    <div className="space-y-8">
+      {featured.length > 0 && <HeroCarousel coins={featured} prices={prices} onTrade={(c) => nav(`/c/${c.id}`)} />}
 
-      {/* ===== market ledger ===== */}
       <section>
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
-          <div>
-            <h2 className="display text-3xl">Market</h2>
-            <p className="text-[var(--color-ink-soft)] text-sm mt-1">
-              {agents.length > 0 ? `${agents.length} coin${agents.length === 1 ? '' : 's'} live on AURN` : 'Every coin launched through AURN, ranked live'}
-            </p>
-          </div>
-          <div className="relative w-full sm:w-64">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or ticker…" className="input" />
-          </div>
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <h2 className="display text-3xl">Explore coins</h2>
+          <button onClick={() => loadAgents(true)} disabled={agentsLoading}
+            className="chip cursor-pointer shrink-0" title="Refresh">{agentsLoading ? '…' : '↻'}</button>
         </div>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="seg no-scrollbar flex overflow-x-auto">
-            {TABS.map((t) => (
-              <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
-            ))}
+        {/* filter chips */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1 mb-4">
+          {TABS.map((t) => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              className={`chip cursor-pointer shrink-0 !px-3.5 !py-2 !text-[13px] ${tab === t.key ? 'chip-brand' : ''}`}>
+              <span className="opacity-80">{t.icon}</span> {t.label}
+            </button>
+          ))}
+          <div className="relative shrink-0 ml-1">
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="input !py-2 !px-3 w-36 text-sm" />
           </div>
-          <button onClick={() => loadAgents(true)} disabled={agentsLoading}
-            className="ml-auto chip cursor-pointer" title="Refresh">{agentsLoading ? '…' : '↻ Refresh'}</button>
         </div>
 
         {agentsLoading && agents.length === 0 ? (
-          <div className="card divide-y divide-[var(--color-line)]">
-            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-16 animate-pulse opacity-40" />)}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <div key={i} className="card h-64 animate-pulse opacity-40" />)}
           </div>
         ) : list.length === 0 ? (
-          <EmptyState q={q} onLaunch={() => nav('/launch')} />
+          <EmptyState q={q} tab={tab} onLaunch={() => nav('/launch')} />
         ) : (
-          <div className="card overflow-hidden">
-            {/* column header — desktop only */}
-            <div className="hidden md:grid grid-cols-[2.5rem_1fr_9rem_6rem_9rem_6rem_5rem] items-center gap-3 px-5 py-3 eyebrow border-b hairline">
-              <span>#</span><span>Coin</span><span className="text-right">Price</span>
-              <span className="text-right">24h</span><span className="text-right">Market cap</span>
-              <span className="text-right">Holders</span><span></span>
-            </div>
-            {list.map((c, i) => <Row key={c.id} charm={c} price={prices[c.id]} rank={i + 1} onOpen={() => nav(`/c/${c.id}`)} />)}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {list.map((c) => <GridCard key={c.id} charm={c} price={prices[c.id]} onOpen={() => nav(`/c/${c.id}`)} />)}
           </div>
         )}
       </section>
@@ -103,75 +88,130 @@ export default function Explore() {
   )
 }
 
-/* The glacial ring motif from the cover art — pure CSS, sits in the hero. */
-function Ring() {
+/* The big square coin image, or the flat lettered tile when there's no logo. */
+function CoinImage({ charm, className = '' }) {
+  const [broken, setBroken] = useState(false)
+  if (charm.logo && !broken) {
+    return <img src={charm.logo} alt="" loading="lazy" onError={() => setBroken(true)}
+      className={`object-cover w-full h-full ${className}`} />
+  }
+  return <div className="w-full h-full grid place-items-center"><CharmAvatar charm={charm} size={92} /></div>
+}
+
+/* A tiny creator row: avatar + handle. */
+function Creator({ charm }) {
+  const handle = (charm.creator || 'anon').replace(/^@/, '')
+  const initial = (handle[0] || 'A').toUpperCase()
   return (
-    <div className="pointer-events-none absolute -right-16 -top-10 sm:right-6 sm:top-1/2 sm:-translate-y-1/2 opacity-70">
-      <div className="relative w-[300px] h-[300px] sm:w-[380px] sm:h-[380px] floaty">
-        <div className="absolute inset-0 rounded-full"
-          style={{ background: 'radial-gradient(circle at 50% 42%, transparent 52%, rgba(190,210,250,0.55) 58%, transparent 66%)', filter: 'blur(2px)' }} />
-        <div className="absolute inset-0 rounded-full"
-          style={{ boxShadow: '0 0 120px 10px rgba(160,192,240,0.35)' }} />
-        <div className="absolute left-1/2 top-[46%] -translate-x-1/2 -translate-y-1/2 w-[46%] h-[58%] rounded-[50%]"
-          style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(220,232,255,0.14), transparent 70%)', border: '1px solid rgba(200,220,255,0.35)' }} />
+    <span className="flex items-center gap-1.5 min-w-0">
+      <span className="w-5 h-5 rounded-full grid place-items-center text-[10px] font-semibold shrink-0 bg-[var(--color-paper-2)] text-[var(--color-ink-soft)]">{initial}</span>
+      <span className="text-xs text-[var(--color-ink-soft)] truncate">{handle}</span>
+    </span>
+  )
+}
+
+/* Swipeable hero carousel with pagination dots. */
+function HeroCarousel({ coins, prices, onTrade }) {
+  const ref = useRef(null)
+  const [active, setActive] = useState(0)
+  const onScroll = () => {
+    const el = ref.current
+    if (!el) return
+    const w = el.clientWidth * 0.9
+    setActive(Math.round(el.scrollLeft / w))
+  }
+  return (
+    <div>
+      <div ref={ref} onScroll={onScroll}
+        className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 lg:mx-0 lg:px-0">
+        {coins.map((c) => {
+          const price = prices[c.id] ?? c.price
+          const up = (c.change24 ?? 0) >= 0
+          return (
+            <div key={c.id} className="snap-center shrink-0 w-[90%] lg:w-full">
+              <div className="relative rounded-3xl overflow-hidden card-glow h-[300px] cursor-pointer" onClick={() => onTrade(c)}>
+                {/* background image */}
+                <div className="absolute inset-0"><CoinImage charm={c} className="scale-105 blur-[1px] opacity-60" /></div>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,7,13,.35) 0%, rgba(6,7,13,.15) 40%, rgba(6,7,13,.92) 100%)' }} />
+                {/* creator */}
+                <div className="absolute top-4 left-4 z-10"><Creator charm={c} /></div>
+                {/* inset logo */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[60%] w-32 h-32 rounded-2xl overflow-hidden ring-1 ring-white/15 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.9)]">
+                  <CoinImage charm={c} />
+                </div>
+                {/* footer */}
+                <div className="absolute inset-x-0 bottom-0 p-5 z-10">
+                  <div className="flex items-end justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-serif text-2xl leading-tight truncate">{c.name}</div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="font-mono text-xs text-[var(--color-ink-soft)] uppercase truncate">{c.ticker}</span>
+                        <Verified size={12} gold={c.official} />
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="font-mono num text-lg font-semibold">{kusd(c.mcap)}</div>
+                      {c.change24 != null && <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pctText(c.change24)}</div>}
+                    </div>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); onTrade(c) }} className="btn btn-holo w-full mt-3 !py-2.5">Trade</button>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {coins.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-3">
+          {coins.map((_, i) => (
+            <span key={i} className={`h-1.5 rounded-full transition-all ${i === active ? 'w-5 bg-[var(--color-ink)]' : 'w-1.5 bg-[var(--color-line-2)]'}`} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* feel.cash-style coin card: big image, name/ticker, price/change, creator. */
+function GridCard({ charm, price, onOpen }) {
+  const up = (charm.change24 ?? 0) >= 0
+  return (
+    <div onClick={onOpen} className="card card-hover overflow-hidden cursor-pointer flex flex-col">
+      <div className="aspect-square relative">
+        <CoinImage charm={charm} />
+        {charm.graduated === true && (
+          <span className="absolute top-2 right-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">Grad</span>
+        )}
+      </div>
+      <div className="p-3">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className="font-semibold truncate">{charm.name}</span>
+          <Verified size={12} gold={charm.official} />
+        </div>
+        <div className="text-xs text-[var(--color-ink-faint)] font-mono uppercase truncate">{charm.ticker}</div>
+        <div className="flex items-center gap-2 mt-1.5 font-mono num text-sm">
+          <span className="font-semibold">{kusd(charm.mcap)}</span>
+          {charm.change24 != null && (
+            <span className={up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}>{pctText(charm.change24)}</span>
+          )}
+        </div>
+        <div className="mt-2.5 pt-2.5 border-t hairline"><Creator charm={charm} /></div>
       </div>
     </div>
   )
 }
 
-function EmptyState({ q, onLaunch }) {
+function EmptyState({ q, tab, onLaunch }) {
   if (q) return <div className="card text-center py-16 text-[var(--color-ink-soft)]">No coins match “{q}”.</div>
+  if (tab === 'stock') return <div className="card text-center py-16 text-[var(--color-ink-soft)]">No stock-paired coins yet.</div>
   return (
     <div className="card text-center px-6 py-16">
       <div className="mx-auto mb-5 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)', boxShadow: '0 0 30px -6px rgba(170,200,245,0.7)' }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0c15" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
-      <h3 className="font-serif text-2xl mb-1.5">The market is empty</h3>
-      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">No coins have launched on AURN yet. Be the first — mint a token that thinks, talks, and trades.</p>
+      <h3 className="font-serif text-2xl mb-1.5">No coins yet</h3>
+      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">Be the first — mint a token that thinks, talks, and trades on AURN.</p>
       <button onClick={onLaunch} className="btn btn-holo !py-3 !px-7 mx-auto">Launch the first coin</button>
-    </div>
-  )
-}
-
-function Row({ charm, price, rank, onOpen }) {
-  const up = (charm.change24 ?? 0) >= 0
-  return (
-    <div onClick={onOpen}
-      className="trow grid grid-cols-[1.5rem_1fr_auto] md:grid-cols-[2.5rem_1fr_9rem_6rem_9rem_6rem_5rem] items-center gap-3 px-4 md:px-5 py-3.5 cursor-pointer border-b hairline last:border-0">
-      <span className="font-mono num text-sm text-[var(--color-ink-faint)]">{rank}</span>
-
-      <div className="flex items-center gap-3 min-w-0">
-        <CharmAvatar charm={charm} size={40} ring />
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-semibold truncate">{charm.name}</span>
-            <Verified size={12} gold={charm.official} />
-            {charm.graduated === true && <span className="chip chip-up !py-0 !text-[10px]">Grad</span>}
-          </div>
-          <div className="text-xs text-[var(--color-ink-faint)] font-mono">${charm.ticker}</div>
-        </div>
-      </div>
-
-      {/* mobile: compact price + change stacked at the right */}
-      <div className="md:hidden text-right">
-        <div className="font-mono num text-sm">{price ? usd(price) : '—'}</div>
-        {charm.change24 != null && (
-          <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pct(charm.change24)}</div>
-        )}
-      </div>
-
-      {/* desktop columns */}
-      <div className="hidden md:block text-right font-mono num text-sm">{price ? usd(price) : '—'}</div>
-      <div className={`hidden md:block text-right font-mono num text-sm ${charm.change24 == null ? 'text-[var(--color-ink-faint)]' : up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>
-        {charm.change24 != null ? pct(charm.change24) : '—'}
-      </div>
-      <div className="hidden md:block text-right font-mono num text-sm text-[var(--color-ink-soft)]">{charm.mcap ? usd(charm.mcap) : '—'}</div>
-      <div className="hidden md:flex items-center justify-end gap-1 font-mono num text-sm text-[var(--color-ink-faint)]">
-        {charm.holders != null ? (<><Mentions size={12} />{num(charm.holders)}</>) : '—'}
-      </div>
-      <div className="hidden md:flex justify-end">
-        <button onClick={(e) => { e.stopPropagation(); onOpen() }} className="btn btn-secondary !py-1.5 !px-3 text-xs">Open</button>
-      </div>
     </div>
   )
 }
