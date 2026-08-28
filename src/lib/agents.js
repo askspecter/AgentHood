@@ -14,17 +14,15 @@ function normalizeLogo(raw) {
   if (!raw || typeof raw !== 'string') return null
   const s = raw.trim()
   if (!s) return null
-  // Our own logo store: always serve it from THIS origin, whatever origin it was
-  // saved under. A coin whose logo was recorded as https://eska.fun/api/logo?id=…
-  // must still load on any deployment (the image bytes live in shared KV), so we
-  // strip the origin and keep the same-origin path.
-  const mine = s.match(/\/api\/logo\?id=[A-Za-z0-9_-]+/)
-  if (mine) return mine[0]
   if (s.startsWith('ipfs://')) {
     const path = s.replace(/^ipfs:\/\/(ipfs\/)?/, '')
     return `https://ipfs.io/ipfs/${path}`
   }
+  // Absolute URL (or inline data) — use it exactly as stored. This is the same
+  // URL pons renders, so if it loads there it loads here.
   if (/^https?:\/\//.test(s) || s.startsWith('data:')) return s
+  // A same-origin logo-store path (no host) — serve it from this origin.
+  if (s.startsWith('/api/logo?id=')) return s
   // A bare CID.
   if (/^[a-zA-Z0-9]{46,}$/.test(s)) return `https://ipfs.io/ipfs/${s}`
   return null
