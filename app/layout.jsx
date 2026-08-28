@@ -2,7 +2,7 @@ import "@rainbow-me/rainbowkit/styles.css"; // REQUIRED, before app CSS — styl
 import "../src/index.css";
 
 export const metadata = {
-  metadataBase: new URL(process.env.PUBLIC_ORIGIN || "https://eska.fun"),
+  metadataBase: new URL(process.env.PUBLIC_ORIGIN || "https://aurn.fun"),
   title: "AURN",
   description:
     "AURN — characters worth owning. Discover living characters, trade their coins, shape their story.",

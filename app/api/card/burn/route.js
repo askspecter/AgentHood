@@ -60,7 +60,7 @@ export async function GET(request) {
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "30px", letterSpacing: "3px", color: soft }}>
           <div style={{ display: "flex" }}>supply only goes down</div>
-          <div style={{ display: "flex" }}>eska.fun</div>
+          <div style={{ display: "flex" }}>aurn.fun</div>
         </div>
       </div>
     ),

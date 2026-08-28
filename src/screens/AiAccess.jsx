@@ -7,11 +7,11 @@ import { Back } from '../components/icons'
  * AI access — connect AURN to your AI through the MCP server.
  *
  * Generates a personal read-only API key (browse coins, quotes, your portfolio)
- * and shows how to wire eska.fun/api/mcp into a client like Claude or Cursor.
+ * and shows how to wire aurn.fun/api/mcp into a client like Claude or Cursor.
  * It carries no spend authority — your own wallet signs every transaction, so an
  * AI can prepare a trade but can never move your funds.
  */
-const ENDPOINT = 'https://eska.fun/api/mcp'
+const ENDPOINT = 'https://aurn.fun/api/mcp'
 
 export default function AiAccess() {
   const nav = useNavigate()

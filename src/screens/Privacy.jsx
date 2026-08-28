@@ -5,7 +5,7 @@ export default function Privacy() {
     <LegalLayout
       title="Privacy Policy"
       updated="July 29, 2026"
-      lead="This Privacy Policy explains what information AURN collects when you use eska.fun, how we use it, and the choices you have. AURN is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
+      lead="This Privacy Policy explains what information AURN collects when you use aurn.fun, how we use it, and the choices you have. AURN is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
     >
       <Sec n={1} title="A quick summary">
         <UL items={[

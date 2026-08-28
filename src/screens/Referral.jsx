@@ -29,7 +29,7 @@ export default function Referral() {
   // A clean, URL-safe code from the wallet address (the handle carries a
   // Unicode ellipsis, which can't go in a link).
   const code = (wallet.address ? wallet.address.slice(2, 10) : 'eska').toUpperCase()
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://eska.fun'
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://aurn.fun'
   const link = `${origin}/?ref=${code}`
 
   const copy = async (text, which) => {

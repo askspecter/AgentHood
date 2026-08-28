@@ -292,7 +292,7 @@ export async function GET(request) {
     const pons = chain.pons || {};
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
-    // The Discover feed shows ONLY coins launched through eska.fun (the registry)
+    // The Discover feed shows ONLY coins launched through aurn.fun (the registry)
     // plus the official $AURN pin. The wider pons universe — curated featured
     // coins and auto-discovered launches — is included only when ESKA_FEED_PONS=on.
     // Off by default: our feed is our own launches.

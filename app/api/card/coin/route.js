@@ -101,7 +101,7 @@ export async function GET(request) {
                 <div style={{ display: "flex", fontSize: "56px", fontWeight: 700, color: holo }}>{mcap}</div>
               </div>
             ) : (
-              <div style={{ display: "flex", fontSize: "40px", color: soft }}>live on eska.fun</div>
+              <div style={{ display: "flex", fontSize: "40px", color: soft }}>live on aurn.fun</div>
             )}
             {change != null ? (
               <div style={{ display: "flex", fontSize: "44px", fontWeight: 700, color: change >= 0 ? "#5fe3c0" : "#ff8aa0", paddingBottom: "4px" }}>
@@ -115,7 +115,7 @@ export async function GET(request) {
               </div>
             ) : null}
           </div>
-          <div style={{ display: "flex", fontSize: "30px", letterSpacing: "3px", color: soft }}>eska.fun</div>
+          <div style={{ display: "flex", fontSize: "30px", letterSpacing: "3px", color: soft }}>aurn.fun</div>
         </div>
       </div>
     ),
