@@ -35,6 +35,18 @@ function normLogo(raw) {
 }
 
 /**
+ * Route a resolved logo through the same-origin image proxy so mobile clients
+ * never have to reach a public IPFS gateway (often blocked/slow on cellular) and
+ * only load a small WebP. Same-origin paths and data URLs are already fine.
+ */
+function proxify(url) {
+  if (!url) return null;
+  if (url.startsWith("data:") || url.startsWith("/api/")) return url;
+  if (/^https?:\/\//.test(url)) return `/api/img?src=${encodeURIComponent(url)}`;
+  return url;
+}
+
+/**
  * The token's icon from the block explorer (Blockscout), used when the token has
  * no usable on-chain logo(). This is how a Pons/Doppler token's real image shows
  * up in the feed instead of a placeholder, so the locked list matches it.
@@ -120,7 +132,7 @@ export async function GET(request) {
     const locks = rows.map((r) => {
       const m = meta[r.token.toLowerCase()] || { symbol: "TOKEN", name: null, decimals: 18, logo: null };
       const amount = (() => { try { return formatUnits(r.amountRaw, m.decimals); } catch { return null; } })();
-      return { ...r, symbol: m.symbol, name: m.name || m.symbol, decimals: m.decimals, logo: m.logo, amount };
+      return { ...r, symbol: m.symbol, name: m.name || m.symbol, decimals: m.decimals, logo: proxify(m.logo), amount };
     });
 
     return NextResponse.json({ live: true, address: LOCKER_ADDRESS, count, locks });

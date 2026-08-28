@@ -162,7 +162,10 @@ export default function Locked() {
   const withLogo = useCallback((l) => {
     const a = byToken[String(l.token || '').toLowerCase()]
     if (!a) return l
-    return { ...l, logo: l.logo || a.logo, tone: l.tone ?? a.tone, symbol: l.symbol || a.ticker, name: l.name || a.name }
+    // Load a known coin's image through the same-origin proxy too (a.logo is a
+    // raw IPFS/remote URL that can be blocked on mobile).
+    const fallback = a.logo && /^https?:\/\//.test(a.logo) ? `/api/img?src=${encodeURIComponent(a.logo)}` : a.logo
+    return { ...l, logo: l.logo || fallback, tone: l.tone ?? a.tone, symbol: l.symbol || a.ticker, name: l.name || a.name }
   }, [byToken])
 
   // The list to show as "locked tokens": on-chain public locks (live) or local.
