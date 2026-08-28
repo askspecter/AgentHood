@@ -88,43 +88,12 @@ const TOKEN_LAUNCHED_TOPIC =
  * the known coins are always present. Add or remove addresses here (or via the
  * PONS_SEED_TOKENS env) as the roster changes.
  */
-const FEATURED_PONS = [
-  "0x2076CD26D8Cf26f91655d4Ada3dD2fdBFdd8e7a4", // APES
-  "0x62C71cd34a52c30d894419CBcc55Db2aFA8032eA", // YOLO
-  "0x45F82AC5d507e988f7406935da8eEfe495a360e0", // BRODIE
-  "0xA8aD8DAcbb2123458BD628e7De689524905bFcb7", // LONG
-  "0xB0Fea401F1ee62F0e7cC3Bdf94b20c25aB5117e2", // MOTION
-  "0x69984Ad3322300039f2855f81C44Dbc532EFe744", // TYGR
-  "0x9516922a56171AB9834b88864d1010a6D8633296", // Artcoin
-  "0x9d98f99b0b6B2b7F99ab8BC187e1C59793eccb2c", // PIPECAT
-  "0x1aBf16f660CCbAa22CE8646deB1B63635D582228", // FONZ
-  "0x30dB03A051205CcBeb1B6524dDf87fbC6c0127bC", // TA
-  "0x8ECEA3d0E648DB646d824AA51EedeB16aC3d6878", // wire
-  "0x92D176ccBeEffeCd8089e841D09ea17b6C22D969", // VLAD
-  "0x29fbaa3668E688C83fae9b5Dd13cC3CfC097ccBF", // DAHOOD
-  "0x7FE995a80075dF3Dc8Ae11A9b82c7FE4202CD87f", // HMM
-  "0x859ead0EE2fd39a2804bB27713742577f7bE79c1", // CC
-  "0xC9E7C34fa156a235e8B8601171a543bc9c84a1B9", // TAMPONS
-  "0x6245e67affA44a23077f0Ea7f981a8DC743a0c47", // FRONG
-];
-
-// Known symbols for the curated coins, paired to the list above by order. Used
-// as a fallback so a featured coin still shows when the RPC is too rate-limited
-// to read its symbol on-chain — otherwise the whole featured row thins out to
-// almost nothing whenever the public node is busy.
-const FEATURED_SYMBOL_LIST = [
-  "APES", "YOLO", "BRODIE", "LONG", "MOTION", "TYGR", "Artcoin", "PIPECAT",
-  "FONZ", "TA", "wire", "VLAD", "DAHOOD", "HMM", "CC", "TAMPONS", "FRONG",
-];
-const KNOWN_SYMBOLS = Object.fromEntries(
-  FEATURED_PONS.map((a, i) => [a.toLowerCase(), FEATURED_SYMBOL_LIST[i]])
-);
-
-// The official $AURN token — always pinned to the top of Discover and
-// gold-checked, no matter the env/registry state, so AURN's own coin is
-// unmistakable. OFFICIAL_TOKEN env can still override the address if it moves.
-const OFFICIAL_ESKA_TOKEN = "0x8e7d62f76df1ffc369ab90967c92d7d68009dba3";
-KNOWN_SYMBOLS[OFFICIAL_ESKA_TOKEN] = "AURN";
+// No curated coins. AURN's Market shows ONLY coins launched through AURN
+// itself (the registry) plus an optional pin (OFFICIAL_TOKEN) — never a
+// hardcoded roster of other projects' tokens.
+const FEATURED_PONS = [];
+const FEATURED_SYMBOL_LIST = [];
+const KNOWN_SYMBOLS = {};
 
 /**
  * Discover launch token addresses from the block explorer's own index.
@@ -327,7 +296,9 @@ export async function GET(request) {
     // plus the official $AURN pin. The wider pons universe — curated featured
     // coins and auto-discovered launches — is included only when ESKA_FEED_PONS=on.
     // Off by default: our feed is our own launches.
-    const includePons = String(process.env.ESKA_FEED_PONS || "").trim().toLowerCase() === "on";
+    // AURN never auto-discovers other coins on the chain — the Market is only
+    // what launched through AURN. Discovery/curation stays permanently off.
+    const includePons = false;
 
     const [topTokens, discovered, registry, rate] = await Promise.all([
       includePons ? discoverTopTokens(chain.explorer).catch(() => []) : Promise.resolve([]),

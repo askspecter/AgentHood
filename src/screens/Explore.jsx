@@ -23,7 +23,7 @@ const byCap = (a, b) => (b.official ? 1 : 0) - (a.official ? 1 : 0) || capOf(b) 
 const byNew = (a, b) => (a.featured ? 1 : 0) - (b.featured ? 1 : 0) || capOf(b) - capOf(a)
 
 export default function Explore() {
-  const { agents, agentsLoading, loadAgents, prices, wallet, connect } = useStore()
+  const { agents, agentsLoading, loadAgents, prices } = useStore()
   const nav = useNavigate()
   const [tab, setTab] = useState('all')
   const [q, setQ] = useState('')
@@ -48,11 +48,10 @@ export default function Explore() {
           </h1>
           <p className="mt-6 text-[var(--color-ink-soft)] text-base sm:text-lg max-w-lg leading-relaxed">
             Launch a token that lives as an AI agent, trade it from your own wallet,
-            and watch it graduate. No demo markets — every price here settles on-chain.
+            and watch it graduate.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <button onClick={() => nav('/launch')} className="btn btn-holo !py-3 !px-6">Launch a coin</button>
-            {!wallet && <button onClick={connect} className="btn btn-secondary !py-3 !px-6">Connect wallet</button>}
             <button onClick={() => nav('/about')} className="btn btn-ghost !py-3 !px-6">How it works</button>
           </div>
         </div>
