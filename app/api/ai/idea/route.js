@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
  *   - look        → one image-prompt sentence for the coin's appearance
  *   - personality → 4 short trait phrases (JSON array)
  *   - tagline     → a one-line hook
+ *   - description → a 2–3 sentence page description built from the agent's soul
  *
  * If OPENAI_API_KEY isn't set, this returns 503 and the client falls back to its
  * built-in suggestions, so the buttons always work.
@@ -59,6 +60,19 @@ const SPECS = {
       "You write a one-line hook (tagline) for a coin-character. Punchy, memorable, under 80 characters. No quotes, no hashtags.",
     user: `A one-line tagline${c.name ? ` for ${c.name}` : ""}${c.vibe ? ` (vibe: ${c.vibe})` : ""}.`,
     max_tokens: 40,
+  }),
+  description: (c) => ({
+    system:
+      "You write the public description shown on a coin-character's page. Two or three short sentences, at most ~60 words, that capture who this character is and its vibe. Warm and vivid, written for people browsing coins. No quotes, no hashtags, no markdown, no emoji.",
+    user:
+      `Write the page description for a coin-character` +
+      `${c.name ? ` called ${c.name}` : ""}${c.ticker ? ` ($${c.ticker})` : ""}.` +
+      `${c.tagline ? ` Tagline: ${c.tagline}.` : ""}` +
+      `${c.vibe ? ` Vibe: ${c.vibe}.` : ""}` +
+      `${c.personality ? ` Personality: ${c.personality}.` : ""}` +
+      `${c.lore ? ` Details: ${c.lore}.` : ""}` +
+      `${c.look ? ` Looks like: ${c.look}.` : ""}`,
+    max_tokens: 120,
   }),
 };
 

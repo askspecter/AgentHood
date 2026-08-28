@@ -28,6 +28,11 @@ export interface LaunchInput {
   launchConfigId?: number;
   /** Enable protocol buybacks for this launch (v2). */
   buybackEnabled?: boolean;
+  /**
+   * Creator tax in basis points (v2). The share of the 1% total trading fee
+   * routed to the creator, capped at 1000 bps (10% of the fee). Default 0.
+   */
+  creatorTaxBps?: number;
   /** Social links, written into the token's on-chain metadata. */
   twitter?: string;
   telegram?: string;

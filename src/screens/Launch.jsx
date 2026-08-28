@@ -37,7 +37,7 @@ const IDEAS = [
 ]
 
 /* Name suggestions for the Idea button on step one. */
-const NAME_IDEAS = ['Vanta', 'Lumen', 'Onyx', 'Halcyon', 'Nyx', 'Ember', 'Cobalt', 'Seraph', 'Vesper', 'Zephyr', 'Marrow', 'Quill']
+const NAME_IDEAS = ['Nova', 'Lumen', 'Onyx', 'Halcyon', 'Nyx', 'Ember', 'Cobalt', 'Seraph', 'Vesper', 'Zephyr', 'Marrow', 'Quill']
 
 /* Appearance prompts the Idea button drops into the look description. When the AI
    image API is wired, these are exactly the kind of prompt it will render from. */
@@ -199,7 +199,7 @@ export default function Launch() {
 
   const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
-  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false, version: 'v1' })
+  const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false, version: 'v1', description: '', descEdited: false, creatorTax: '' })
 
   // Non-custodial deploy — the connected wallet signs the Pons launch tx.
   const { address, chainId } = useAccount()
@@ -220,6 +220,8 @@ export default function Launch() {
   const canLaunch = !!d.name.trim()
 
   const set = (k, v) => setD((s) => ({ ...s, [k]: v }))
+  // Editing the description marks it user-owned so auto-generation won't clobber it.
+  const setDescription = (v) => setD((s) => ({ ...s, description: v.slice(0, 500), descEdited: true }))
   const toggleVibe = (v) => setD((s) => ({ ...s, vibe: s.vibe.includes(v) ? s.vibe.filter((x) => x !== v) : [...s.vibe, v].slice(0, 5) }))
   const togglePersonality = (p) => setD((s) => ({ ...s, personality: s.personality.includes(p) ? s.personality.filter((x) => x !== p) : [...s.personality, p].slice(0, 3) }))
   // AI-button state (per-button busy flags).
@@ -228,6 +230,7 @@ export default function Launch() {
   const [soulBusy, setSoulBusy] = useState(false)
   const [aiTraits, setAiTraits] = useState(null)
   const [traitBusy, setTraitBusy] = useState(false)
+  const [descBusy, setDescBusy] = useState(false)
 
   // Ticker derived from the name (letters/digits, up to 5). Empty name → empty.
   const autoTicker = (name) => (name || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 5).toUpperCase()
@@ -329,6 +332,40 @@ export default function Launch() {
     d.lore, d.look,
   ].filter(Boolean).join(' · ').slice(0, 280)
 
+  // AI-write the coin's page description from everything the creator picked, so
+  // they never have to write it themselves. Falls back to a locally-composed
+  // description if the AI endpoint isn't configured/reachable, so it always
+  // produces something. `manual` marks a user-clicked regenerate (always runs);
+  // the auto-fill only writes when the field is still untouched.
+  const generateDescription = useCallback(async (manual = false) => {
+    setDescBusy(true)
+    try {
+      const r = await aiIdea('description', {
+        name: d.name,
+        ticker: d.ticker,
+        tagline: d.tagline,
+        vibe: d.vibe.join(', '),
+        personality: d.personality.join('. '),
+        lore: d.lore,
+        look: d.look,
+      })
+      const text = (r?.text || describe() || '').slice(0, 500)
+      if (text) setD((s) => (manual || !s.descEdited ? { ...s, description: text } : s))
+    } finally {
+      setDescBusy(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [d.name, d.ticker, d.tagline, d.vibe, d.personality, d.lore, d.look])
+
+  // On reaching the review step, auto-generate the description once if the user
+  // hasn't written one — so the field arrives pre-filled and editable.
+  useEffect(() => {
+    if (step !== 4) return
+    if (d.descEdited || d.description.trim() || descBusy) return
+    generateDescription(false)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
   const doLaunch = useCallback(async () => {
     if (!user || !address) return connect()
     if (!canLaunch) return
@@ -368,6 +405,9 @@ export default function Launch() {
         launchConfigId: 0,
         initialBuyEth: d.firstBuy && Number(d.firstBuy) > 0 ? String(d.firstBuy) : '',
         buybackEnabled: true, // v2 only; ignored by v1
+        // Creator tax (v2 only): the % of the 1% trading fee kept by the creator,
+        // 0–10%, sent to the contract as basis points (10% → 1000 bps).
+        creatorTaxBps: version === 'v2' ? Math.round(Math.min(10, Math.max(0, Number(d.creatorTax) || 0)) * 100) : undefined,
       }
 
       // Prepare the version-specific launch plan (may read on-chain for v2).
@@ -475,7 +515,7 @@ export default function Launch() {
         {step === 1 && <StepLook d={d} preview={preview} set={set} onNext={next} pickStyle={pickStyle} lookIdea={lookIdea} lookBusy={lookBusy} setLogoFromFile={setLogoFromFile} />}
         {step === 2 && <StepForge preview={preview} pct={pct} onContinue={() => setStep(3)} onEdit={() => setStep(1)} />}
         {step === 3 && <StepSoul d={d} preview={preview} set={set} toggleVibe={toggleVibe} togglePersonality={togglePersonality} idea={idea} soulBusy={soulBusy} aiTraits={aiTraits} moreTraits={moreTraits} traitBusy={traitBusy} onNext={next} canLaunch={canLaunch} />}
-        {step === 4 && <StepReview d={d} set={set} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} busy={busy} error={error} />}
+        {step === 4 && <StepReview d={d} set={set} setDescription={setDescription} generateDescription={generateDescription} descBusy={descBusy} preview={preview} meta={meta} metaError={metaError} onEdit={() => setStep(0)} onLaunch={doLaunch} user={user} busy={busy} error={error} />}
         {step === 5 && <StepDone charm={preview} result={result} meta={meta} onTrade={() => nav(`/c/${result?.token || ''}`)} />}
       </div>
     </div>
@@ -490,7 +530,7 @@ function StepName({ d, setName, setTicker, onNext, nameIdea, nameBusy }) {
       <h1 className="display text-4xl sm:text-5xl mb-10">Name your agent.</h1>
       <div className="relative mb-8">
         <div className="flex items-end gap-3">
-          <input autoFocus value={d.name} onChange={(e) => setName(e.target.value)} placeholder="Vanta"
+          <input autoFocus value={d.name} onChange={(e) => setName(e.target.value)} placeholder="Nova"
             className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
           <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : 'Idea'}</button>
         </div>
@@ -499,7 +539,7 @@ function StepName({ d, setName, setTicker, onNext, nameIdea, nameBusy }) {
       <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· follows the name</span></label>
       <div className="flex items-center input !py-2.5 max-w-[220px] mb-10">
         <span className="text-[var(--color-ink-faint)] mr-1">$</span>
-        <input value={d.ticker} onChange={(e) => setTicker(e.target.value)} placeholder="VNTA"
+        <input value={d.ticker} onChange={(e) => setTicker(e.target.value)} placeholder="NOVA"
           className="w-full bg-transparent outline-none font-mono num text-lg border-0 p-0" />
       </div>
       <button onClick={onNext} disabled={!d.name.trim()} className="btn btn-holo w-full !py-3.5">Next</button>
@@ -717,7 +757,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
 }
 
 /* ---------- 5 · Review & launch (REAL) ---------- */
-function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, busy, error }) {
+function StepReview({ d, set, setDescription, generateDescription, descBusy, preview, meta, metaError, onEdit, onLaunch, user, busy, error }) {
   const fee = meta?.launchFeeEth
   return (
     <div className="flex-1 flex flex-col">
@@ -754,16 +794,20 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
             desc="Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain." />
         </div>
         {d.version === 'v2' && <PairedAssetPicker d={d} set={set} />}
+        {d.version === 'v2' && <CreatorTax d={d} set={set} />}
       </div>
 
       {/* Description + links */}
       <div className="card p-4 mb-6 space-y-3">
         <div>
-          <span className="text-sm font-medium">Description</span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Description <span className="text-xs text-[var(--color-ink-faint)] font-normal">· auto-written by AI</span></span>
+            <button onClick={() => generateDescription(true)} disabled={descBusy} className="chip chip-brand !py-1">{descBusy ? '…' : 'Regenerate'}</button>
+          </div>
           <textarea
-            value={d.description ?? ''} onChange={(e) => set('description', e.target.value.slice(0, 500))}
-            rows={3} placeholder="What is this coin about? (shown on its page)"
-            className="input mt-2 resize-none" />
+            value={d.description ?? ''} onChange={(e) => setDescription(e.target.value)}
+            rows={3} placeholder={descBusy ? 'Writing a description…' : 'Generating from your agent — or write your own.'}
+            className="input resize-none" />
         </div>
         <div className="grid sm:grid-cols-2 gap-2.5">
           <label className="block">
@@ -782,6 +826,7 @@ function StepReview({ d, set, preview, meta, metaError, onEdit, onLaunch, user, 
         <Row k="Supply" v="1,000,000,000 (fixed)" />
         <Row k="Liquidity" v={d.version === 'v2' ? 'Bonding curve → Uniswap V4' : 'Uniswap V3 · WETH · 1%'} />
         <Row k="Launch fee" v={d.version === 'v2' ? 'Read live from factory' : '0.0005 ETH'} />
+        {d.version === 'v2' && <Row k="Creator tax" v={`${Number(d.creatorTax) || 0}% of the 1% fee`} />}
         {user && <Row k="Signs with" v={user.username} />}
       </div>
 
@@ -877,6 +922,36 @@ function PairedAssetPicker({ d, set }) {
           <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in {d.pairSymbol || '—'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
         </div>
       )}
+    </div>
+  )
+}
+
+/* v2 creator tax — the creator's cut of the 1% trading fee, 0–10%. Mirrors the
+   Pons "Creator tax" control: traders always pay 1% total, up to 10% of which
+   the creator keeps. Sent on-chain as basis points (10% → 1000 bps). */
+function CreatorTax({ d, set }) {
+  const onChange = (raw) => {
+    // digits + one dot, clamped to a 0–10 range once it parses to a number.
+    let v = raw.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
+    if (v !== '' && v !== '.') {
+      const n = Number(v)
+      if (Number.isFinite(n) && n > 10) v = '10'
+    }
+    set('creatorTax', v)
+  }
+  return (
+    <div className="mt-4 pt-4 border-t hairline">
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <span className="text-sm font-medium">Creator tax</span>
+        <div className="flex items-center input !py-1.5 w-24">
+          <input
+            value={d.creatorTax ?? ''} onChange={(e) => onChange(e.target.value)}
+            placeholder="0" inputMode="decimal"
+            className="w-full bg-transparent outline-none font-mono num text-right border-0 p-0" />
+          <span className="text-[var(--color-ink-faint)] ml-1">%</span>
+        </div>
+      </div>
+      <p className="text-[11px] text-[var(--color-ink-faint)]">Traders pay 1.00% in total, up to 10% of it yours. Paid to your creator wallet.</p>
     </div>
   )
 }
