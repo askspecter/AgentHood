@@ -141,9 +141,6 @@ export default function CharmDetail() {
               )}
             </div>
           </div>
-          {typeof charm.graduationProgress === 'number' && grad !== true && (
-            <span className="chip !text-sm">{Math.round(charm.graduationProgress * 100)}% to graduation</span>
-          )}
         </div>
         <PriceChart seed={charm.history} live={price} up={charm.change24 == null ? true : charm.change24 >= 0} />
         <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t hairline">

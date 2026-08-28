@@ -36,6 +36,11 @@ export class PonsV2Adapter implements LaunchStrategy {
     const pairToken = (input.pairToken ?? zeroAddress) as Address;
     const launchConfigId = BigInt(input.launchConfigId ?? 0);
 
+    // Creator tax (bps) — the creator's share of the 1% trading fee, capped at
+    // 1000 bps (10% of the fee) to match the protocol's ceiling. The field is a
+    // uint16 on-chain; clamp and round to a whole bp.
+    const creatorTaxBps = Math.max(0, Math.min(1000, Math.round(input.creatorTaxBps ?? 0)));
+
     const warnings: string[] = [];
 
     // NON-BLOCKING whitelist check. Pons v2 launches are whitelist-gated
@@ -77,7 +82,7 @@ export class PonsV2Adapter implements LaunchStrategy {
       // caller's address, not the zero address — some factory paths revert on
       // zero. Match the proven-working calldata.
       creatorFeeRecipient: account,
-      creatorTaxBps: 0,
+      creatorTaxBps,
       buybackEnabled: input.buybackEnabled ?? true,
       expectedEconomics,
       salt,

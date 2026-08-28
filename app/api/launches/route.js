@@ -312,8 +312,12 @@ export async function GET(request) {
     // Map each launched-here token to the X handle of whoever launched it, so the
     // feed can credit "@name" instead of the deployer's hex address.
     const handleByToken = new Map();
+    // The deployer wallet per token, so a coin with no X handle is credited to
+    // the address that launched it (not an anonymous "anon" placeholder).
+    const deployerByToken = new Map();
     for (const e of registry.entries || []) {
       if (e?.token && e?.xUsername) handleByToken.set(String(e.token).toLowerCase(), e.xUsername);
+      if (e?.token && e?.deployer) deployerByToken.set(String(e.token).toLowerCase(), e.deployer);
     }
     // The official ($AURN) token, so the client can gold-check it.
     const officialSet = new Set(
@@ -419,6 +423,8 @@ export async function GET(request) {
         const k = (l.token || "").toLowerCase();
         const h = handleByToken.get(k);
         if (h) l.xUsername = h;
+        // Prefer the on-chain deployer if enrich read one, else the registry's.
+        if (!l.deployer) l.deployer = deployerByToken.get(k) || null;
         if (officialSet.has(k)) {
           l.official = true;
           // The official coin always shows under the AURN brand, whatever its
