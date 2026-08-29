@@ -21,8 +21,9 @@ function normalizeLogo(raw) {
   // Absolute URL (or inline data) - use it exactly as stored. This is the same
   // URL pons renders, so if it loads there it loads here.
   if (/^https?:\/\//.test(s) || s.startsWith('data:')) return s
-  // A same-origin logo-store path (no host) - serve it from this origin.
-  if (s.startsWith('/api/logo?id=')) return s
+  // A same-origin path (no host) - the logo store, the image proxy, or a bundled
+  // asset like /aurn-logo.png. Serve it from this origin as-is.
+  if (s.startsWith('/')) return s
   // A bare CID.
   if (/^[a-zA-Z0-9]{46,}$/.test(s)) return `https://ipfs.io/ipfs/${s}`
   return null
