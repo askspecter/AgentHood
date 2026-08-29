@@ -38,20 +38,20 @@
   <h1>AURN AR Agent</h1>
   <p>Point your camera at the marker and your coin shows up: a 3D agent that talks and shows its live data.</p>
   <button class="go" id="go">Start AR</button>
-  <div class="note">Prototype. Open the <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Hiro marker</a> on another screen (or print it), then point your phone at it.</div>
+  <div class="note">Prototype. Open the <a href="/ar/aurn-marker.png" target="_blank" rel="noopener">AURN marker</a> on another screen (or print it), then point your phone at it.</div>
 </div>
 
 <div class="hud">
   <div class="brand"><img src="/aurn-logo.png" alt=""><b>AURN · AR</b></div>
   <div class="live"><span class="dot"></span><span id="hudPrice">loading…</span></div>
 </div>
-<div class="hint" id="hint">Point at the Hiro marker</div>
+<div class="hint" id="hint">Point at the AURN marker</div>
 
 <a-scene id="scene" embedded vr-mode-ui="enabled:false" renderer="alpha:true; antialias:true"
   arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;" style="display:none">
   <a-assets><img id="logoTex" src="/aurn-logo.png" crossorigin="anonymous"></a-assets>
 
-  <a-marker preset="hiro" id="marker" smooth="true" smoothCount="8" smoothTolerance="0.01" smoothThreshold="4">
+  <a-marker type="pattern" url="/ar/aurn-marker.patt" id="marker" smooth="true" smoothCount="8" smoothTolerance="0.01" smoothThreshold="4">
     <a-entity id="agent" position="0 0.05 0"
       animation="property: position; from: 0 0.05 0; to: 0 0.28 0; dir: alternate; loop: true; dur: 1700; easing: easeInOutSine">
       <!-- holo ring -->
@@ -111,7 +111,7 @@
     $('#hint').textContent = 'Agent locked · '+live.symbol;
     if(!greeted){ greeted=true; speak(`gm. I am ${live.symbol.replace('$','')}, a coin with a soul. I am live on Robinhood Chain.`); }
   }
-  function onLost(){ $('#hint').textContent = 'Point at the Hiro marker'; }
+  function onLost(){ $('#hint').textContent = 'Point at the AURN marker'; }
 
   $('#go').addEventListener('click', ()=>{
     $('#start').style.display='none';
