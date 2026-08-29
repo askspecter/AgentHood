@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, getAddress } from "ethers";
-import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken } from "@/lib/engine";
+import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken, officialTokenAddress, officialLogo } from "@/lib/engine";
 
 const POOL_SLOT0_ABI = [
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
@@ -323,15 +323,15 @@ export async function GET(request) {
     const officialSet = new Set(
       (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
     );
-    // Gold-check + pin an official token ONLY when one is explicitly configured
-    // via OFFICIAL_TOKEN. By default the front shows nothing but coins launched
-    // through AURN itself - no curated or auto-discovered coins.
-    if (process.env.OFFICIAL_TOKEN) officialSet.add(process.env.OFFICIAL_TOKEN.toLowerCase());
+    // Gold-check + pin the official token ($AURN by default; OFFICIAL_TOKEN
+    // overrides, OFFICIAL_TOKEN="" drops it) so it always leads the feed.
+    const officialAddr = officialTokenAddress();
+    if (officialAddr) officialSet.add(officialAddr.toLowerCase());
 
     const seeds = [
       ...(includePons ? FEATURED_PONS : []),
       ...launchedHere,
-      process.env.OFFICIAL_TOKEN || null,
+      officialAddr,
       ...(includePons ? (process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/) : []),
     ].filter(Boolean);
 
@@ -367,7 +367,7 @@ export async function GET(request) {
       const alwaysShow = new Set([
         ...(includePons ? FEATURED_PONS.map((a) => a.toLowerCase()) : []),
         ...launchedHere.map((a) => String(a).toLowerCase()),
-        ...(process.env.OFFICIAL_TOKEN ? [process.env.OFFICIAL_TOKEN.toLowerCase()] : []),
+        ...(officialAddr ? [officialAddr.toLowerCase()] : []),
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
@@ -428,9 +428,10 @@ export async function GET(request) {
         if (officialSet.has(k)) {
           l.official = true;
           // The official coin always shows under the AURN brand, whatever its
-          // on-chain symbol/name reads as.
+          // on-chain symbol/name reads as, with the crisp bundled brand logo.
           l.symbol = KNOWN_SYMBOLS[k] || "AURN";
           l.name = "AURN";
+          l.logo = officialLogo();
           // The official $AURN token is @aurnfun, not the deployer/"pons" fallback.
           if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "aurnfun";
         }
