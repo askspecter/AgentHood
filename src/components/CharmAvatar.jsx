@@ -24,10 +24,10 @@ export default function CharmAvatar({ charm, size = 48, ring = false }) {
   const [c1, c2] = toneFor(charm)
   const letter = (charm.name?.[0] ?? 'A').toUpperCase()
   const [broken, setBroken] = useState(false)
-  const radius = Math.round(s * 0.24) // rounded square — a flat tile, never a ball
+  const radius = Math.round(s * 0.24) // rounded square - a flat tile, never a ball
   const ringShadow = ring ? 'inset 0 0 0 1px rgba(210,224,255,.14)' : undefined
 
-  // A real token logo — a square image in the tile's footprint. If it fails to
+  // A real token logo - a square image in the tile's footprint. If it fails to
   // load we fall through to the flat lettered tile below (never a blank).
   if (charm.logo && !broken) {
     return (
@@ -45,7 +45,7 @@ export default function CharmAvatar({ charm, size = 48, ring = false }) {
       style={{
         width: s, height: s,
         borderRadius: radius,
-        // Flat diagonal gradient — a coloured tile, not a glossy sphere.
+        // Flat diagonal gradient - a coloured tile, not a glossy sphere.
         background: `linear-gradient(145deg, ${c1} 0%, ${c2} 100%)`,
         boxShadow: ringShadow,
       }}

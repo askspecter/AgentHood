@@ -92,7 +92,7 @@ export async function GET(request) {
 
     const { data } = await profileResponse.json();
 
-    // Only identity is stored. We deliberately do NOT keep the access token —
+    // Only identity is stored. We deliberately do NOT keep the access token -
     // this app never posts on the user's behalf, so holding it would be a
     // liability with no benefit.
     await setSession({

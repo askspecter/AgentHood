@@ -12,7 +12,7 @@ import CharmAvatar, { TONES } from '../components/CharmAvatar'
 import { XGlyph, Verified, Back } from '../components/icons'
 
 /**
- * Launch — create an agent, mint a real token on pons.
+ * Launch - create an agent, mint a real token on pons.
  *
  * The charms.ai-style creation flow (name → look → forge → soul → review) is the
  * theme; the deployment underneath is real. The Pons strategy (v1 or v2) builds
@@ -26,7 +26,7 @@ const VIBES = ['cozy', 'chaotic', 'dreamy', 'hype', 'spooky', 'poetic', 'retro',
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 const friendly = (m) =>
   /SSL|EPROTO|handshake|allowlist|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(String(m || ''))
-    ? "Couldn't reach Robinhood Chain right now — launching is unavailable. Try again in a moment."
+    ? "Couldn't reach Robinhood Chain right now - launching is unavailable. Try again in a moment."
     : String(m || '')
 
 const IDEAS = [
@@ -51,7 +51,7 @@ const LOOK_IDEAS = [
 
 /* Visual styles for the look step. Each sets the coin's tone (its aura/glow) and
    a matching vibe. Deliberately AURN's own set, not a copy of anyone else's. */
-/* The style gallery — each tile shows an AI preview (via /api/ai/style-preview)
+/* The style gallery - each tile shows an AI preview (via /api/ai/style-preview)
    and its prompt fragment (p) steers the coin's own logo generation. Keys must
    match STYLE_PROMPTS in the style-preview endpoint. */
 const STYLE_DEFS = [
@@ -108,7 +108,7 @@ function shuffled(arr, seed) {
   return a
 }
 
-/* Shrink a picked image to a small square data URL — the real logo shown on pons. */
+/* Shrink a picked image to a small square data URL - the real logo shown on pons. */
 function fileToLogo(file, size = 256) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -156,7 +156,7 @@ async function aiImage(prompt, style) {
 const styleLabel = (key) => STYLES.find((s) => s.key === key)?.label || ''
 
 /* Store an image (data URL or remote URL) durably and get back a stable URL for
-   on-chain metadata. Returns null if storage isn't configured — callers keep the
+   on-chain metadata. Returns null if storage isn't configured - callers keep the
    original source as a fallback. */
 async function persistLogo(source) {
   try {
@@ -201,7 +201,7 @@ export default function Launch() {
   const [pct, setPct] = useState(0)
   const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false, version: 'v1', description: '', descEdited: false, creatorTax: '' })
 
-  // Non-custodial deploy — the connected wallet signs the Pons launch tx.
+  // Non-custodial deploy - the connected wallet signs the Pons launch tx.
   const { address, chainId } = useAccount()
   const publicClient = usePublicClient()
   const { switchChainAsync } = useSwitchChain()
@@ -287,7 +287,7 @@ export default function Launch() {
 
   // Discover the factory ABI + the X wallet up front, so the review step can mint
   // without any extra round trip. The factory read depends on the block explorer,
-  // which occasionally hiccups — so retry a few times with backoff before showing
+  // which occasionally hiccups - so retry a few times with backoff before showing
   // an error, and let the user retry without reloading. Most blips resolve
   // themselves and are never seen.
   useEffect(() => {
@@ -358,7 +358,7 @@ export default function Launch() {
   }, [d.name, d.ticker, d.tagline, d.vibe, d.personality, d.lore, d.look])
 
   // On reaching the review step, auto-generate the description once if the user
-  // hasn't written one — so the field arrives pre-filled and editable.
+  // hasn't written one - so the field arrives pre-filled and editable.
   useEffect(() => {
     if (step !== 4) return
     if (d.descEdited || d.description.trim() || descBusy) return
@@ -372,7 +372,7 @@ export default function Launch() {
     const version = d.version === 'v2' ? 'v2' : 'v1'
     setBusy(true); setError(null)
     try {
-      // Ensure the logo is a durable, short URL before it goes on-chain — a huge
+      // Ensure the logo is a durable, short URL before it goes on-chain - a huge
       // data URL makes the factory revert with MetadataTooLong().
       let logo = d.logo
       if (logo && !/\/api\/logo\?id=/.test(logo)) {
@@ -384,7 +384,7 @@ export default function Launch() {
       if (chainId !== robinhoodChain.id) {
         try { await switchChainAsync({ chainId: robinhoodChain.id }) }
         catch {
-          setError(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) — this is an EVM chain, not Solana — then try again.`)
+          setError(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) - this is an EVM chain, not Solana - then try again.`)
           return
         }
       }
@@ -397,7 +397,7 @@ export default function Launch() {
         name: d.name,
         ticker: (d.ticker || autoTicker(d.name) || 'TICK'),
         imageUri: logo || '',
-        description: (d.description?.trim() || [d.tagline, d.lore].filter(Boolean).join(' — ')).slice(0, 500),
+        description: (d.description?.trim() || [d.tagline, d.lore].filter(Boolean).join(' - ')).slice(0, 500),
         twitter: (d.twitter || '').trim(),
         telegram: (d.telegram || '').trim(),
         website: (d.website || '').trim(),
@@ -426,7 +426,7 @@ export default function Launch() {
         }
       }
 
-      // Sign + send from the user's own wallet — non-custodial.
+      // Sign + send from the user's own wallet - non-custodial.
       const hash = await writeContractAsync({
         address: plan.address, abi: plan.abi, functionName: plan.functionName,
         args: plan.args, value: plan.value, chainId: robinhoodChain.id,
@@ -460,13 +460,13 @@ export default function Launch() {
   // "Generating the look": kick off FLUX.1 [schnell] on fal.ai and animate the
   // progress. The bar eases toward ~94% while the image renders, then snaps to
   // 100% and shows the ready card. If the user already uploaded an image, or no
-  // image key is set, it skips generation and just finishes — the procedural
+  // image key is set, it skips generation and just finishes - the procedural
   // avatar stands in, so the flow never blocks.
   useEffect(() => {
     if (step !== 2) return
     let cancelled = false, ready = false
     setPct(0)
-    // The subject only — the server slots this into the chosen style's template,
+    // The subject only - the server slots this into the chosen style's template,
     // so the style fragment is no longer merged in here (it owns the render).
     const subject = [
       d.name,
@@ -708,7 +708,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
         <h1 className="display text-3xl mt-4">Give {d.name || 'it'} a soul.</h1>
       </div>
 
-      {/* Vibe — up to five */}
+      {/* Vibe - up to five */}
       <div className="flex items-center justify-between mb-2">
         <label className="eyebrow">Vibe <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 5</span></label>
       </div>
@@ -723,7 +723,7 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
         })}
       </div>
 
-      {/* Personality — up to three trait cards */}
+      {/* Personality - up to three trait cards */}
       <div className="flex items-center justify-between mb-2">
         <label className="eyebrow">Personality <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 3</span></label>
         <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : 'more'}</button>
@@ -782,13 +782,13 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
         </div>
       </div>
 
-      {/* Launch model — Pons v1 or v2 */}
+      {/* Launch model - Pons v1 or v2 */}
       <div className="card p-4 mb-6">
         <span className="text-sm font-medium">Launch model</span>
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           <VersionCard active={d.version !== 'v2'} onClick={() => set('version', 'v1')}
             tag="v1" title="Instant Pool"
-            desc="One tx deploys the token + a locked Uniswap V3 pool (WETH). Tradable at once — open, no whitelist." />
+            desc="One tx deploys the token + a locked Uniswap V3 pool (WETH). Tradable at once - open, no whitelist." />
           <VersionCard active={d.version === 'v2'} onClick={() => set('version', 'v2')}
             tag="v2" title="Bonding Curve"
             desc="Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain." />
@@ -806,7 +806,7 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
           </div>
           <textarea
             value={d.description ?? ''} onChange={(e) => setDescription(e.target.value)}
-            rows={3} placeholder={descBusy ? 'Writing a description…' : 'Generating from your agent — or write your own.'}
+            rows={3} placeholder={descBusy ? 'Writing a description…' : 'Generating from your agent - or write your own.'}
             className="input resize-none" />
         </div>
         <div className="grid sm:grid-cols-2 gap-2.5">
@@ -836,7 +836,7 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
         {busy ? 'Launching…' : !user ? 'Connect Wallet to launch' : `Deploy · ${(d.version === 'v2' ? 'v2' : 'v1').toUpperCase()}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Non-custodial launch on Robinhood Chain via Pons — signed by your own wallet.
+        Non-custodial launch on Robinhood Chain via Pons - signed by your own wallet.
       </p>
     </div>
   )
@@ -874,7 +874,7 @@ function AssetLogo({ src, symbol, size = 24 }) {
   )
 }
 
-/* v2 paired asset — the quote token the bonding curve is priced in. ETH (native)
+/* v2 paired asset - the quote token the bonding curve is priced in. ETH (native)
    by default, or one of the factory-approved RWA/quote tokens, each shown with
    its real logo from Robinhood's asset directory. */
 function PairedAssetPicker({ d, set }) {
@@ -919,14 +919,14 @@ function PairedAssetPicker({ d, set }) {
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in {d.pairSymbol || '—'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in {d.pairSymbol || '-'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
         </div>
       )}
     </div>
   )
 }
 
-/* v2 creator tax — the creator's cut of the 1% trading fee, 0–10%. Mirrors the
+/* v2 creator tax - the creator's cut of the 1% trading fee, 0–10%. Mirrors the
    Pons "Creator tax" control: traders always pay 1% total, up to 10% of which
    the creator keeps. Sent on-chain as basis points (10% → 1000 bps). */
 function CreatorTax({ d, set }) {
@@ -987,7 +987,7 @@ const PAIR_STOCKS = [
   ['IREN', 'IREN Limited'], ['SpaceX', 'SpaceX'],
 ]
 
-/* Pool pairing — quote the new pool in WETH (default) or in a tokenized stock,
+/* Pool pairing - quote the new pool in WETH (default) or in a tokenized stock,
    the launch flow. */
 function PoolPairing({ d, set }) {
   const [q, setQ] = useState('')
@@ -1026,7 +1026,7 @@ function PoolPairing({ d, set }) {
           <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">
             {d.pairedStock
               ? `Pool quoted in $${d.pairedStock} instead of WETH. Stock-paired volume doesn't count toward developer rebates.`
-              : 'Pick a stock — your pool is quoted in it instead of WETH.'}
+              : 'Pick a stock - your pool is quoted in it instead of WETH.'}
           </p>
         </div>
       )}
@@ -1040,7 +1040,7 @@ function StepDone({ charm, result, meta, onTrade }) {
     <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
       <div className="eyebrow mb-2">Live on Robinhood Chain</div>
       <h1 className="display text-4xl sm:text-5xl mb-2"><span className="holo-text">{charm.name}</span> is live.</h1>
-      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Pons on Robinhood Chain — tradeable now, with creator fees flowing to your wallet.</p>
+      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Pons on Robinhood Chain - tradeable now, with creator fees flowing to your wallet.</p>
 
       <div className="glass card-glow rounded-3xl p-8 w-full max-w-sm relative overflow-hidden mb-7">
         <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">AURN</span>

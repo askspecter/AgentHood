@@ -1,5 +1,5 @@
 /**
- * Token locks — a per-wallet record of supply the holder has committed to lock
+ * Token locks - a per-wallet record of supply the holder has committed to lock
  * for a fixed term, with a live countdown to unlock.
  *
  * Stored locally per connected wallet (AURN is non-custodial, so nothing here

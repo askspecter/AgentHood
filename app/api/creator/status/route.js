@@ -42,14 +42,14 @@ export async function GET(request) {
     const key = token.toLowerCase();
     entry = (reg.entries || []).find((e) => String(e.token).toLowerCase() === key) || null;
   } catch {
-    /* registry unavailable — treat as not-creator rather than erroring */
+    /* registry unavailable - treat as not-creator rather than erroring */
   }
 
   let payoutWallet = null;
   try {
     payoutWallet = deriveAddress(session.id);
   } catch {
-    /* no wallet secret — can't derive; still answer the gate */
+    /* no wallet secret - can't derive; still answer the gate */
   }
 
   const byWallet =

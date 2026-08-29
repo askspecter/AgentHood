@@ -38,7 +38,7 @@ function textConfig() {
 const SPECS = {
   name: (c) => ({
     system:
-      "You invent original names for a crypto coin that is also a character. The name must feel brand-new and coined — NOT an existing brand, company, person, place, ticker, or a common dictionary phrase. Cool, punchy, easy to say. Randomly either a single invented word (e.g. 'Zynth', 'Novaeth', 'Kryll', 'Obsyd') or two words (e.g. 'Neon Vane', 'Iron Halo', 'Velvet Dusk'). Vary the length and the vibe each time. Return ONLY the name — no quotes, no ticker, no explanation.",
+      "You invent original names for a crypto coin that is also a character. The name must feel brand-new and coined - NOT an existing brand, company, person, place, ticker, or a common dictionary phrase. Cool, punchy, easy to say. Randomly either a single invented word (e.g. 'Zynth', 'Novaeth', 'Kryll', 'Obsyd') or two words (e.g. 'Neon Vane', 'Iron Halo', 'Velvet Dusk'). Vary the length and the vibe each time. Return ONLY the name - no quotes, no ticker, no explanation.",
     user: `Invent one original, never-before-used coin-character name${c.hint ? ` with a ${c.hint} feel` : ""}.`,
     max_tokens: 16,
   }),
@@ -87,7 +87,7 @@ function parseList(text) {
     const arr = JSON.parse(t);
     if (Array.isArray(arr)) return arr.map(stripQuotes).filter(Boolean);
   } catch {
-    /* not JSON — fall through to line/comma splitting */
+    /* not JSON - fall through to line/comma splitting */
   }
   return t
     .replace(/^\s*[\[\]]\s*$/gm, "")

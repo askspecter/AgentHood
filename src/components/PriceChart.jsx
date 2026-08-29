@@ -7,7 +7,7 @@ export default function PriceChart({ seed = [], live, up = true, height = 220 })
   const width = 640
 
   useEffect(() => {
-    // Only append a real, finite live price — a 0/undefined tick would flatten
+    // Only append a real, finite live price - a 0/undefined tick would flatten
     // or break (NaN path → invisible) the whole line.
     if (!Number.isFinite(live) || live <= 0) return
     setSeries((s) => [...s, live].slice(-60))
@@ -28,7 +28,7 @@ export default function PriceChart({ seed = [], live, up = true, height = 220 })
   // Center the band around the series midpoint so a gentle line sits mid-height.
   const pts = data.map((v, i) => [i * step, height / 2 - ((v - mid) / range) * (height - 28)])
   const d = pts.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ')
-  // AURN glow — a luminous cold-white line (no red/green), lit by a soft blue
+  // AURN glow - a luminous cold-white line (no red/green), lit by a soft blue
   // halo, regardless of the 24h direction.
   const line = '#eaf1ff'
   const halo = '#9fb8e2'

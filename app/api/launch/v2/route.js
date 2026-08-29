@@ -14,7 +14,7 @@ import {
 import { getSession } from "@/lib/session";
 
 /**
- * POST /api/launch/v2 — launch a token on pons v2, signed with the caller's X wallet.
+ * POST /api/launch/v2 - launch a token on pons v2, signed with the caller's X wallet.
  *
  * The whole v2 launch is done server-side so it's always correct:
  *  • the launch config is chosen from the factory's open list (freshest terms),
@@ -58,7 +58,7 @@ export async function POST(request) {
   }
   if (!session) {
     return NextResponse.json(
-      { error: "Sign in with X first — the launch is signed with your X wallet." },
+      { error: "Sign in with X first - the launch is signed with your X wallet." },
       { status: 401 }
     );
   }
@@ -85,7 +85,7 @@ export async function POST(request) {
   const cfg = v2Config(chain);
   const factory = new Contract(cfg.factory, FACTORY_ABI, signer);
 
-  // Fee routing (server-controlled). Default: the creator keeps 100% — their own
+  // Fee routing (server-controlled). Default: the creator keeps 100% - their own
   // wallet is the recipient. Set PONS_V2_FEE_RECIPIENT (an AURN splitter/wallet)
   // and PONS_V2_CREATOR_TAX_BPS to route a protocol/buyback cut later.
   let creatorFeeRecipient = owner;
@@ -100,7 +100,7 @@ export async function POST(request) {
     // No pre-flight whitelist gate: launchEnabled()/whitelistedLaunchers() can
     // read false even when this wallet can actually launch (their semantics vary
     // by deployment), which wrongly blocked real launches. The launchToken
-    // dry-run below is the authoritative, free check — if the launch would truly
+    // dry-run below is the authoritative, free check - if the launch would truly
     // revert (e.g. genuinely not whitelisted), it returns the contract's own
     // reason; if it would succeed, it proceeds.
 
@@ -131,21 +131,21 @@ export async function POST(request) {
       );
     }
 
-    // Dry-run first — a revert here costs nothing and returns a clean message.
+    // Dry-run first - a revert here costs nothing and returns a clean message.
     try {
       await factory.launchToken.staticCall(params, launchConfigId, pairToken, { value: fee });
     } catch (error) {
       const reason = error.shortMessage || error.reason || error.message || "";
       if (/NotWhitelisted/i.test(reason)) {
         return NextResponse.json(
-          { error: "Launching is still limited to approved wallets. Your wallet isn't approved yet — try again once launches open publicly." },
+          { error: "Launching is still limited to approved wallets. Your wallet isn't approved yet - try again once launches open publicly." },
           { status: 403 }
         );
       }
       return NextResponse.json(
         {
           error: `Simulation reverted, so nothing was sent: ${reason}`,
-          hint: "The factory rejected these terms. This is often the economics pin moving — try again.",
+          hint: "The factory rejected these terms. This is often the economics pin moving - try again.",
         },
         { status: 400 }
       );

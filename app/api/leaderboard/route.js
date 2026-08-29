@@ -6,12 +6,12 @@ import { topTraders, topReferrers } from "@/lib/stats";
 /**
  * GET /api/leaderboard?network=robinhood&board=creator|volume|referral
  *
- * All three boards are built from real, AURN-native activity — nothing invented:
- *  • creator  — every coin launched through AURN is priced live and grouped by
+ * All three boards are built from real, AURN-native activity - nothing invented:
+ *  • creator  - every coin launched through AURN is priced live and grouped by
  *               the X account that launched it, ranked by total market cap.
- *  • volume   — cumulative WETH-denominated trade size per trader, recorded at
+ *  • volume   - cumulative WETH-denominated trade size per trader, recorded at
  *               the trade endpoint as swaps settle.
- *  • referral — sign-ins through a ?ref= link, credited to the referrer once per
+ *  • referral - sign-ins through a ?ref= link, credited to the referrer once per
  *               new account.
  * A board simply stays empty (the UI shows "warming up") until it has data.
  */
@@ -50,12 +50,12 @@ async function creatorBoard(chain, network) {
   const rate = await getEthUsd().catch(() => null);
 
   // Price each launched-here coin (bounded concurrency, time-boxed) and read its
-  // USD market cap — on-chain first, explorer as the fallback.
+  // USD market cap - on-chain first, explorer as the fallback.
   const start = Date.now();
   const priced = [];
   const CONC = 4;
   // Hard cap well under Vercel's function limit so the request always returns
-  // quickly with whatever it priced — rather than hanging until it's killed,
+  // quickly with whatever it priced - rather than hanging until it's killed,
   // which leaves the board stuck on skeletons.
   for (let i = 0; i < entries.length; i += CONC) {
     if (Date.now() - start > 3500) break;
@@ -129,7 +129,7 @@ export async function GET(request) {
   }
 
   // Whether durable storage is connected. When false, every board relies on an
-  // in-memory fallback that resets on each serverless cold start — so the boards
+  // in-memory fallback that resets on each serverless cold start - so the boards
   // look permanently empty. Surfaced so the UI can say "storage not connected"
   // instead of the misleading "warming up".
   const kv = Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);

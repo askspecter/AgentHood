@@ -9,7 +9,7 @@ import { resolveTokenLogo, proxifyLogo } from "@/lib/tokenLogo";
  *
  * The balance is the first thing the app reads on every load and every Profile
  * refresh, and a public RPC's getBalance is slow. A few seconds of caching makes
- * the second read instant without ever showing a stale figure for long — the
+ * the second read instant without ever showing a stale figure for long - the
  * balance only moves when the user trades or sends, both of which take longer
  * than this TTL to confirm anyway.
  */
@@ -20,8 +20,8 @@ const BALANCE_TTL_MS = Number(process.env.WALLET_BALANCE_TTL_MS || 12_000);
  * Hard cap on any single RPC read. The public Robinhood RPC rate-limits and can
  * hang; without a cap the whole function waits until Vercel's timeout and
  * returns a 5xx (the "/api/wallet function timeouts" anomaly). With it, a slow
- * RPC becomes a fast, graceful response — the last known balance, or a clean
- * note — never a crash.
+ * RPC becomes a fast, graceful response - the last known balance, or a clean
+ * note - never a crash.
  */
 const RPC_TIMEOUT_MS = Number(process.env.WALLET_RPC_TIMEOUT_MS || 6000);
 
@@ -38,7 +38,7 @@ function raceTimeout(promise, ms) {
  *
  * The signed-in user's X-derived wallet: address and native balance. Pass a
  * `token` to also get that token's balance, which is what the Trade panel shows
- * next to the amount field. The private key is never included here — that
+ * next to the amount field. The private key is never included here - that
  * requires the explicit export endpoint.
  */
 export async function GET(request) {
@@ -103,7 +103,7 @@ export async function GET(request) {
       // Serve the last known balance if we have one, rather than nothing.
       return {
         value: cached ? cached.value : null,
-        error: `Could not read the balance right now — the network node is busy. ${error.message}`,
+        error: `Could not read the balance right now - the network node is busy. ${error.message}`,
       };
     }
   })();

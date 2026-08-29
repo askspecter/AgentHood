@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import { Back, XLogo, Gift, Share } from '../components/icons'
 
 /**
- * Referral code — your personal invite.
+ * Referral code - your personal invite.
  *
  * The code is drawn from your wallet address, so it's unique to you, and the
  * link carries it as ?ref= for whoever you share it with. When they connect a
@@ -41,7 +41,7 @@ export default function Referral() {
   }
 
   const share = async () => {
-    const text = `Trade agents on AURN — real coins on Robinhood Chain. Join with my code ${code}:`
+    const text = `Trade agents on AURN - real coins on Robinhood Chain. Join with my code ${code}:`
     if (navigator.share) {
       try { await navigator.share({ title: 'AURN', text, url: link }) } catch {}
     } else {

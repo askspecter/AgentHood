@@ -11,7 +11,7 @@ const NETWORK = 'robinhood'
  * Non-custodial trading across every Pons venue. Pricing comes from /api/quote
  * (v3 pool · v4 · bonding curve), and execution is built by /api/terminal/build
  * as an ordered list of unsigned steps (approvals + swap) that the connected
- * wallet signs in turn via wagmi — no server key, the user's own wallet signs.
+ * wallet signs in turn via wagmi - no server key, the user's own wallet signs.
  */
 export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bare = false, onDone }) {
   const { connect } = useStore()
@@ -88,7 +88,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bar
       }
       if (chainId !== robinhoodChain.id) {
         try { await switchChainAsync({ chainId: robinhoodChain.id }) }
-        catch { throw new Error(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) — an EVM chain, not Solana — then try again.`) }
+        catch { throw new Error(`Switch your wallet to ${robinhoodChain.name} (chain ${robinhoodChain.id}) - an EVM chain, not Solana - then try again.`) }
       }
 
       // Ask the server to build the ordered, unsigned steps for this venue.
@@ -100,7 +100,7 @@ export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bar
       const plan = await bres.json()
       if (!bres.ok || !plan.steps?.length) throw new Error(plan.hint ? `${plan.error} ${plan.hint}` : plan.error || 'Could not build this trade.')
 
-      // Sign each step in order — approvals first, swap last.
+      // Sign each step in order - approvals first, swap last.
       let last
       for (let i = 0; i < plan.steps.length; i++) {
         const st = plan.steps[i]
@@ -150,9 +150,9 @@ export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bar
       </button>
 
       {status === 'done' && txHash && (
-        <a className="mt-2 block text-xs text-center underline text-[var(--color-ink-soft)]" href={explorerTx(txHash)} target="_blank" rel="noreferrer">Trade sent — view on explorer ↗</a>
+        <a className="mt-2 block text-xs text-center underline text-[var(--color-ink-soft)]" href={explorerTx(txHash)} target="_blank" rel="noreferrer">Trade sent - view on explorer ↗</a>
       )}
-      {side === 'sell' && <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">A pool sell settles in WETH — unwrap to ETH in your wallet.</p>}
+      {side === 'sell' && <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">A pool sell settles in WETH - unwrap to ETH in your wallet.</p>}
       {error && <p className="mt-2 whitespace-pre-wrap text-xs text-[var(--color-down)]">{error}</p>}
     </section>
   )

@@ -14,7 +14,7 @@ interface IERC20 {
  *
  * Anyone can lock a token they hold until a chosen unlock time; the tokens sit in
  * this contract and can only be withdrawn by the lock's owner, and only once the
- * unlock time has passed. AURN never holds a key — every lock/unlock is signed by
+ * unlock time has passed. AURN never holds a key - every lock/unlock is signed by
  * the owner's own wallet. Every lock is readable by anyone through the view
  * functions below (no wallet required), so the list of locked tokens is public.
  */
@@ -91,7 +91,7 @@ contract AurnLocker {
     }
 
     // ------------------------------------------------------------------
-    // Public views — callable by anyone, no wallet needed.
+    // Public views - callable by anyone, no wallet needed.
     // ------------------------------------------------------------------
 
     function locksCount() external view returns (uint256) {
@@ -123,7 +123,7 @@ contract AurnLocker {
     }
 
     // ------------------------------------------------------------------
-    // Safe transfers — tolerate ERC-20s that return no value / return false.
+    // Safe transfers - tolerate ERC-20s that return no value / return false.
     // ------------------------------------------------------------------
 
     function _safeTransfer(address token, address to, uint256 value) internal {

@@ -16,7 +16,7 @@ const hits = new Map();
 const WINDOW_MS = 60_000;
 
 /**
- * Anyone may audit — the check is read-only and costs nothing to run, so gating
+ * Anyone may audit - the check is read-only and costs nothing to run, so gating
  * it behind sign-in would only make the tool useless to the person who most
  * needs it: someone about to buy a token they have not checked. Signing in with
  * X simply raises the ceiling.
@@ -53,7 +53,7 @@ export async function POST(request) {
   try {
     session = await getSession();
   } catch {
-    // A missing or bad SESSION_SECRET must not take the auditor down with it —
+    // A missing or bad SESSION_SECRET must not take the auditor down with it -
     // sign-in is an extra here, not a prerequisite. Continue as anonymous.
     session = null;
   }
@@ -64,7 +64,7 @@ export async function POST(request) {
   if (rateLimited(key, max)) {
     return NextResponse.json(
       {
-        error: `Slow down — max ${max} audits per minute.`,
+        error: `Slow down - max ${max} audits per minute.`,
         hint: session ? undefined : "Signing in with X raises the limit.",
       },
       { status: 429 }

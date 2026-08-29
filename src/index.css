@@ -12,7 +12,7 @@
   --font-serif: "Instrument Serif", ui-serif, Georgia, serif;
   --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 
-  /* AURN — glacial noir. A near-black, cool-blue field lit by a single cold
+  /* AURN - glacial noir. A near-black, cool-blue field lit by a single cold
      white glow, like light through frosted glass. No warm hues anywhere. */
   --color-paper: #06070d;
   --color-paper-2: rgba(198,214,255,0.06);
@@ -30,7 +30,7 @@
   --color-down-soft: rgba(255,138,160,0.14);
 }
 
-/* the one cold-metal spectrum every effect on the page is cut from — silver,
+/* the one cold-metal spectrum every effect on the page is cut from - silver,
    white and pale blue, the sheen of the frosted logo */
 :root {
   --holo: conic-gradient(from var(--holo-a, 0deg),
@@ -104,7 +104,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-/* drifting cold aurora — a single glacial glow high on the field, echoed faintly
+/* drifting cold aurora - a single glacial glow high on the field, echoed faintly
    below, the way the light sits in the cover art. Deep, quiet, alive. */
 body::before {
   content: "";
@@ -119,7 +119,7 @@ body::before {
   opacity: var(--aurora-opacity);
   animation: auroraDrift 26s ease-in-out infinite alternate;
 }
-/* whole-page film grain — a faint frosted-glass texture */
+/* whole-page film grain - a faint frosted-glass texture */
 body::after {
   content: "";
   position: fixed; inset: 0;
@@ -192,7 +192,7 @@ body::after {
   transform: translateX(-140%); animation: sheenSweep 4.2s ease-in-out 1.2s infinite;
 }
 .btn-holo:hover { box-shadow: 0 16px 52px -8px rgba(170,200,245,0.75), inset 0 1px 0 rgba(255,255,255,0.75); }
-/* calm variant for dense grids — same skin, no shimmer sweep */
+/* calm variant for dense grids - same skin, no shimmer sweep */
 .btn-holo.static { animation: none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 8px 24px -12px rgba(160,190,240,0.5); }
 .btn-holo.static::after { display: none; }
 
@@ -208,7 +208,7 @@ body::after {
   position: relative;
   /* An opaque dark base under the sheen replaces the old backdrop-filter blur.
      backdrop-filter re-samples and blurs the page behind every card on every
-     scroll frame — with a full feed grid that is what made fast scrolling stutter.
+     scroll frame - with a full feed grid that is what made fast scrolling stutter.
      On this near-black theme the frosted look reads the same without it, so the
      feed now scrolls at full frame rate. The sticky header keeps its own blur
      (a single element, where translucency actually matters). */
@@ -298,10 +298,10 @@ body::after {
 @keyframes spinSlow { to { transform: rotate(360deg) } }
 .spin-slow { animation: spinSlow 40s linear infinite; }
 
-/* chat typing indicator — three dots the agent shows while it's thinking */
+/* chat typing indicator - three dots the agent shows while it's thinking */
 @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); opacity: .45 } 30% { transform: translateY(-4px); opacity: 1 } }
 .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-ink-soft); display: inline-block; animation: typingBounce 1.1s ease-in-out infinite; }
-/* streaming caret — blinks at the end of a reply while it types out */
+/* streaming caret - blinks at the end of a reply while it types out */
 .stream-caret { display: inline-block; width: 2px; height: 1em; margin-left: 2px; vertical-align: -0.15em; background: var(--color-ink-soft); animation: blink 1s step-end infinite; }
 
 /* 3D tilt helpers */

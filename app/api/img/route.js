@@ -10,7 +10,7 @@ import { NextResponse } from "next/server";
  * so the browser's <img> errors and the UI falls back to a placeholder. This
  * route fetches the image server-side (where those gateways are reachable),
  * shrinks it to a small WebP, and serves it from this origin with a long
- * immutable cache — so the client only ever loads a light, same-origin image.
+ * immutable cache - so the client only ever loads a light, same-origin image.
  *
  * Only http(s) and ipfs sources are allowed, obvious internal hosts are blocked,
  * and the output is always re-encoded to an image, so it can't be used as an

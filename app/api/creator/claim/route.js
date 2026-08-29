@@ -31,8 +31,8 @@ import { resolveLaunch, v2Config, ESCROW_ABI } from "@/lib/engine/ponsV2";
  * wallet at both launch and claim). When the split is on, AURN re-splits that
  * 70% AFTER it has landed: it skims 10/70 to the AURN ops wallet, leaving the
  * creator 60/70. (Any burn is done manually from the ops wallet, not here.)
- * Skimming after the claim — out of the creator's own wallet, which the server
- * custodially controls — means the creator's 60% never leaves their control, and
+ * Skimming after the claim - out of the creator's own wallet, which the server
+ * custodially controls - means the creator's 60% never leaves their control, and
  * if the skim fails the creator simply keeps that slice (AURN under-collects;
  * nobody is underpaid or stranded). Native ETH is never skimmed: the claim's gas
  * is paid in ETH, so an ETH balance delta is ambiguous. Only the token and WETH
@@ -75,7 +75,7 @@ async function transferSlice({ provider, signer, from, asset, to, amount, label,
   }
   // Broadcast with an explicit nonce and return the moment it's accepted. The
   // dry-run already proved it succeeds and this L2 confirms in a fraction of a
-  // second, so we do NOT block the claim response waiting for the receipt —
+  // second, so we do NOT block the claim response waiting for the receipt -
   // that receipt wait was the whole delay. A flaky confirmation read can't
   // false-fail it either, because we never read the receipt here.
   try {
@@ -143,12 +143,12 @@ async function skimAurnSplit({ chain, xUserId, wallet, token, weth, received }) 
     return { status: "config-error", detail: error?.message };
   }
   // Where the buyback WETH accumulates (server-controlled). Absent if wallets
-  // aren't configured — then AURN's whole cut just goes to ops.
+  // aren't configured - then AURN's whole cut just goes to ops.
   let buybackTo = null;
   try {
     buybackTo = getAddress(deriveAddress(BUYBACK_ID));
   } catch {
-    /* no buyback reserve — fall back to ops-only below */
+    /* no buyback reserve - fall back to ops-only below */
   }
 
   const signer = deriveSigner(xUserId, chain);
@@ -160,7 +160,7 @@ async function skimAurnSplit({ chain, xUserId, wallet, token, weth, received }) 
   ];
 
   // Hand out nonces from one line so the two transfers broadcast back-to-back
-  // without waiting for each to mine — advance only when a broadcast succeeds so
+  // without waiting for each to mine - advance only when a broadcast succeeds so
   // a failed slice never leaves a nonce gap that strands the next one.
   let nonce;
   try {
@@ -229,7 +229,7 @@ export async function POST(request) {
     const key = token.toLowerCase();
     entry = (reg.entries || []).find((e) => String(e.token).toLowerCase() === key) || null;
   } catch {
-    /* fall through — treated as not-creator below */
+    /* fall through - treated as not-creator below */
   }
   let wallet = null;
   try {
@@ -246,7 +246,7 @@ export async function POST(request) {
 
   // pons v2: fees accrue to the shared escrow and are withdrawn with claim()
   // (native) / claimToken(asset) (custom pair). Recipients claim their whole
-  // credited balance at once — there's no per-token claim on the escrow.
+  // credited balance at once - there's no per-token claim on the escrow.
   try {
     const provider = rpcProvider(chain);
     const launch = await resolveLaunch(provider, chain, token);
@@ -299,7 +299,7 @@ export async function POST(request) {
   }
   if (!claimFn) {
     return NextResponse.json(
-      { error: "This locker exposes no automatic claim — fees may accrue directly to your wallet, or need the Pons app to collect." },
+      { error: "This locker exposes no automatic claim - fees may accrue directly to your wallet, or need the Pons app to collect." },
       { status: 501 }
     );
   }
@@ -312,7 +312,7 @@ export async function POST(request) {
   const provider = rpcProvider(chain);
 
   // The AURN split skims a slice of what the claim credits the creator's wallet,
-  // so read the baseline BEFORE claiming — with retries, so a transient RPC blip
+  // so read the baseline BEFORE claiming - with retries, so a transient RPC blip
   // can't silently disable the split. If it genuinely can't be read, refuse to
   // claim yet (fail closed) rather than pay the creator their full 70% and leave
   // AURN's slice stranded with no way to recover it.
@@ -328,7 +328,7 @@ export async function POST(request) {
     } catch {
       return NextResponse.json(
         {
-          error: "The network is busy, so the AURN split couldn't be prepared. Nothing was claimed — try again in a moment.",
+          error: "The network is busy, so the AURN split couldn't be prepared. Nothing was claimed - try again in a moment.",
           retryable: true,
         },
         { status: 503 }
@@ -343,7 +343,7 @@ export async function POST(request) {
     const reason = error?.shortMessage || error?.reason || error?.message || "the claim would revert";
     return NextResponse.json(
       {
-        error: "No fees to claim yet — creator fees build up as your coin is traded. Check back once there's some volume.",
+        error: "No fees to claim yet - creator fees build up as your coin is traded. Check back once there's some volume.",
         detail: reason,
       },
       { status: 400 }
@@ -363,7 +363,7 @@ export async function POST(request) {
 
   // Skim AURN's 10% once the fees have landed (AURN_FEE_SPLIT=on only). Poll for
   // the credited amount first to beat read-after-write lag. Best effort: the
-  // claim already paid the creator, so a skim problem never fails it — it's
+  // claim already paid the creator, so a skim problem never fails it - it's
   // reported as pending so the UI can show it plainly instead of hiding it.
   let distribution = null;
   if (doSplit && before) {

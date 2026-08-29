@@ -1,7 +1,7 @@
 /**
  * Deploy AurnLocker to Robinhood Chain.
  *
- * Usage (with a funded deployer wallet — the key never leaves your machine):
+ * Usage (with a funded deployer wallet - the key never leaves your machine):
  *   PRIVATE_KEY=0xYOUR_KEY node scripts/deploy-locker.mjs
  *
  * Optional env:

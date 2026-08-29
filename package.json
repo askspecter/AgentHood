@@ -2,7 +2,7 @@
   "name": "aurn",
   "private": true,
   "version": "1.0.0",
-  "description": "AURN — characters worth owning. A Next.js app with real X sign-in and on-chain launch/trade on Robinhood Chain.",
+  "description": "AURN - characters worth owning. A Next.js app with real X sign-in and on-chain launch/trade on Robinhood Chain.",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",

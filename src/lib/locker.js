@@ -1,7 +1,7 @@
 import { parseAbi } from 'viem'
 
 /**
- * AurnLocker — the on-chain token time-lock (contracts/AurnLocker.sol).
+ * AurnLocker - the on-chain token time-lock (contracts/AurnLocker.sol).
  *
  * Set NEXT_PUBLIC_LOCKER_ADDRESS to the deployed address to turn the Locked page
  * on-chain. Until then LOCKER_ADDRESS is empty and the page shows a clear

@@ -10,7 +10,7 @@ name: Deploy Locker
 #   3. Copy the printed address from the logs
 #   4. Set NEXT_PUBLIC_LOCKER_ADDRESS=<that address> in Vercel and redeploy
 #
-# The key stays a GitHub secret — it is never printed and never leaves CI.
+# The key stays a GitHub secret - it is never printed and never leaves CI.
 
 on:
   workflow_dispatch:

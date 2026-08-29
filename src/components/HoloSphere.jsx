@@ -4,7 +4,7 @@ import HoloOrb from './HoloOrb'
 /**
  * A real 3D holographic sphere rendered with WebGL.
  * The surface normal is reconstructed per-pixel, lit, and given a pastel
- * iridescent skin whose colour bands rotate around the ball over time —
+ * iridescent skin whose colour bands rotate around the ball over time -
  * so it reads as an actual spinning 3D orb, not a flat disc.
  * Fluid: the canvas fills its container (never wider than the viewport) and
  * the backing store follows the measured size. Reacts to the pointer,

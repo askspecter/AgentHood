@@ -5,14 +5,14 @@ import { v1LockerAbi } from '../lib/pons/abis'
 import { robinhoodChain, explorerTx } from '../lib/chain'
 
 /**
- * Creator fees — non-custodial. Pool fees accrue to the permanent liquidity
+ * Creator fees - non-custodial. Pool fees accrue to the permanent liquidity
  * position; the creator claims their share by signing collectFees on the v1
  * locker with their OWN wallet (no server key). The panel shows only to the
  * wallet that launched this coin (the deployer or the fee-redirect wallet).
  */
 const NETWORK = 'robinhood'
 const eq = (a, b) => !!a && !!b && a.toLowerCase() === b.toLowerCase()
-const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '-')
 const fmtAmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 4 : 8 })
 const fmtUsd = (n) => (n == null ? null : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 4 }))
 

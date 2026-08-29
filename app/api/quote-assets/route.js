@@ -23,7 +23,7 @@ export async function GET(request) {
     for (const t of dir?.tokens || []) {
       if (t?.token) byAddr.set(t.token.toLowerCase(), t);
     }
-  } catch { /* directory unavailable — logos just fall back to a letter tile */ }
+  } catch { /* directory unavailable - logos just fall back to a letter tile */ }
 
   const assets = V2_QUOTE_TOKENS.map((q) => {
     const hit = byAddr.get(q.address.toLowerCase());

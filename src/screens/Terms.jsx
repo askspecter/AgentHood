@@ -9,7 +9,7 @@ export default function Terms() {
     >
       <Sec n={1} title="What AURN is">
         <p>AURN is an interface to a decentralized token protocol on Robinhood Chain. Through AURN you can discover coins, view live on-chain market data, launch a coin, and swap coins that live in public liquidity pools. AURN is a front-end: the trades, launches, and balances you see are settled by smart contracts on a public blockchain, not by us.</p>
-        <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We never take custody of your funds — your self-custodial wallet always holds them — we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
+        <p>We do not operate a bank, broker-dealer, exchange, or money transmitter. We never take custody of your funds - your self-custodial wallet always holds them - we do not match orders, and we do not guarantee liquidity, price, or the availability of any market.</p>
       </Sec>
 
       <Sec n={2} title="Eligibility">
@@ -18,7 +18,7 @@ export default function Terms() {
       </Sec>
 
       <Sec n={3} title="Connecting your wallet">
-        <p>You connect your own self-custodial wallet — such as MetaMask, Rainbow, or any WalletConnect-compatible wallet. We never create, hold, or have access to your wallet or its private keys. Every transaction is signed inside your wallet, by you; we only prepare the transaction for you to review and approve.</p>
+        <p>You connect your own self-custodial wallet - such as MetaMask, Rainbow, or any WalletConnect-compatible wallet. We never create, hold, or have access to your wallet or its private keys. Every transaction is signed inside your wallet, by you; we only prepare the transaction for you to review and approve.</p>
         <UL items={[
           'You are solely responsible for safeguarding your wallet, its seed phrase, and its private keys. We cannot recover them, reset them, or move your funds if you lose access.',
           'You are solely responsible for all activity that occurs through your connected wallet.',

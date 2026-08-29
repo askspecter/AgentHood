@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 /**
  * GET /api/card/coin?symbol=LONG&name=Long&mcap=2100000&change=12.4&official=1
  *
- * A branded 1200x630 share card for a coin — the image that unfurls when a coin
+ * A branded 1200x630 share card for a coin - the image that unfurls when a coin
  * link is posted on X. The client passes the coin's real numbers as query params
  * (it already has them), so the card is a fast pure render with no on-chain read.
  * All fields are optional; the card degrades gracefully.
@@ -22,7 +22,7 @@ const money = (n) => {
 
 /**
  * When only a token address is known (a link unfurling on X), fill the card from
- * the block explorer's token index — one fast, time-boxed call, best-effort.
+ * the block explorer's token index - one fast, time-boxed call, best-effort.
  */
 async function resolveFromToken(token) {
   const explorer = (process.env.ROBINHOOD_EXPLORER || "https://robinhoodchain.blockscout.com").replace(/\/+$/, "");

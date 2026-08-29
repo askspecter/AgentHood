@@ -7,7 +7,7 @@ import WalletActions from '../components/WalletActions'
 import { primeHoldings, cachedHoldings } from '../lib/holdings'
 
 /**
- * Portfolio — real, on-chain.
+ * Portfolio - real, on-chain.
  *
  * Everything here is read from your connected wallet: the ETH balance and every
  * coin it holds, priced live. The `portfolio` command's own
@@ -18,18 +18,18 @@ import { primeHoldings, cachedHoldings } from '../lib/holdings'
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 
-/** Never show a raw RPC/SSL stack trace — translate it to something a human reads. */
+/** Never show a raw RPC/SSL stack trace - translate it to something a human reads. */
 function friendly(msg) {
   const s = String(msg || '')
   if (/SSL|EPROTO|handshake|allowlist|403|ECONN|ENOTFOUND|timeout|fetch|network|unreachable|502|server response/i.test(s)) {
-    return "Couldn't reach Robinhood Chain right now — the RPC is unavailable. Tap Refresh in a moment."
+    return "Couldn't reach Robinhood Chain right now - the RPC is unavailable. Tap Refresh in a moment."
   }
   return s
 }
 const fmtUsd = (n) =>
-  n == null ? '—' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })
+  n == null ? '-' : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: 2 })
 const fmtEth = (n) =>
-  n == null ? '—' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' ETH'
+  n == null ? '-' : Number(n).toLocaleString('en-US', { maximumFractionDigits: 6 }) + ' ETH'
 const fmtQty = (n) =>
   Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 6 })
 const fmtPct = (n) => (n == null ? null : `${n >= 0 ? '+' : ''}${n.toFixed(2)}%`)
@@ -50,7 +50,7 @@ export default function Profile() {
 
   const [folio, setFolio] = useState(null)
   // Holdings we already read (this or a previous session) paint instantly while
-  // the fresh scan runs — so the list never sits on "Reading your wallet…".
+  // the fresh scan runs - so the list never sits on "Reading your wallet…".
   const [seed] = useState(() => cachedHoldings())
   const [folioEthUsd, setFolioEthUsd] = useState(null)
   const [walletEth, setWalletEth] = useState(null)
@@ -63,7 +63,7 @@ export default function Profile() {
     if (!wallet) return
     setError(null)
 
-    // Fast path — the balance is one getBalance call and must paint immediately,
+    // Fast path - the balance is one getBalance call and must paint immediately,
     // not wait behind the heavy holdings scan (which times out on a public RPC).
     fetch(`/api/wallet?network=${NETWORK}`)
       .then((r) => (r.ok ? r.json() : null))
@@ -73,7 +73,7 @@ export default function Profile() {
       })
       .catch(() => {})
 
-    // Slower path — every coin the wallet holds, priced.
+    // Slower path - every coin the wallet holds, priced.
     setLoading(true)
     try {
       const res = await fetch('/api/terminal', {
@@ -144,7 +144,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* header — real X identity */}
+      {/* header - real X identity */}
       <div className="flex items-center gap-3 mb-6">
         {wallet.avatar ? (
           <img src={wallet.avatar} alt="" className="w-12 h-12 rounded-full object-cover border hairline shrink-0" />
@@ -166,7 +166,7 @@ export default function Profile() {
       <div className="card p-5 sm:p-6 mb-4">
         <div className="eyebrow mb-1">Total value</div>
         <div className="flex items-center flex-wrap gap-x-3 gap-y-1">
-          <div className="font-mono num text-3xl sm:text-4xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '—'}</div>
+          <div className="font-mono num text-3xl sm:text-4xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '-'}</div>
           {pnl && (
             <span className={`inline-flex items-baseline gap-1.5 chip !text-sm ${pnl.pct >= 0 ? 'chip-up' : 'chip-down'}`}>
               <span className="font-mono num font-semibold">{fmtPct(pnl.pct)}</span>
@@ -177,7 +177,7 @@ export default function Profile() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t hairline">
-          <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '—'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
+          <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '-'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
           <Mini label="Coins held" value={haveHoldings ? String(holdings.length) : (loading ? '…' : '0')} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
@@ -187,7 +187,7 @@ export default function Profile() {
         <Link to="/launch" className="btn btn-holo static w-full justify-center mt-2">Launch a coin</Link>
       </div>
 
-      {/* holdings — real coins in the wallet */}
+      {/* holdings - real coins in the wallet */}
       <div className="flex items-center justify-between mb-3">
         <div className="eyebrow">Holdings</div>
         <button onClick={load} disabled={loading} className="text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">{loading ? 'Reading…' : '↻ Refresh'}</button>
@@ -217,7 +217,7 @@ export default function Profile() {
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-mono num font-semibold">
-                    {valueUsd != null ? fmtUsd(valueUsd) : h.valueWeth != null ? fmtEth(h.valueWeth) : '—'}
+                    {valueUsd != null ? fmtUsd(valueUsd) : h.valueWeth != null ? fmtEth(h.valueWeth) : '-'}
                   </div>
                   {ch != null && (
                     <div className={`text-xs font-mono num ${ch >= 0 ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{fmtPct(ch)}</div>
@@ -230,7 +230,7 @@ export default function Profile() {
       )}
 
       <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">
-        Coins are discovered by scanning on-chain transfers to your wallet, then reading each balance — launches, stock tokens and airdrops alike. A position from before the scanned window can still be missing; tap Refresh to rescan.
+        Coins are discovered by scanning on-chain transfers to your wallet, then reading each balance - launches, stock tokens and airdrops alike. A position from before the scanned window can still be missing; tap Refresh to rescan.
       </p>
     </div>
   )

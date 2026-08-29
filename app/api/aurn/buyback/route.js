@@ -8,7 +8,7 @@ import { aurnToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/
  *
  * The collector wallet (derived from BUYBACK_ID, server-controlled) holds the
  * WETH earmarked from the AURN fee share. This swaps that WETH for $AURN through
- * the pons/Uniswap pool and sends the $AURN straight to the burn address — a real
+ * the pons/Uniswap pool and sends the $AURN straight to the burn address - a real
  * buy-and-burn in one path.
  *
  * ── SAFETY ──────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ import { aurnToken, DEAD, BUYBACK_ID, buybackEnabled, adminSecret } from "@/lib/
  *   • OFF unless AURN_BUYBACK=on.
  *   • POST must carry the AURN_ADMIN_SECRET, so it can't be triggered by anyone.
  *   • The swap is quoted, slippage-protected, and dry-run before it's sent.
- *   • The collector needs a little ETH for gas — fund the address from GET.
+ *   • The collector needs a little ETH for gas - fund the address from GET.
  * GET is safe and open: it reports the collector address, its WETH balance, and
  * whether buyback is enabled, so you can fund it and verify before flipping it on.
  */
@@ -165,7 +165,7 @@ export async function POST(request) {
     }
   }
   if (!data) {
-    return NextResponse.json({ error: "The buyback swap reverted in simulation — check liquidity, gas (collector needs ETH), and the pool." }, { status: 400 });
+    return NextResponse.json({ error: "The buyback swap reverted in simulation - check liquidity, gas (collector needs ETH), and the pool." }, { status: 400 });
   }
 
   try {

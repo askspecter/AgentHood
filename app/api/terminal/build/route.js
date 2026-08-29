@@ -22,14 +22,14 @@ import {
 } from "@/lib/engine/ponsV2";
 
 /**
- * POST /api/terminal/build — NON-CUSTODIAL trade builder.
+ * POST /api/terminal/build - NON-CUSTODIAL trade builder.
  *
  * The custodial /api/terminal/execute derived a wallet from the X session and
  * signed server-side. This route signs nothing: it resolves the token's venue
  * (WETH wrap · v2 curve · graduated/Pons Uniswap v4 · v1 Uniswap v3 pool) and
  * returns the ORDERED list of unsigned transactions {to, data, value}. The
- * caller's own wallet (wagmi) signs each step in turn — approvals first, swap
- * last — so the same multi-venue engine now works with RainbowKit.
+ * caller's own wallet (wagmi) signs each step in turn - approvals first, swap
+ * last - so the same multi-venue engine now works with RainbowKit.
  *
  * Nothing here spends funds; every address/router/fee is server config, and the
  * recipient is always the caller's own `owner`.

@@ -14,7 +14,7 @@ const SEED_AGENTS = SEED_TOKENS.map((t) => tokenToAgent(t, null))
 /**
  * The store blends the real X session with the real pons feed and local chat:
  *   • X session (from /api/auth/me + /api/wallet),
- *   • the pons launch feed as agents (from /api/launches) — real tokens only,
+ *   • the pons launch feed as agents (from /api/launches) - real tokens only,
  *     no demo cast,
  *   • chat transcripts (local, per token, in localStorage).
  */
@@ -55,11 +55,11 @@ export function StoreProvider({ children }) {
   const { data: balanceData } = useBalance({ address, query: { enabled: !!address, refetchInterval: 15000 } })
 
   const initFeed = typeof window === 'undefined' ? null : loadFeed()
-  // Cached feed if we have one, else the bundled seed — so the grid is never blank.
+  // Cached feed if we have one, else the bundled seed - so the grid is never blank.
   const [agents, setAgents] = useState(initFeed?.agents ?? SEED_AGENTS)
   const [ethUsd, setEthUsd] = useState(initFeed?.ethUsd ?? null)
   const [explorer, setExplorer] = useState(initFeed?.explorer ?? null)
-  // With a cached feed we show it immediately and refresh quietly — no skeletons.
+  // With a cached feed we show it immediately and refresh quietly - no skeletons.
   const [agentsLoading, setAgentsLoading] = useState(!initFeed)
 
   const [chats, setChats] = useState(() => (typeof window === 'undefined' ? {} : loadChats()))
@@ -114,7 +114,7 @@ export function StoreProvider({ children }) {
 
   // Real pons feed → agents. The discovery feed (/api/launches) plus the
   // launched-here registry (/api/registry), unioned so a coin launched on AURN
-  // always shows the moment it's recorded — even if the discovery feed missed it.
+  // always shows the moment it's recorded - even if the discovery feed missed it.
   const loadAgents = useCallback((fresh = false) => {
     setAgentsLoading(true)
     Promise.all([
@@ -129,12 +129,12 @@ export function StoreProvider({ children }) {
         }
         const seen = new Set()
         const agentsOut = []
-        // Registry (launched-here) first — most reliable for our own coins —
+        // Registry (launched-here) first - most reliable for our own coins -
         // then the discovery feed, de-duplicated by token.
         for (const t of [...(reg?.launches || []), ...(feed?.launches || [])]) {
           const key = (t.token || t.id || '').toLowerCase()
           if (!key || seen.has(key)) continue
-          // Skip a coin whose real name/symbol couldn't be read this cycle — it
+          // Skip a coin whose real name/symbol couldn't be read this cycle - it
           // would render as the "$TOKEN" placeholder. It comes back the moment its
           // symbol resolves. The official pin is always kept.
           if (!t.official && !t.symbol && !t.name) continue
@@ -145,7 +145,7 @@ export function StoreProvider({ children }) {
         // yet still appears, just lower down).
         agentsOut.sort((a, b) => (b.mcap || 0) - (a.mcap || 0))
         // Only trust the result when at least one endpoint actually answered.
-        // Then it's authoritative — including "no coins", which must clear the
+        // Then it's authoritative - including "no coins", which must clear the
         // grid and the cache, not leave a stale coin from a previous visit
         // showing forever. A total network failure keeps the last good cache.
         const answered = (feed && !feed.error) || (reg && !reg.error)
@@ -197,7 +197,7 @@ export function StoreProvider({ children }) {
   const sendMessage = useCallback((id, text) => {
     const agent = agentsById[id]
     const now = Date.now()
-    // The turns the model should see — before this new user line is added.
+    // The turns the model should see - before this new user line is added.
     const priorHistory = chats[id] ?? []
     setChats((c) => ({ ...c, [id]: [...(c[id] ?? []), { role: 'user', text, ts: now }] }))
     if (!agent) return
@@ -221,7 +221,7 @@ export function StoreProvider({ children }) {
       const next = list.slice(); next[i] = msg; return { ...c, [id]: next }
     })
 
-    // Talk to the live agent — a real model that speaks as the coin and knows its
+    // Talk to the live agent - a real model that speaks as the coin and knows its
     // numbers, streamed so it types out live. Fall back to the built-in local
     // flavour whenever AI isn't configured or the request fails, so chat always
     // answers.

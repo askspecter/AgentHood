@@ -10,14 +10,14 @@ export default function Privacy() {
       <Sec n={1} title="A quick summary">
         <UL items={[
           'You connect your own self-custodial wallet. We never see or store its private keys, and we do not ask you to sign in with a social account.',
-          'Your wallet address and its balances and activity are public on the blockchain — that is inherent to how blockchains work, not something we publish.',
+          'Your wallet address and its balances and activity are public on the blockchain - that is inherent to how blockchains work, not something we publish.',
           'Your chats with a coin, your theme choice, and any name/photo you set in Edit profile are stored on your own device, not on our servers.',
           'We do not sell your personal information.',
         ]} />
       </Sec>
 
       <Sec n={2} title="Information we collect">
-        <p><strong className="text-[var(--color-ink)]">From your wallet.</strong> When you connect a wallet, we receive its public address. That is all a wallet connection shares — we never receive your seed phrase or private keys, and we cannot move your funds.</p>
+        <p><strong className="text-[var(--color-ink)]">From your wallet.</strong> When you connect a wallet, we receive its public address. That is all a wallet connection shares - we never receive your seed phrase or private keys, and we cannot move your funds.</p>
         <p><strong className="text-[var(--color-ink)]">Wallet and on-chain data.</strong> We read public blockchain data for your connected address to show your balance, holdings, and the coins in the feed. Everything on a public blockchain is, by design, visible to anyone.</p>
         <p><strong className="text-[var(--color-ink)]">Technical data.</strong> Like most websites, our hosting provider may automatically log basic technical information such as IP address, browser type, and timestamps to keep the Service running and secure.</p>
         <p><strong className="text-[var(--color-ink)]">Stored on your device.</strong> Your chat transcripts, appearance preference, referral view, and profile edits (display name and photo) are saved in your browser’s local storage and never leave your device unless you clear or move them.</p>
@@ -25,7 +25,7 @@ export default function Privacy() {
 
       <Sec n={3} title="What we do not collect">
         <UL items={[
-          'We never receive your wallet’s seed phrase or private keys — they never leave your wallet.',
+          'We never receive your wallet’s seed phrase or private keys - they never leave your wallet.',
           'We do not store any key that could move your funds. Every transaction is signed inside your own wallet, by you.',
           'We do not ask for your legal name, address, or government ID to browse or trade.',
         ]} />
@@ -73,7 +73,7 @@ export default function Privacy() {
         <UL items={[
           'You can disconnect your wallet at any time from Settings or from your wallet app.',
           'You can clear your on-device data (chats, preferences, profile edits) by clearing your browser storage.',
-          'Depending on where you live, you may have rights to access, correct, or delete the limited personal data we hold — contact us to make a request.',
+          'Depending on where you live, you may have rights to access, correct, or delete the limited personal data we hold - contact us to make a request.',
         ]} />
       </Sec>
 

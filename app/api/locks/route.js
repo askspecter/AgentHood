@@ -7,7 +7,7 @@ import { resolveTokenLogo, proxifyLogo } from "@/lib/tokenLogo";
  * GET /api/locks?network=robinhood[&owner=0x..]
  *
  * The public token-lock registry, read straight from the AurnLocker contract.
- * No wallet needed — anyone can see the list of locked tokens. Returns the most
+ * No wallet needed - anyone can see the list of locked tokens. Returns the most
  * recent locks with their token metadata, amount, and unlock time. Pass `owner`
  * to get just that wallet's locks.
  */

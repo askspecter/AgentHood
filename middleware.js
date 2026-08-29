@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
  *
  * docs.aurn.fun points at this same Vercel project, so by default it would show
  * the app. This rewrites any request on a `docs.` host to the static docs page
- * (public/docs.html) — the page is fully self-contained (inline CSS/JS, embedded
+ * (public/docs.html) - the page is fully self-contained (inline CSS/JS, embedded
  * fonts), so a single rewrite covers every path. The main domain is untouched.
  */
 export function middleware(request) {

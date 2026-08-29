@@ -13,7 +13,7 @@ import { DURATIONS, getLocks, addLock, removeLock, fmtCountdown, fmtDate } from 
  * Settings → Locked. Lock supply of a token you hold on Robinhood Chain for a
  * fixed term. When the AurnLocker contract is deployed (NEXT_PUBLIC_LOCKER_ADDRESS),
  * locks are real on-chain time-locks signed by your own wallet, and the list of
- * locked tokens is public — anyone can see it without connecting a wallet.
+ * locked tokens is public - anyone can see it without connecting a wallet.
  */
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
@@ -107,7 +107,7 @@ export default function Locked() {
     if (sel.balance != null && amt > Number(sel.balance) + 1e-9) return setError(`You only hold ${sel.balance} ${sel.symbol}.`)
     const d = DURATIONS.find((x) => x.key === dur) || DURATIONS[3]
 
-    // Fallback: no contract deployed yet — record locally so the flow still works.
+    // Fallback: no contract deployed yet - record locally so the flow still works.
     if (!lockerLive) {
       const startedAt = Date.now()
       addLock(wallet.address, { token: sel.token, symbol: sel.symbol, name: sel.name, logo: sel.logo || '', tone: sel.tone, amount: String(amount), decimals: sel.decimals ?? 18, durationKey: d.key, durationLabel: d.label, startedAt, unlockAt: startedAt + d.ms })
@@ -233,7 +233,7 @@ export default function Locked() {
               <>
                 <div className="flex items-center justify-between mt-5 mb-2">
                   <span className="eyebrow">Amount</span>
-                  <span className="text-xs text-[var(--color-ink-faint)] font-mono">{balBusy ? 'reading…' : sel.balance != null ? `Balance: ${sel.balance} ${sel.symbol}` : 'Balance —'}</span>
+                  <span className="text-xs text-[var(--color-ink-faint)] font-mono">{balBusy ? 'reading…' : sel.balance != null ? `Balance: ${sel.balance} ${sel.symbol}` : 'Balance -'}</span>
                 </div>
                 <div className="flex items-center input !py-2.5">
                   <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'))} inputMode="decimal" placeholder="0.0" className="flex-1 min-w-0 bg-transparent outline-none border-0 p-0 font-mono num text-lg" />
@@ -249,7 +249,7 @@ export default function Locked() {
                 <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">Unlocks {fmtDate(Date.now() + (DURATIONS.find((x) => x.key === dur)?.ms || 0))}.</p>
 
                 {error && <div className="chip chip-down w-full mt-4">{error}</div>}
-                {doneHash && <a href={explorerTx(doneHash)} target="_blank" rel="noreferrer" className="mt-3 block text-xs text-center underline text-[var(--color-ink-soft)]">Locked on-chain — view ↗</a>}
+                {doneHash && <a href={explorerTx(doneHash)} target="_blank" rel="noreferrer" className="mt-3 block text-xs text-center underline text-[var(--color-ink-soft)]">Locked on-chain - view ↗</a>}
                 <button onClick={submit} disabled={!canLock || busy} className="btn btn-holo w-full !py-3.5 mt-4">
                   {busy ? (step || 'Working…') : `Lock ${sel.symbol}`}
                 </button>
@@ -273,16 +273,16 @@ export default function Locked() {
         </>
       )}
 
-      {/* Public list — visible to anyone, no wallet needed */}
+      {/* Public list - visible to anyone, no wallet needed */}
       <div className="eyebrow mb-3">Locked tokens {lockerLive && publicLocks && <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {publicLocks.length} on-chain</span>}</div>
       {!lockerLive ? (
         <div className="card text-center py-10 px-6 text-sm text-[var(--color-ink-soft)]">
-          The on-chain locker isn’t deployed yet. Deploy <span className="font-mono">AurnLocker</span> and set <span className="font-mono text-[var(--color-ink)]">NEXT_PUBLIC_LOCKER_ADDRESS</span> — then every lock shows here publicly, no wallet needed.
+          The on-chain locker isn’t deployed yet. Deploy <span className="font-mono">AurnLocker</span> and set <span className="font-mono text-[var(--color-ink)]">NEXT_PUBLIC_LOCKER_ADDRESS</span> - then every lock shows here publicly, no wallet needed.
         </div>
       ) : publicLocks === null ? (
         <div className="card text-center py-10 text-[var(--color-ink-soft)]">Reading the lock registry…</div>
       ) : publicLocks.length === 0 ? (
-        <div className="card text-center py-10 text-[var(--color-ink-soft)]">No tokens are locked yet. Be the first — lock supply above.</div>
+        <div className="card text-center py-10 text-[var(--color-ink-soft)]">No tokens are locked yet. Be the first - lock supply above.</div>
       ) : (
         <div className="space-y-2.5">
           {publicLocks.map((l) => (
@@ -292,7 +292,7 @@ export default function Locked() {
       )}
 
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-6">
-        Non-custodial — AURN never holds your keys. {lockerLive ? 'Locks are enforced on-chain by the AurnLocker contract.' : 'On-chain enforcement activates once the locker contract is deployed.'}
+        Non-custodial - AURN never holds your keys. {lockerLive ? 'Locks are enforced on-chain by the AurnLocker contract.' : 'On-chain enforcement activates once the locker contract is deployed.'}
       </p>
     </div>
   )

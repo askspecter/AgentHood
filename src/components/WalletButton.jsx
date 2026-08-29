@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 
 /**
  * Connect-wallet button (disconnected) and the account chip + menu (connected).
- * Non-custodial — RainbowKit modal + wagmi, no X identity.
+ * Non-custodial - RainbowKit modal + wagmi, no X identity.
  */
 function WalletGlyph({ size = 14, color = 'currentColor' }) {
   return (

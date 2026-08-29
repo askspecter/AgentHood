@@ -5,7 +5,7 @@ import { Verified, XLogo } from './icons'
 import { usd, num, pct } from '../lib/format'
 
 /**
- * A swipeable / draggable card rail — like the Charms feed.
+ * A swipeable / draggable card rail - like the Charms feed.
  * Touch scroll + scroll-snap on mobile, click-drag on desktop, and dot
  * pagination that tracks whichever card is nearest the centre.
  */
@@ -99,7 +99,7 @@ function Card({ charm, price, onOpen, onTrade }) {
       className="snap-center shrink-0 w-[82%] sm:w-[340px] rounded-[26px] overflow-hidden card-hover cursor-pointer select-none"
       style={{ border: '1px solid var(--color-line)', background: 'rgba(255,255,255,0.02)' }}
     >
-      {/* hero — tone-tinted, glossy avatar floating */}
+      {/* hero - tone-tinted, glossy avatar floating */}
       <div className="relative h-44 grid place-items-center overflow-hidden"
         style={{ background: `radial-gradient(85% 85% at 50% 8%, ${c1}59, transparent 60%), linear-gradient(180deg, ${c2}2e, rgba(9,8,16,0.5))` }}>
         <div className="absolute inset-0 pointer-events-none"

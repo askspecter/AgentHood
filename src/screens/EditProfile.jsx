@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import { Back, Verified } from '../components/icons'
 
 /**
- * Edit profile — the display name and photo only.
+ * Edit profile - the display name and photo only.
  *
  * The username is your wallet address and can't be changed here (it's your
  * on-chain identity). Name and photo are local overrides layered on top of it:
@@ -12,7 +12,7 @@ import { Back, Verified } from '../components/icons'
  * back to the plain address.
  */
 
-// Shrink any picked image to a small square data URL — keeps localStorage light
+// Shrink any picked image to a small square data URL - keeps localStorage light
 // and the avatar crisp at the sizes we render it.
 function fileToAvatar(file, size = 256) {
   return new Promise((resolve, reject) => {
@@ -134,7 +134,7 @@ export default function EditProfile() {
             <span className="font-mono text-sm text-[var(--color-ink-soft)] flex-1">{handle}</span>
             <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]"><Verified size={12} /> connected</span>
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">This is your connected wallet address — your identity on-chain.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">This is your connected wallet address - your identity on-chain.</p>
         </div>
       </div>
 

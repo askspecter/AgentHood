@@ -16,7 +16,7 @@ import { CURVE_ABI, resolveLaunch, resolvePonsPool, phaseBlockedMessage, buildV4
 /**
  * The ERC-20 surface a trade actually touches. Defined here, not imported: the
  * engine exports two different `ERC20_ABI`s (the audit one has no `allowance` or
- * `approve`), and whichever loads last wins — which is what made a sell throw
+ * `approve`), and whichever loads last wins - which is what made a sell throw
  * "allowance is not a function". Owning it locally removes that ambiguity.
  */
 const ERC20_ABI = [
@@ -41,7 +41,7 @@ const ROUTER_V1 = new Interface([
 /**
  * WETH9. Every pons launch pool is a Uniswap V3 WETH pair, and the router swaps
  * WETH, not native ETH. A buy that sends raw ETH to the router can dry-run clean
- * and still revert on chain — which is exactly what was happening. So we wrap ETH
+ * and still revert on chain - which is exactly what was happening. So we wrap ETH
  * into WETH ourselves, swap WETH for the token, and (on a sell) unwrap the WETH
  * back to ETH. That is the plain Uniswap V3 path, with no reliance on the router
  * accepting native ETH.
@@ -56,7 +56,7 @@ const WETH9_ABI = [
 
 /**
  * Encode the swap in both router shapes, dry-run each, and return the one the
- * chain actually accepts. Nothing is sent here — a revert costs nothing.
+ * chain actually accepts. Nothing is sent here - a revert costs nothing.
  */
 async function chooseSwap(provider, swapRouter, owner, base) {
   const variants = [
@@ -82,13 +82,13 @@ async function chooseSwap(provider, swapRouter, owner, base) {
 }
 
 /**
- * POST /api/terminal/execute — sign and send a trade from the caller's X wallet.
+ * POST /api/terminal/execute - sign and send a trade from the caller's X wallet.
  *
  * This is the only endpoint in the app that spends money, and it exists because
  * a phone has no wallet extension: without it, "buy me $5 nvda" is a sentence
  * the terminal can price and never fill.
  *
- * What keeps it safe is not that the client is trusted — it is that almost
+ * What keeps it safe is not that the client is trusted - it is that almost
  * nothing the client says is used:
  *
  *  • The wallet is derived from the SESSION, so a request can only ever spend
@@ -122,7 +122,7 @@ export async function POST(request) {
     slippage = 5,
     network = "robinhood",
     // Which asset this trade settles in: "weth" (a launch) or "usdg" (a stock).
-    // Only these two, both server config — the client picks between them, it
+    // Only these two, both server config - the client picks between them, it
     // cannot name an arbitrary address to route through.
     quote: quoteId = "weth",
   } = body || {};
@@ -152,7 +152,7 @@ export async function POST(request) {
   }
   if (!session) {
     return NextResponse.json(
-      { error: "Sign in with X first — this signs with the wallet derived from your account." },
+      { error: "Sign in with X first - this signs with the wallet derived from your account." },
       { status: 401 }
     );
   }
@@ -243,7 +243,7 @@ export async function POST(request) {
   // Route curve buys/sells here. A graduated (Uniswap v4) launch is handled once
   // v4 infra is configured. Not a v2 launch → fall through to the v1 path. ----
   try {
-    // A pons launch (curve or graduated v4), or — failing that — a Pons token's
+    // A pons launch (curve or graduated v4), or - failing that - a Pons token's
     // ordinary Uniswap v4 pool discovered from its Initialize event. Both feed the
     // same v4 execution branch below; only the pool key (hook/fee/tickSpacing)
     // differs, and buildV4Swap reads it off the launch object.
@@ -364,7 +364,7 @@ export async function POST(request) {
     }
   } catch (error) {
     // We only get here after entering the v2 branch (resolveLaunch returned a
-    // launch), so a revert is a real curve-trade failure — surface it.
+    // launch), so a revert is a real curve-trade failure - surface it.
     return NextResponse.json(
       { error: `The trade failed: ${error.shortMessage || error.reason || error.message}` },
       { status: 400 }
@@ -529,10 +529,10 @@ export async function POST(request) {
     if (!chosen) {
       return NextResponse.json(
         {
-          error: "This trade would fail on-chain right now, so it was not sent — your funds are safe.",
+          error: "This trade would fail on-chain right now, so it was not sent - your funds are safe.",
           hint: isBuy
             ? "Most often the price moved past your slippage. Tap Adjust and raise slippage (e.g. 5%), or change the amount, then try again."
-            : "Raise slippage and try again. A sell that always reverts can be a honeypot — check the token first.",
+            : "Raise slippage and try again. A sell that always reverts can be a honeypot - check the token first.",
           approvalHash,
           wrapHash,
         },
@@ -550,7 +550,7 @@ export async function POST(request) {
       );
     }
 
-    // Record AURN-native trade volume for the leaderboard — WETH-settled trades
+    // Record AURN-native trade volume for the leaderboard - WETH-settled trades
     // only (a launch pair), sized by the WETH leg: the WETH spent on a buy or the
     // WETH received on a sell. Best-effort and awaited so it commits before the
     // function returns; a stats failure never affects the trade result.
@@ -563,13 +563,13 @@ export async function POST(request) {
       }
     }
 
-    // A sell's proceeds are left as WETH — deliberately NOT auto-unwrapped.
+    // A sell's proceeds are left as WETH - deliberately NOT auto-unwrapped.
     //
     // Unwrapping (WETH.withdraw) burns the WETH to the zero address, and every
     // block explorer renders that as "Tokens burnt: WETH → Null", which reads
     // like the wallet is losing money on every trade even though it isn't. So we
     // keep the proceeds as WETH and let the holder convert to native ETH on
-    // demand, with the explicit "Unwrap to ETH" action — no silent burn on any
+    // demand, with the explicit "Unwrap to ETH" action - no silent burn on any
     // trade. A stock sell already settles in USDG, which is likewise just held.
     const unwrapHash = null;
 
