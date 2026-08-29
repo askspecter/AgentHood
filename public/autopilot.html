@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AURN Autopilot (preview)</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" media="print" onload="this.media='all'">
+<style>
+  :root{
+    --bg:#07070e;--ink:#f2f2fb;--soft:#a7a4bd;--faint:#6c6884;
+    --line:rgba(255,255,255,.10);--card:rgba(24,22,38,.66);
+    --h1:#dbe4ff;--h2:#b9a6ff;--h3:#8f7bff;--up:#79efbf;
+    --holo:linear-gradient(122deg,#dbe4ff,#b9a6ff 42%,#8f7bff);
+  }
+  *{margin:0;box-sizing:border-box}
+  html,body{min-height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:"Instrument Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+  .glow{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;z-index:0}
+  .g1{width:60vw;height:60vw;right:-18vw;top:-24vw;background:radial-gradient(circle,rgba(143,123,255,.34),transparent 62%)}
+  .g2{width:52vw;height:52vw;left:-20vw;bottom:-26vw;background:radial-gradient(circle,rgba(97,150,232,.24),transparent 64%)}
+  .wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:26px 20px 44px;display:flex;flex-direction:column;gap:22px}
+
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand img{width:28px;height:28px;border-radius:8px}
+  .brand b{font-family:"Instrument Serif",serif;letter-spacing:.16em;text-transform:uppercase;font-size:19px}
+  .pv{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--h2);border:1px solid rgba(143,123,255,.4);border-radius:999px;padding:5px 11px}
+
+  .lede{margin-top:2px}
+  .lede h1{font-family:"Instrument Serif",serif;font-weight:400;font-size:38px;line-height:1.05;letter-spacing:-.01em}
+  .lede p{color:var(--soft);font-size:15.5px;line-height:1.5;margin-top:10px;max-width:52ch}
+
+  .coin{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 15px;backdrop-filter:blur(10px)}
+  .coin img{width:38px;height:38px;border-radius:11px;background:#14101f}
+  .coin .nm{font-family:"Instrument Serif",serif;font-size:20px;line-height:1}
+  .coin .mc{font-family:"Space Mono",monospace;font-size:12px;color:var(--soft);margin-top:3px}
+  .coin .mc b{color:var(--up)}
+  .coin .live{margin-left:auto;display:flex;align-items:center;gap:7px;font-family:"Space Mono",monospace;font-size:11px;color:var(--faint)}
+  .coin .live .dot{width:8px;height:8px;border-radius:50%;background:var(--up);box-shadow:0 0 10px var(--up);animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.4}}
+
+  /* the loop */
+  .loop{position:relative;width:min(420px,86vw);aspect-ratio:1;margin:6px auto}
+  .loop svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+  .ring{fill:none;stroke:url(#rg);stroke-width:2;opacity:.6}
+  .arc{fill:none;stroke:url(#rg);stroke-width:3;stroke-linecap:round;stroke-dasharray:6 200;filter:drop-shadow(0 0 6px rgba(160,190,255,.8));animation:travel 4.5s linear infinite}
+  @keyframes travel{to{stroke-dashoffset:-206}}
+  .node{position:absolute;transform:translate(-50%,-50%);text-align:center;width:150px}
+  .node .ic{width:52px;height:52px;margin:0 auto 8px;border-radius:15px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:0 0 26px -8px rgba(143,123,255,.7)}
+  .node .ic svg{position:static;width:24px;height:24px}
+  .node .t{font-weight:600;font-size:15px}
+  .node .d{font-size:12px;color:var(--soft);margin-top:2px;line-height:1.35}
+  .n-earn{left:50%;top:6%}
+  .n-reinvest{left:90%;top:74%}
+  .n-grow{left:10%;top:74%}
+  .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
+  .center .lbl{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+  .center .val{font-family:"Space Mono",monospace;font-size:26px;font-variant-numeric:tabular-nums;margin-top:4px}
+  .center .sub{font-size:11px;color:var(--soft);margin-top:2px}
+
+  .policy{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .pc{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .pc .p{font-family:"Space Mono",monospace;font-size:22px;background:var(--holo);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .pc .k{font-size:12.5px;color:var(--soft);margin-top:4px}
+  .pc .k b{color:var(--ink)}
+
+  .note{font-size:12.5px;color:var(--faint);line-height:1.5;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .note b{color:var(--h2)}
+  .foot{display:flex;align-items:center;justify-content:space-between;font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+  a{color:var(--h2);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="glow g1"></div><div class="glow g2"></div>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><img src="/aurn-logo.png" alt=""><b>Autopilot</b></div>
+    <div class="pv">Preview</div>
+  </div>
+
+  <div class="lede">
+    <h1>Agents that run themselves.</h1>
+    <p>An agent earns fees, spends, and reinvests on its own. A tiny economy that never sleeps and never needs you. Here is the loop, on live data.</p>
+  </div>
+
+  <div class="coin">
+    <img id="coinLogo" src="/aurn-logo.png" alt="">
+    <div>
+      <div class="nm" id="coinSym">$AURN</div>
+      <div class="mc">Market cap <b id="coinMc">loading…</b></div>
+    </div>
+    <div class="live"><span class="dot"></span>live</div>
+  </div>
+
+  <div class="loop">
+    <svg viewBox="0 0 100 100">
+      <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#dbe4ff"/><stop offset=".5" stop-color="#b9a6ff"/><stop offset="1" stop-color="#8f7bff"/>
+      </linearGradient></defs>
+      <circle class="ring" cx="50" cy="50" r="40"></circle>
+      <circle class="arc" cx="50" cy="50" r="40"></circle>
+    </svg>
+    <div class="node n-earn">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#dbe4ff" stroke-width="1.8"><path d="M12 3v18M5 8l7-5 7 5"/></svg></div>
+      <div class="t">Earn</div><div class="d">Trading fees flow in</div>
+    </div>
+    <div class="node n-reinvest">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#b9a6ff" stroke-width="1.8"><path d="M4 12a8 8 0 0 1 14-5m2-2v5h-5M20 12a8 8 0 0 1-14 5m-2 2v-5h5"/></svg></div>
+      <div class="t">Reinvest</div><div class="d">Buys back its own coin</div>
+    </div>
+    <div class="node n-grow">
+      <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#8f7bff" stroke-width="1.8"><path d="M3 17l6-6 4 4 8-8M21 7v6h-6"/></svg></div>
+      <div class="t">Grow</div><div class="d">Value compounds</div>
+    </div>
+    <div class="center">
+      <div class="lbl">Live market cap</div>
+      <div class="val" id="loopVal">—</div>
+      <div class="sub" id="loopSub">the pool it grows</div>
+    </div>
+  </div>
+
+  <div class="policy">
+    <div class="pc"><div class="p">70%</div><div class="k"><b>Reinvest</b> · buyback</div></div>
+    <div class="pc"><div class="p">20%</div><div class="k"><b>Operate</b> · gas & ops</div></div>
+    <div class="pc"><div class="p">10%</div><div class="k"><b>Treasury</b> · reserve</div></div>
+  </div>
+
+  <div class="note">
+    <b>Preview.</b> This shows the autonomous loop on live market data. Agents do not move funds yet. When Autopilot ships it runs opt-in and non-custodial, signed by the agent's own wallet, and every action is on-chain and verifiable.
+  </div>
+
+  <div class="foot"><span>AURN · Autopilot</span><a href="/">aurn.fun</a></div>
+</div>
+
+<script>
+  const $=(s)=>document.querySelector(s);
+  const fmt=(n)=>{const a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(2)+'B';if(a>=1e6)return(n/1e6).toFixed(2)+'M';if(a>=1e3)return(n/1e3).toFixed(1)+'K';return String(Math.round(n));};
+
+  async function load(){
+    try{
+      const r=await fetch('/api/launches?network=robinhood',{cache:'no-store'});
+      const j=await r.json();
+      const list=j.launches||[];
+      const off=list.find(x=>x.official)||list[0]||{};
+      const sym='$'+(off.symbol||'AURN').replace(/^\$/,'');
+      const eth=Number(j.ethUsd||0);
+      let mc=null;
+      if(off.marketCapWeth && eth) mc='$'+fmt(off.marketCapWeth*eth);
+      if(off.logo) $('#coinLogo').src=off.logo;
+      $('#coinSym').textContent=sym;
+      $('#coinMc').textContent = mc || 'coming soon';
+      $('#loopVal').textContent = mc || sym;
+      // if a creator is logged in, surface their REAL earned fees
+      try{
+        const fr=await fetch('/api/creator/fees?token='+(off.token||'')+'&network=robinhood',{cache:'no-store'});
+        const fj=await fr.json();
+        if(fj && Array.isArray(fj.accrued) && fj.accrued.length){
+          const usd=fj.accrued.reduce((s,a)=>s+(a.usd||0),0);
+          const eth0=fj.accrued.find(a=>a.symbol==='ETH');
+          const disp = usd>0 ? '$'+fmt(usd)+' earned' : (eth0? eth0.amount.toFixed(4)+' ETH earned' : null);
+          if(disp){ $('#loopVal').textContent=disp; $('#loopSub').textContent='your live fees'; $('.center .lbl').textContent='Earned (live)'; }
+        }
+      }catch(e){}
+    }catch(e){ $('#coinMc').textContent='unavailable'; }
+  }
+  load(); setInterval(load, 30000);
+</script>
+</body>
+</html>
