@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>AURN AR Agent (prototype)</title>
+<style>
+  :root{--holo:linear-gradient(122deg,#dbe4ff,#b9a6ff 42%,#8f7bff);--ink:#f2f2fb;--soft:#a7a4bd}
+  *{margin:0;box-sizing:border-box}
+  html,body{height:100%;overflow:hidden;background:#05060c;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+  a-scene{position:fixed;inset:0}
+  /* HUD */
+  .hud{position:fixed;left:0;right:0;top:0;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;z-index:20;pointer-events:none}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand img{width:26px;height:26px;border-radius:7px}
+  .brand b{font-size:15px;letter-spacing:.12em}
+  .live{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--soft);background:rgba(10,10,20,.5);padding:6px 11px;border-radius:999px;backdrop-filter:blur(8px)}
+  .live .dot{width:8px;height:8px;border-radius:50%;background:#79efbf;box-shadow:0 0 10px #79efbf;animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{50%{opacity:.4}}
+  .hint{position:fixed;left:0;right:0;bottom:22px;text-align:center;font-size:13px;color:var(--soft);z-index:20;pointer-events:none;text-shadow:0 1px 8px rgba(0,0,0,.8)}
+  /* start overlay */
+  .start{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:28px;background:radial-gradient(120% 90% at 50% 30%,#12101f,#05060c 80%)}
+  .start .mk{width:64px;height:64px;border-radius:16px}
+  .start h1{font-size:26px;font-weight:600}
+  .start p{color:var(--soft);font-size:15px;line-height:1.5;max-width:34ch}
+  .start .go{margin-top:6px;border:none;font:inherit;font-weight:600;font-size:16px;color:#0b0a14;background:var(--holo);padding:14px 30px;border-radius:14px;box-shadow:0 14px 34px -12px rgba(143,123,255,.9)}
+  .start a{color:#b9a6ff}
+  .note{font-size:12px;color:#6c6884;max-width:36ch}
+</style>
+<script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+</head>
+<body>
+
+<div class="start" id="start">
+  <img class="mk" src="/aurn-logo.png" alt="AURN">
+  <h1>AURN AR Agent</h1>
+  <p>Point your camera at the marker and your coin shows up: a 3D agent that talks and shows its live data.</p>
+  <button class="go" id="go">Start AR</button>
+  <div class="note">Prototype. Open the <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/hiro.png" target="_blank" rel="noopener">Hiro marker</a> on another screen (or print it), then point your phone at it.</div>
+</div>
+
+<div class="hud">
+  <div class="brand"><img src="/aurn-logo.png" alt=""><b>AURN · AR</b></div>
+  <div class="live"><span class="dot"></span><span id="hudPrice">loading…</span></div>
+</div>
+<div class="hint" id="hint">Point at the Hiro marker</div>
+
+<a-scene id="scene" embedded vr-mode-ui="enabled:false" renderer="alpha:true; antialias:true"
+  arjs="sourceType: webcam; detectionMode: mono; debugUIEnabled: false;" style="display:none">
+  <a-assets><img id="logoTex" src="/aurn-logo.png" crossorigin="anonymous"></a-assets>
+
+  <a-marker preset="hiro" id="marker" smooth="true" smoothCount="8" smoothTolerance="0.01" smoothThreshold="4">
+    <a-entity id="agent" position="0 0.05 0"
+      animation="property: position; from: 0 0.05 0; to: 0 0.28 0; dir: alternate; loop: true; dur: 1700; easing: easeInOutSine">
+      <!-- holo ring -->
+      <a-torus color="#b9a6ff" radius="0.62" radius-tubular="0.02" segments-tubular="48"
+        rotation="90 0 0" opacity="0.9"
+        animation="property: rotation; from: 90 0 0; to: 90 360 0; loop: true; dur: 7000; easing: linear"></a-torus>
+      <a-torus color="#8f7bff" radius="0.44" radius-tubular="0.012" segments-tubular="40"
+        rotation="90 0 0" opacity="0.7"
+        animation="property: rotation; from: 90 0 0; to: 90 -360 0; loop: true; dur: 5200; easing: linear"></a-torus>
+      <!-- logo billboard facing the camera -->
+      <a-image src="#logoTex" width="0.62" height="0.62" transparent="true"
+        position="0 0 0" look-at="[camera]"></a-image>
+      <!-- live label -->
+      <a-text id="agentTicker" value="$AURN" align="center" color="#eef4ff" width="3"
+        position="0 0.95 0" look-at="[camera]"></a-text>
+      <a-text id="agentPrice" value="Robinhood Chain" align="center" color="#b9a6ff" width="2.2"
+        position="0 0.72 0" look-at="[camera]"></a-text>
+    </a-entity>
+  </a-marker>
+
+  <a-entity camera></a-entity>
+</a-scene>
+
+<script>
+  const $=(s)=>document.querySelector(s);
+  const fmt=(n)=>{const a=Math.abs(n);if(a>=1e9)return(n/1e9).toFixed(2)+'B';if(a>=1e6)return(n/1e6).toFixed(2)+'M';if(a>=1e3)return(n/1e3).toFixed(1)+'K';return String(Math.round(n));};
+
+  let live={ symbol:'$AURN', line:'Robinhood Chain' };
+  async function loadLive(){
+    try{
+      const r=await fetch('/api/launches?network=robinhood',{cache:'no-store'});
+      const j=await r.json();
+      const list=j.launches||[];
+      const off=list.find(x=>x.official)||list[0]||{};
+      const sym=(off.symbol||'AURN').replace(/^\$/,'');
+      const eth=Number(j.ethUsd||0);
+      let line;
+      if(off.marketCapWeth && eth) line='$'+fmt(off.marketCapWeth*eth)+' mcap';
+      else if(off.priceInWeth && eth) line='$'+(off.priceInWeth*eth).toPrecision(3);
+      else if(off.supplyTokens) line=fmt(off.supplyTokens)+' supply · Robinhood Chain';
+      else line='Robinhood Chain';
+      live={ symbol:'$'+sym, line };
+    }catch(e){ /* keep defaults */ }
+    $('#hudPrice').textContent = live.symbol+' · '+live.line;
+    const t=$('#agentTicker'), p=$('#agentPrice');
+    if(t) t.setAttribute('value', live.symbol);
+    if(p) p.setAttribute('value', live.line);
+  }
+
+  function speak(text){
+    try{ const u=new SpeechSynthesisUtterance(text); u.rate=1; u.pitch=1.05; u.lang='en-US';
+      speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+  }
+
+  let greeted=false;
+  function onFound(){
+    $('#hint').textContent = 'Agent locked · '+live.symbol;
+    if(!greeted){ greeted=true; speak(`gm. I am ${live.symbol.replace('$','')}, a coin with a soul. I am live on Robinhood Chain.`); }
+  }
+  function onLost(){ $('#hint').textContent = 'Point at the Hiro marker'; }
+
+  $('#go').addEventListener('click', ()=>{
+    $('#start').style.display='none';
+    $('#scene').style.display='block';
+    // prime speech synthesis (needs a user gesture, esp. on iOS)
+    try{ speechSynthesis.speak(new SpeechSynthesisUtterance(' ')); }catch(e){}
+    loadLive();
+    setInterval(loadLive, 30000);
+    const m=$('#marker');
+    m.addEventListener('markerFound', onFound);
+    m.addEventListener('markerLost', onLost);
+  });
+</script>
+</body>
+</html>
