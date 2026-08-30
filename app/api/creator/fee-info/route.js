@@ -10,7 +10,7 @@ import { getAddress } from "ethers";
  * server key: the v1 locker address, the payout wallet (deployer or redirect),
  * isToken0, decimals, symbol, the creator share, and a token USD price. The
  * connected wallet reads the accrued amounts (by simulating collectFees) and
- * signs the claim itself — this endpoint never signs anything.
+ * signs the claim itself - this endpoint never signs anything.
  */
 const META_ABI = [
   "function symbol() view returns (string)",

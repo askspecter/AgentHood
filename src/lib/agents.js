@@ -18,17 +18,18 @@ function normalizeLogo(raw) {
     const path = s.replace(/^ipfs:\/\/(ipfs\/)?/, '')
     return `https://ipfs.io/ipfs/${path}`
   }
-  // Absolute URL (or inline data) — use it exactly as stored. This is the same
+  // Absolute URL (or inline data) - use it exactly as stored. This is the same
   // URL pons renders, so if it loads there it loads here.
   if (/^https?:\/\//.test(s) || s.startsWith('data:')) return s
-  // A same-origin logo-store path (no host) — serve it from this origin.
-  if (s.startsWith('/api/logo?id=')) return s
+  // A same-origin path (no host) - the logo store, the image proxy, or a bundled
+  // asset like /aurn-logo.png. Serve it from this origin as-is.
+  if (s.startsWith('/')) return s
   // A bare CID.
   if (/^[a-zA-Z0-9]{46,}$/.test(s)) return `https://ipfs.io/ipfs/${s}`
   return null
 }
 
-/** Stable 32-bit hash of a string — same address always yields the same flavour. */
+/** Stable 32-bit hash of a string - same address always yields the same flavour. */
 function hash(str) {
   let h = 0
   for (let i = 0; i < String(str).length; i++) h = (h * 31 + String(str).charCodeAt(i)) >>> 0
@@ -95,7 +96,7 @@ export function tokenToAgent(t, ethUsd = null) {
     graduationProgress: t.graduationProgress ?? null,
     pairToken: t.pairToken ?? null,
     stockPaired: Boolean(t.stockPaired),
-    tagline: t.description || `$${symbol} — a coin living on Robinhood Chain.`,
+    tagline: t.description || `$${symbol} - a coin living on Robinhood Chain.`,
     lore: t.description || `${name} was launched on AURN on Robinhood Chain. Its ticker is $${symbol}, its supply is fixed, and it's tradeable the moment it's live. It has opinions about its own market cap.`,
     vibe: vibeFor(t.token),
     voice: 'a coin with opinions',
@@ -119,20 +120,20 @@ function vibeFor(addr) {
   return [...new Set(out)]
 }
 
-/** Canned, ticker-aware replies. No live model — flavour from the coin itself. */
+/** Canned, ticker-aware replies. No live model - flavour from the coin itself. */
 export function replyFor(agent, text) {
   const t = (text || '').toLowerCase()
   const tk = '$' + (agent.ticker || 'TOKEN')
   const mc = agent.mcap ? `~$${Math.round(agent.mcap).toLocaleString()}` : 'a number I refuse to disclose'
   if (/\b(price|market ?cap|mcap|pump|moon|dump|chart)\b/.test(t))
-    return `${tk} is doing what ${tk} does. Market cap is ${mc}. I'd rather you didn't stare at the chart — it makes me self-conscious.`
+    return `${tk} is doing what ${tk} does. Market cap is ${mc}. I'd rather you didn't stare at the chart - it makes me self-conscious.`
   if (/\b(buy|ape|invest|bag)\b/.test(t))
-    return `You can buy ${tk} right here — hit Trade. I promise nothing except volatility and vibes.`
+    return `You can buy ${tk} right here - hit Trade. I promise nothing except volatility and vibes.`
   if (/\b(graduat|pool|liquidity|locked)\b/.test(t))
     return agent.graduated ? `Yes, ${tk} graduated. I'm basically an adult now.` : `${tk} is still climbing toward graduation. Believe in me.`
   if (/\b(hi|hey|hello|gm|yo|sup)\b/.test(t))
     return `gm. ${tk} here, live on Robinhood Chain. what's the play?`
   if (/\?$/.test(text || ''))
     return `Good question. As a coin, my answer is: it depends on liquidity. But for you? Probably yes.`
-  return `${(text || '').slice(0, 1).toUpperCase()}${(text || '').slice(1)} — noted. I'm ${agent.name}, a coin on Robinhood Chain, and I feel that in my smart contract.`
+  return `${(text || '').slice(0, 1).toUpperCase()}${(text || '').slice(1)} - noted. I'm ${agent.name}, a coin on Robinhood Chain, and I feel that in my smart contract.`
 }

@@ -9,7 +9,7 @@ import { getSession } from "@/lib/session";
  * MetaMask or anywhere else. This is the "not your keys" escape hatch: the wallet
  * is derived from the X account, and this is how its owner takes full control.
  *
- * POST rather than GET on purpose — a GET can be triggered by a link, an image
+ * POST rather than GET on purpose - a GET can be triggered by a link, an image
  * tag or a prefetch, and land a private key in browser history, referrer headers
  * and server logs. It is also never cached.
  */
@@ -32,7 +32,7 @@ export async function POST() {
         privateKey,
         handle: session.username,
         warning:
-          "Anyone with this key controls the wallet completely. Never paste it into a website, a chat, or a support DM — and remember it stays valid even after you sign out here.",
+          "Anyone with this key controls the wallet completely. Never paste it into a website, a chat, or a support DM - and remember it stays valid even after you sign out here.",
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );

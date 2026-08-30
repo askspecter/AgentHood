@@ -4,7 +4,7 @@ import CharmAvatar from '../components/CharmAvatar'
 import { timeAgo } from '../lib/format'
 
 /**
- * Chats — talk to the coins. Each thread is a real pons agent.
+ * Chats - talk to the coins. Each thread is a real pons agent.
  */
 export default function Chats() {
   const { chats, getAgent, agents, agentsLoading } = useStore()

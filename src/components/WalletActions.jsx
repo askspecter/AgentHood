@@ -11,11 +11,11 @@ import CharmAvatar from './CharmAvatar'
 import { Coin } from './icons'
 
 /**
- * Portfolio quick actions — Receive · Send · Trade.
+ * Portfolio quick actions - Receive · Send · Trade.
  *
  * Real, on your connected wallet: Receive shows the deposit address, Send moves
- * ETH or a token out — signed by your own wallet, non-custodially — and Trade
- * opens the pons-style swap sheet — with a picker of every coin you hold so you
+ * ETH or a token out - signed by your own wallet, non-custodially - and Trade
+ * opens the pons-style swap sheet - with a picker of every coin you hold so you
  * can trade one in a tap, or paste any Robinhood Chain address to trade it.
  */
 export default function WalletActions() {
@@ -53,7 +53,7 @@ export default function WalletActions() {
 function Overlay({ children, onClose, title }) {
   if (typeof document === 'undefined') return null
   // Portal to <body> so the fixed overlay escapes the portfolio card's
-  // backdrop-filter stacking context — otherwise later cards (the holdings
+  // backdrop-filter stacking context - otherwise later cards (the holdings
   // empty state, the nav) paint on top of it.
   return createPortal(
     <div className="fixed inset-0 z-[100] grid place-items-center bg-black/80 backdrop-blur-md p-4" onClick={onClose}>
@@ -114,7 +114,7 @@ function HeldTokenPicker({ selected, onPick }) {
       {holdings === null ? (
         <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">Reading your wallet…</div>
       ) : holdings.length === 0 ? (
-        <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">No coins held — paste an address below.</div>
+        <div className="mt-1 text-sm text-[var(--color-ink-soft)] p-3 rounded-xl panel-soft">No coins held - paste an address below.</div>
       ) : (
         <div className="mt-1 max-h-44 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
           {holdings.map((h) => {
@@ -141,7 +141,7 @@ function HeldTokenPicker({ selected, onPick }) {
 }
 
 /**
- * Trade sheet — pick a held coin (or paste any Robinhood Chain address) and the
+ * Trade sheet - pick a held coin (or paste any Robinhood Chain address) and the
  * pons-style swap opens right under it. This is the whole "tap a coin, trade it"
  * flow the portfolio wanted, without leaving the wallet.
  */
@@ -167,7 +167,7 @@ function TradeModal({ wallet, onClose }) {
               <TradePanel token={token} symbol={sel?.symbol} bare onDone={invalidateHoldings} />
             </div>
           ) : (
-            <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-4">Pick a coin above, or paste an address — you can trade any token on Robinhood Chain.</p>
+            <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-4">Pick a coin above, or paste an address - you can trade any token on Robinhood Chain.</p>
           )}
         </>
       )}
@@ -207,7 +207,7 @@ function SendModal({ wallet, onClose }) {
         try { await switchChainAsync({ chainId: robinhoodChain.id }) }
         catch { throw new Error(`Switch your wallet to ${robinhoodChain.name} first.`) }
       }
-      // Signed by the connected wallet — non-custodial. A plain ETH transfer for
+      // Signed by the connected wallet - non-custodial. A plain ETH transfer for
       // native, or an ERC-20 transfer() call for a token.
       let hash
       if (asset === 'native') {
@@ -260,7 +260,7 @@ function SendModal({ wallet, onClose }) {
           </label>
           {error && <div className="chip chip-down w-full mb-3">{error}</div>}
           <button onClick={submit} disabled={busy} className="btn btn-primary w-full">{busy ? 'Sending…' : 'Send'}</button>
-          <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Signed by your own wallet — we never touch your funds.</p>
+          <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">Signed by your own wallet - we never touch your funds.</p>
         </>
       )}
     </Overlay>

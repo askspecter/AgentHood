@@ -93,7 +93,7 @@ export default function Shell() {
               </NavLink>
             )
           })}
-          {/* Launch — the holographic action inside the pill */}
+          {/* Launch - the holographic action inside the pill */}
           <button onClick={() => nav('/launch')} aria-label="Launch a coin"
             className="flex flex-col items-center justify-center gap-1 w-[56px] py-2 rounded-[18px] text-[11px] font-medium text-[var(--color-ink-faint)] active:scale-95 transition-transform">
             <span className="relative h-6 grid place-items-center">

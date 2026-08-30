@@ -12,7 +12,7 @@ export function usd(n, opts = {}) {
   return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: max })
 }
 
-// account balances — clean dollars, no forced 4-decimal prices
+// account balances - clean dollars, no forced 4-decimal prices
 export function bal(n) {
   if (n == null || isNaN(n)) return '$0'
   return '$' + n.toLocaleString(undefined, { maximumFractionDigits: Math.abs(n % 1) > 0 ? 2 : 0 })
@@ -21,7 +21,7 @@ export function bal(n) {
 export function num(n) {
   if (n == null) return '0'
   const a = Math.abs(n)
-  // Whole magnitudes read cleaner without a trailing .0 — 1,000,000,000 → "1B".
+  // Whole magnitudes read cleaner without a trailing .0 - 1,000,000,000 → "1B".
   const compact = (v, suffix) => (Number.isInteger(v) ? v.toFixed(0) : v.toFixed(1)) + suffix
   if (a >= 1_000_000_000) return compact(n / 1e9, 'B')
   if (a >= 1_000_000) return compact(n / 1e6, 'M')

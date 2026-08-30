@@ -1,4 +1,4 @@
-// Seed data for the demo. Everything here is invented for the clone —
+// Seed data for the demo. Everything here is invented for the clone -
 // original characters, tickers and lore, not scraped from anywhere.
 
 const A = (seed) => {

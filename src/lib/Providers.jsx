@@ -5,7 +5,7 @@ import { RainbowKitProvider, getDefaultConfig, darkTheme, lightTheme } from '@ra
 import { injectedWallet, metaMaskWallet, rainbowWallet, walletConnectWallet } from '@rainbow-me/rainbowkit/wallets'
 import { robinhoodChain } from './chain'
 
-// Non-custodial wallet connect — wagmi v2 + RainbowKit, the working setup ported
+// Non-custodial wallet connect - wagmi v2 + RainbowKit, the working setup ported
 // from Launchpad-Base (Pork). The modal offers MetaMask / Browser Wallet /
 // Rainbow / WalletConnect on Robinhood Chain. The Coinbase/base SDK subtree that
 // the connector barrel eagerly imports is stubbed in next.config.mjs.

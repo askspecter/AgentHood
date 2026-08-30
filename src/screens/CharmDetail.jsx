@@ -10,7 +10,7 @@ import { usd, num, pct } from '../lib/format'
 import { Verified, Back } from '../components/icons'
 
 /**
- * Agent page — a real pons coin, dressed as a character. Chat with it, and trade
+ * Agent page - a real pons coin, dressed as a character. Chat with it, and trade
  * it right here: the pons-style swap sits directly under the header.
  */
 export default function CharmDetail() {
@@ -29,7 +29,7 @@ export default function CharmDetail() {
     let cancelled = false
     setFetching(true)
     const isAddr = /^0x[a-fA-F0-9]{40}$/.test(String(id))
-    // Not a launched-here coin, but a valid address — read its real symbol/name
+    // Not a launched-here coin, but a valid address - read its real symbol/name
     // straight from the token contract so the page shows the coin properly (not
     // a generic "$TOKEN"). The swap works off the address, so any Robinhood
     // Chain coin is tradeable here.
@@ -117,7 +117,7 @@ export default function CharmDetail() {
         </div>
       </div>
 
-      {/* creator fees — only shown to the wallet that launched this coin */}
+      {/* creator fees - only shown to the wallet that launched this coin */}
       {addr && <CreatorFees token={addr} symbol={charm.ticker} />}
 
       {/* about */}
@@ -126,7 +126,7 @@ export default function CharmDetail() {
         <p className="text-[var(--color-ink)] leading-relaxed">{charm.lore}</p>
       </div>
 
-      {/* trade — pons-style */}
+      {/* trade - pons-style */}
       <TradePanel token={addr} symbol={charm.ticker} />
 
       {/* price + chart */}
@@ -135,7 +135,7 @@ export default function CharmDetail() {
           <div>
             <div className="eyebrow mb-1">Price</div>
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : '—'}</div>
+              <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : '-'}</div>
               {charm.change24 != null && (
                 <span className={`chip !text-sm ${charm.change24 >= 0 ? 'chip-up' : 'chip-down'}`}>{pct(charm.change24)} · 24h</span>
               )}
@@ -144,8 +144,8 @@ export default function CharmDetail() {
         </div>
         <PriceChart seed={charm.history} live={price} up={charm.change24 == null ? true : charm.change24 >= 0} />
         <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t hairline">
-          <Stat label="Market cap" value={charm.mcap ? usd(charm.mcap) : '—'} />
-          <Stat label="Holders" value={charm.holders != null ? num(charm.holders) : '—'} />
+          <Stat label="Market cap" value={charm.mcap ? usd(charm.mcap) : '-'} />
+          <Stat label="Holders" value={charm.holders != null ? num(charm.holders) : '-'} />
           <Stat label="Supply" value={num(charm.supply)} />
         </div>
         {explorer && addr && (

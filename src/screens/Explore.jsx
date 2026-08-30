@@ -5,7 +5,7 @@ import CharmAvatar from '../components/CharmAvatar'
 import { Verified } from '../components/icons'
 
 /**
- * Home — a feel.cash-style front: a swipeable hero carousel of top coins, an
+ * Home - a feel.cash-style front: a swipeable hero carousel of top coins, an
  * "Explore coins" grid of image-forward cards, and quick filter chips. The
  * market is quiet by default; it fills only with coins launched through AURN.
  */
@@ -21,7 +21,7 @@ const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.i
 
 /** Compact USD, feel.cash-style: $10.8K, $31.2K, $1.2M. */
 function kusd(n) {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return '-'
   const a = Math.abs(n)
   if (a >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B'
   if (a >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M'
@@ -215,7 +215,7 @@ function EmptyState({ q, tab, onLaunch }) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0c15" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
       <h3 className="font-serif text-2xl mb-1.5">No coins yet</h3>
-      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">Be the first — mint a token that thinks, talks, and trades on AURN.</p>
+      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">Be the first - mint a token that thinks, talks, and trades on AURN.</p>
       <button onClick={onLaunch} className="btn btn-holo !py-3 !px-7 mx-auto">Launch the first coin</button>
     </div>
   )

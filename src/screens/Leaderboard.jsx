@@ -4,12 +4,12 @@ import { Back, Crown, Verified } from '../components/icons'
 import { usd, num } from '../lib/format'
 
 /**
- * Leaderboard — three boards, all live and all real.
+ * Leaderboard - three boards, all live and all real.
  *
  * Every board ranks actual AURN-native activity, recorded as it happens:
- *  • Top creator — coins launched here, ranked by the market cap they've created.
- *  • Trade volume — cumulative WETH traded per account.
- *  • Top referral — friends brought in through your ?ref= link.
+ *  • Top creator - coins launched here, ranked by the market cap they've created.
+ *  • Trade volume - cumulative WETH traded per account.
+ *  • Top referral - friends brought in through your ?ref= link.
  * None invent names: a board simply shows a "warming up" state until there's
  * something real to rank.
  */
@@ -22,20 +22,20 @@ const TABS = [
   { key: 'referral', label: 'Top referral' },
 ]
 
-const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '—')
+const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '-')
 
 const EMPTY = {
   creator: {
     title: 'Creator board is warming up',
-    body: "This ranks people by the coins they launch on AURN — measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
+    body: "This ranks people by the coins they launch on AURN - measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
   },
   volume: {
     title: 'Trade volume board is warming up',
-    body: 'This ranks the accounts trading the most on AURN, by real WETH volume as swaps settle on-chain — no placeholder names. It fills in as trading picks up here.',
+    body: 'This ranks the accounts trading the most on AURN, by real WETH volume as swaps settle on-chain - no placeholder names. It fills in as trading picks up here.',
   },
   referral: {
     title: 'Referral board is warming up',
-    body: 'Share your referral link from the Referral page. Once friends sign in through it, the biggest referrers show up here — ranked by real sign-ups, nothing invented.',
+    body: 'Share your referral link from the Referral page. Once friends sign in through it, the biggest referrers show up here - ranked by real sign-ups, nothing invented.',
   },
 }
 
@@ -44,7 +44,7 @@ export default function Leaderboard() {
   const [tab, setTab] = useState('creator')
   const [data, setData] = useState({}) // board -> { loading, rows }
 
-  // Fetch the active board. Depends on `tab` ONLY — not `data`: with `data` in
+  // Fetch the active board. Depends on `tab` ONLY - not `data`: with `data` in
   // the deps, setData(loading) re-triggered the effect, whose cleanup cancelled
   // the in-flight fetch, so the result was always discarded and the board hung
   // on skeletons forever. Now the fetch runs to completion.
@@ -161,7 +161,7 @@ function Row({ board, row }) {
         </div>
       </div>
       <div className="text-right shrink-0">
-        <div className="font-mono num">{row.mcapUsd > 0 ? usd(row.mcapUsd) : '—'}</div>
+        <div className="font-mono num">{row.mcapUsd > 0 ? usd(row.mcapUsd) : '-'}</div>
         <div className="eyebrow">mcap created</div>
       </div>
     </div>

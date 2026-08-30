@@ -19,7 +19,7 @@ async function curveReservesAndFee(curve) {
  * Quote a bonding-curve trade. A buy is priced by a read-only `buy` simulation
  * (exact, including any near-graduation clamp); a sell is estimated from the
  * curve's reserves (its spot price is quoteReserve/tokenReserve, i.e. a constant
- * product with a virtual quote reserve) net of the fee — the on-chain minOut
+ * product with a virtual quote reserve) net of the fee - the on-chain minOut
  * guards the fill either way.
  */
 async function quoteCurve(provider, launch, side, amount, slippage) {
@@ -108,11 +108,11 @@ async function quoteV4Payload(provider, chain, launch, side, amount, slippage) {
   };
 }
 
-/** An RPC hiccup (rate-limit, batch coalesce, timeout) — not a real revert. */
+/** An RPC hiccup (rate-limit, batch coalesce, timeout) - not a real revert. */
 const RPC_NOISE = /coalesce|UNKNOWN_ERROR|rate.?limit|429|503|timeout|ETIMEDOUT|ECONN|fetch failed|server response|SERVER_ERROR/i;
 
 /**
- * Token decimals/symbol never change, so read them once per token — that removes
+ * Token decimals/symbol never change, so read them once per token - that removes
  * one RPC round-trip from every re-quote. And a full quote is cached for a few
  * seconds so re-opening the panel or toggling slippage is instant instead of
  * spinning on "Pricing…"; the pool barely moves in that window.
@@ -125,7 +125,7 @@ const QUOTE_TTL_MS = Number(process.env.QUOTE_TTL_MS || 3500);
  * POST /api/quote  { token, side: "buy"|"sell", amount, network }
  *
  * Quotes a swap through QuoterV2 so the UI can show the expected output before
- * anyone signs. Read-only — this spends nothing and grants no approval.
+ * anyone signs. Read-only - this spends nothing and grants no approval.
  */
 
 const DECIMALS_ABI = ["function decimals() view returns (uint8)", "function symbol() view returns (string)"];
@@ -186,7 +186,7 @@ export async function POST(request) {
       return NextResponse.json(msg, { status: msg.retryable ? 503 : 400 });
     }
   } catch {
-    /* not a resolvable v2 launch — fall through to the Pons / v1 paths below */
+    /* not a resolvable v2 launch - fall through to the Pons / v1 paths below */
   }
 
   // Pons launches trade on an ordinary Uniswap v4 pool (with Pons's own hook).
@@ -201,7 +201,7 @@ export async function POST(request) {
       return NextResponse.json(payload);
     }
   } catch {
-    /* no Pons v4 pool (or its quote reverted) — fall through to the v1 path */
+    /* no Pons v4 pool (or its quote reverted) - fall through to the v1 path */
   }
 
   try {
@@ -220,7 +220,7 @@ export async function POST(request) {
         symbol = await meta.symbol();
         META_CACHE.set(String(token).toLowerCase(), { decimals, symbol });
       } catch {
-        /* keep the 18/TOKEN defaults — a quote is still useful without metadata */
+        /* keep the 18/TOKEN defaults - a quote is still useful without metadata */
       }
     }
 
@@ -239,11 +239,11 @@ export async function POST(request) {
     if (!result.ok) {
       // Tell an RPC hiccup apart from a real "the pool refuses this trade". The
       // public node rate-limits, and ethers reports that as "could not coalesce
-      // error" — which is retryable, not a honeypot. Don't cry wolf on a sell.
+      // error" - which is retryable, not a honeypot. Don't cry wolf on a sell.
       if (RPC_NOISE.test(result.reason || "")) {
         return NextResponse.json(
           {
-            error: "The network node is busy right now — try again in a moment.",
+            error: "The network node is busy right now - try again in a moment.",
             hint: "This is a temporary RPC hiccup, not a problem with the token.",
             retryable: true,
           },
@@ -255,7 +255,7 @@ export async function POST(request) {
           error: `The pool could not quote this trade: ${result.reason}`,
           hint: isBuy
             ? "Liquidity may be too thin for this size."
-            : "A sell that cannot even be quoted is the classic honeypot signature — run the audit.",
+            : "A sell that cannot even be quoted is the classic honeypot signature - run the audit.",
         },
         { status: 400 }
       );
@@ -264,7 +264,7 @@ export async function POST(request) {
     const amountOut = result.amountOut;
 
     // The floor the UI shows. It used to be absent from this response entirely,
-    // so the "minimum out" tile read "—" on every quote — the one figure that
+    // so the "minimum out" tile read "-" on every quote - the one figure that
     // says how bad the fill is allowed to get.
     const slippageBps = BigInt(
       Math.round(Math.min(50, Math.max(0.1, Number(slippage) || 5)) * 100)

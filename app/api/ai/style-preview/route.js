@@ -8,13 +8,13 @@ import { stylePreviewPrompt } from "@/lib/styles";
  *
  * The thumbnail shown on a style tile in the Launch flow. A representative
  * character portrait is generated once with FLUX, cached in Vercel KV, and
- * served as bytes forever after — so the picker looks like a gallery without
+ * served as bytes forever after - so the picker looks like a gallery without
  * shipping any third-party images. Falls back with an error the client hides
  * (showing a gradient tile) when FAL_KEY or KV isn't set.
  *
  * The preview prompt comes from the SAME style engine (lib/styles) the real
  * generator uses, so the tile you pick and the logo you get are the same style.
- * Cache is v2 because the prompts changed with that unification — old v1 tiles
+ * Cache is v2 because the prompts changed with that unification - old v1 tiles
  * lazily regenerate the first time each style is viewed again.
  */
 

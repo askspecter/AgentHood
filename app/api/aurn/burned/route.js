@@ -45,7 +45,7 @@ export async function GET(request) {
   }
 
   const token = aurnToken();
-  // No official token set (e.g. between launches) — nothing to read. The UI hides
+  // No official token set (e.g. between launches) - nothing to read. The UI hides
   // the burn counter when `token` is null rather than showing a hollow zero.
   if (!token) {
     const v = { token: null, symbol: "AURN", decimals: 18, burned: burnBaseline(), onchain: 0, baseline: burnBaseline(), configured: false };

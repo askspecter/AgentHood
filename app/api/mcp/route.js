@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyKey } from "@/lib/apikey";
 
 /**
- * The AURN MCP server — a Model Context Protocol endpoint so any AI client
+ * The AURN MCP server - a Model Context Protocol endpoint so any AI client
  * (Claude, Cursor, …) can discover coins, get quotes, and read a portfolio on
  * aurn.fun.
  *
@@ -10,13 +10,13 @@ import { verifyKey } from "@/lib/apikey";
  * a single JSON response (no SSE session needed for a request/response server).
  *
  * ── Auth & safety ────────────────────────────────────────────────────────────
- * AURN is non-custodial, so the MCP server is READ-ONLY — it can never move
+ * AURN is non-custodial, so the MCP server is READ-ONLY - it can never move
  * funds. Read tools (list/get/quote/burned/leaderboard) are open (public on-chain
  * data). The `portfolio` tool needs a valid AURN API key in
  * `Authorization: Bearer …` (minted in Settings → AI access for a connected
  * wallet); the key carries only that wallet address and grants read access to its
  * public balances. To trade or launch, the owner signs in their own wallet in the
- * app — the MCP server has no way to sign for them.
+ * app - the MCP server has no way to sign for them.
  */
 
 const NAME = "AURN";
@@ -76,7 +76,7 @@ const TOOLS = [
   },
   {
     name: "portfolio",
-    description: "Read-only: your connected wallet's address, ETH balance, and (optionally) one token's balance. Requires your AURN API key. Public on-chain data — it can't move funds.",
+    description: "Read-only: your connected wallet's address, ETH balance, and (optionally) one token's balance. Requires your AURN API key. Public on-chain data - it can't move funds.",
     inputSchema: { type: "object", properties: { token: { type: "string", description: "Optional token address to also read your balance of (0x…)." } } },
   },
 ];
@@ -165,7 +165,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "AURN MCP (read-only) — discover coins, quote trades, and read a portfolio on aurn.fun (Robinhood Chain). The `portfolio` tool needs an AURN API key. AURN is non-custodial: to trade or launch, the user signs in their own wallet in the app.",
+      instructions: "AURN MCP (read-only) - discover coins, quote trades, and read a portfolio on aurn.fun (Robinhood Chain). The `portfolio` tool needs an AURN API key. AURN is non-custodial: to trade or launch, the user signs in their own wallet in the app.",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response

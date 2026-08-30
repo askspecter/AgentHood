@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
  * Live $AURN burn counter.
  *
  * Reads the on-chain burn total from /api/aurn/burned (balance held at the burn
- * addresses, which can only ever climb) and shows it counting up — the visible
+ * addresses, which can only ever climb) and shows it counting up - the visible
  * proof behind the deflationary story. Every creator claim tops up the buyback
  * reserve; the buyback swaps it for $AURN and sends it here to burn.
  */
@@ -13,7 +13,7 @@ const NETWORK = 'robinhood'
 
 // Short, punchy formatting for a big burn number: 28.38M, 1.20B, 940.5K.
 function fmtBurn(n) {
-  if (n == null || !Number.isFinite(n)) return '—'
+  if (n == null || !Number.isFinite(n)) return '-'
   if (Math.abs(n) >= 1_000_000_000) return (n / 1e9).toFixed(2) + 'B'
   if (Math.abs(n) >= 1_000_000) return (n / 1e6).toFixed(2) + 'M'
   if (Math.abs(n) >= 1_000) return (n / 1e3).toFixed(1) + 'K'
@@ -62,7 +62,7 @@ export default function BurnCounter() {
   // Share the current burn total to X. aurn.fun unfurls with the live burn card.
   const shareBurn = () => {
     const n = fmtBurn(data?.burned ?? 0)
-    const text = `${n} $AURN burned and counting — bought back & burned on-chain, forever. deflationary by design.`
+    const text = `${n} $AURN burned and counting - bought back & burned on-chain, forever. deflationary by design.`
     const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://aurn.fun')}`
     window.open(url, '_blank', 'noopener,noreferrer')
   }

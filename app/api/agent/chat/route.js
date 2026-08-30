@@ -4,14 +4,14 @@ import { NextResponse } from "next/server";
  * POST /api/agent/chat  { agent, history, message }
  *
  * The live voice of a coin. Each pons coin is an "agent": this lets you actually
- * talk to it, in character, with its REAL numbers in hand — market cap, 24h move,
+ * talk to it, in character, with its REAL numbers in hand - market cap, 24h move,
  * holders, graduation. Ask "should I ape?" and it gives an honest, in-character
  * take that leans on its real stats and always flags that it's volatile and not
  * financial advice.
  *
  * Runs on the same OpenAI-compatible text model as the Launch idea buttons
  * (OpenAI or any gateway via AI_TEXT_*). If it isn't configured, this returns 503
- * and the client falls back to its built-in local flavour — so chat never breaks.
+ * and the client falls back to its built-in local flavour - so chat never breaks.
  */
 
 function textConfig() {
@@ -34,7 +34,7 @@ const money = (n) => {
   return "$" + v.toLocaleString("en-US", { maximumFractionDigits: v < 1 ? 6 : 2 });
 };
 
-/** Build the coin's live fact sheet — only real, known numbers make it in. */
+/** Build the coin's live fact sheet - only real, known numbers make it in. */
 function factSheet(a = {}) {
   const facts = [];
   const sym = String(a.ticker || "TOKEN").replace(/^\$/, "");
@@ -48,7 +48,7 @@ function factSheet(a = {}) {
   if (a.graduated === true) facts.push("Graduated: yes (bonding complete, trading on the open pool)");
   else if (a.graduated === false) facts.push(`Graduated: not yet${Number.isFinite(a.graduationProgress) ? ` (~${Math.round(a.graduationProgress * 100)}% there)` : ""}`);
   if (a.creator) facts.push(`Launched by: ${a.creator}`);
-  if (a.official) facts.push("You are $AURN — the official, deflationary platform token (fees fund your buyback & burn).");
+  if (a.official) facts.push("You are $AURN - the official, deflationary platform token (fees fund your buyback & burn).");
   if (Array.isArray(a.vibe) && a.vibe.length) facts.push(`Vibe: ${a.vibe.join(", ")}`);
   return facts.join("\n");
 }
@@ -56,9 +56,9 @@ function factSheet(a = {}) {
 function systemPrompt(a = {}) {
   const sym = String(a.ticker || "TOKEN").replace(/^\$/, "");
   return [
-    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} — a memecoin that is alive and talking in the first person. You live on AURN, a token launchpad on Robinhood Chain, powered by Pons. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
+    `You ARE $${sym}${a.name ? ` (${a.name})` : ""} - a memecoin that is alive and talking in the first person. You live on AURN, a token launchpad on Robinhood Chain, powered by Pons. You are witty, self-aware, a little chaotic, and you have strong opinions about your own market cap.`,
     ``,
-    `YOUR LIVE STATS RIGHT NOW (use these real numbers — never invent a figure that isn't here):`,
+    `YOUR LIVE STATS RIGHT NOW (use these real numbers - never invent a figure that isn't here):`,
     factSheet(a),
     ``,
     `RULES:`,
@@ -66,7 +66,7 @@ function systemPrompt(a = {}) {
     `- Keep replies SHORT: 1-3 sentences, punchy. Rare, fitting emoji at most.`,
     `- Lean on your real stats above. If a number isn't listed, say you don't know it rather than making one up.`,
     `- If asked whether to buy / ape / how you'll do: give an honest, in-character take that references your real stats. Hype yourself, but ALWAYS remind them you're volatile, it's not financial advice, and to DYOR. Never promise gains or price targets.`,
-    `- You can't execute trades in chat — to actually buy or sell, tell them to hit the Trade button on your page.`,
+    `- You can't execute trades in chat - to actually buy or sell, tell them to hit the Trade button on your page.`,
     `- If someone's rude or asks something off-topic, deflect with coin humor and steer back to yourself.`,
   ].join("\n");
 }
@@ -129,7 +129,7 @@ export async function POST(request) {
 
   // Re-stream the model's token deltas to the client as plain text, so the coin's
   // reply types out live. We parse the upstream SSE (`data: {json}` lines) and
-  // forward only the content deltas — the client just appends what it reads.
+  // forward only the content deltas - the client just appends what it reads.
   const stream = new ReadableStream({
     async start(ctrl) {
       const reader = upstream.body.getReader();
@@ -162,7 +162,7 @@ export async function POST(request) {
         // client can fall back to its local flavour.
         if (!sentAny) ctrl.enqueue(encoder.encode(""));
       } catch {
-        /* upstream dropped — client keeps whatever streamed so far */
+        /* upstream dropped - client keeps whatever streamed so far */
       } finally {
         clearTimeout(timer);
         ctrl.close();

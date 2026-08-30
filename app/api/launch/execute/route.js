@@ -4,7 +4,7 @@ import { deriveSigner, getChain } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 
 /**
- * POST /api/launch/execute — create a token, signed with the caller's X wallet.
+ * POST /api/launch/execute - create a token, signed with the caller's X wallet.
  *
  * Signing in with X already mints a wallet, so creating a token needs no browser
  * extension: the launch is signed server-side with the wallet derived from the
@@ -82,7 +82,7 @@ export async function POST(request) {
   }
   if (!session) {
     return NextResponse.json(
-      { error: "Sign in with X first — the launch is signed with your X wallet." },
+      { error: "Sign in with X first - the launch is signed with your X wallet." },
       { status: 401 }
     );
   }
@@ -113,7 +113,7 @@ export async function POST(request) {
   const owner = await signer.getAddress();
   const provider = signer.provider;
 
-  // Creator fees always go to the caller's own X wallet — never a value the
+  // Creator fees always go to the caller's own X wallet - never a value the
   // client chose.
   const safeValues = feePath ? { ...values, [feePath]: owner } : values;
 

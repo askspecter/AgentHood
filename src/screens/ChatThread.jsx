@@ -83,7 +83,7 @@ export default function ChatThread() {
         <button className="btn btn-primary" disabled={!text.trim()}>Send</button>
       </form>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-2 mb-4">
-        ${charm.ticker} speaks for itself — playful, not financial advice. The coin is real; trade it anytime.
+        ${charm.ticker} speaks for itself - playful, not financial advice. The coin is real; trade it anytime.
       </p>
     </div>
   )

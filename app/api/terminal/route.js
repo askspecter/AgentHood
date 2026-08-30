@@ -27,8 +27,8 @@ import { getSession } from "@/lib/session";
  *
  * One line of terminal input in, a rendered answer out. Read-only: the worst
  * this endpoint can do is quote a trade. Signing happens in the browser wallet,
- * or — for someone who signed in with X and has no wallet extension, which on a
- * phone is nearly everybody — at `/api/terminal/execute`, which is a separate
+ * or - for someone who signed in with X and has no wallet extension, which on a
+ * phone is nearly everybody - at `/api/terminal/execute`, which is a separate
  * route precisely so that spending money is a separate decision.
  */
 
@@ -44,8 +44,8 @@ const RESOLVE_LIMIT = 24;
 /**
  * Short-lived portfolio cache, keyed by network:address.
  *
- * Building a portfolio is the heaviest read this app does — a wide log scan plus
- * a balanceOf on every token the wallet ever touched — so re-running it on every
+ * Building a portfolio is the heaviest read this app does - a wide log scan plus
+ * a balanceOf on every token the wallet ever touched - so re-running it on every
  * Profile visit or Refresh tap is what makes holdings feel slow. Caching the
  * result for a short window makes the second read instant; the TTL is short
  * enough that a fresh trade shows up on the next refresh.
@@ -66,7 +66,7 @@ async function mapBounded(items, concurrency, fn) {
   }
 }
 
-/** Resolve `promise`, or `fallback` if it hasn't settled within `ms` — a hard cap. */
+/** Resolve `promise`, or `fallback` if it hasn't settled within `ms` - a hard cap. */
 function withTimeout(promise, ms, fallback) {
   return Promise.race([
     Promise.resolve(promise).catch(() => fallback),
@@ -75,14 +75,14 @@ function withTimeout(promise, ms, fallback) {
 }
 
 /**
- * The wallet's ERC-20 balances straight from the block explorer's index —
+ * The wallet's ERC-20 balances straight from the block explorer's index -
  * address, balance and metadata in one call.
  *
  * The RPC path (a wide `getLogs` transfer scan, then `balanceOf` on every token
  * it finds) is both slow and lossy: it can hang the whole request on a public
  * RPC, and a chunk that rate-limits drops a coin the wallet plainly holds.
  * Blockscout already indexes every balance, so this returns the whole set in one
- * request — fast, and it never misses a coin the wallet just bought. The
+ * request - fast, and it never misses a coin the wallet just bought. The
  * portfolio uses it as the primary source and keeps the RPC scan as a fallback.
  */
 async function explorerBalances(explorer, address, timeoutMs = 8000) {
@@ -139,7 +139,7 @@ async function resolveOwner(account, session) {
     try {
       return { address: deriveAddress(session.id), source: "x" };
     } catch {
-      // WALLET_DERIVATION_SECRET missing — not fatal for a read-only command.
+      // WALLET_DERIVATION_SECRET missing - not fatal for a read-only command.
     }
   }
   return { address: null, source: null };
@@ -155,7 +155,7 @@ async function resolveTicker(query, launches, chain) {
   const found = resolveToken(query, launches);
   if (found.ok || found.reason === "ambiguous") return found;
 
-  // A miss on the feed. Only a plain ticker is worth a directory lookup — a
+  // A miss on the feed. Only a plain ticker is worth a directory lookup - a
   // full sentence never is, and an address already resolved above.
   if (isAddress(query) || !looksLikeTicker(query)) return found;
 
@@ -229,7 +229,7 @@ export async function POST(request) {
         line(
           command.symbol
             ? `Opening the create form for $${command.symbol}${
-                command.name ? ` — “${command.name}”` : ""
+                command.name ? ` - “${command.name}”` : ""
               }.`
             : "Opening the create form."
         ),
@@ -323,7 +323,7 @@ export async function POST(request) {
           provider.getBlockNumber().catch(() => null),
         ]);
         const gwei = fee.gasPrice != null ? Number(fee.gasPrice) / 1e9 : null;
-        // A plain transfer is 21,000 gas — a figure people can anchor a fee to.
+        // A plain transfer is 21,000 gas - a figure people can anchor a fee to.
         const transferEth = fee.gasPrice != null ? Number(formatEther(fee.gasPrice * 21000n)) : null;
         return NextResponse.json(
           serialise({
@@ -492,7 +492,7 @@ export async function POST(request) {
           });
         }
 
-        // Serve a recent build instantly — the heavy scan below only reruns once
+        // Serve a recent build instantly - the heavy scan below only reruns once
         // the cache has expired.
         const folioKey = `${network}:${owner.address.toLowerCase()}`;
         const cachedFolio = PORTFOLIO_CACHE.get(folioKey);
@@ -501,7 +501,7 @@ export async function POST(request) {
         }
 
         // Hard time budget: whatever isn't ready by the deadline is skipped so a
-        // reload never drags — the wallet still shows, just some prices may fill
+        // reload never drags - the wallet still shows, just some prices may fill
         // in on the next refresh. The heavy pieces below are all bounded to it.
         const t0 = Date.now();
         const overBudget = () => Date.now() - t0 > 4000;
@@ -512,11 +512,11 @@ export async function POST(request) {
         //  1. The launch feed + everything launched through this site, which
         //     comes with live pool prices already attached.
         //  2. A direct chain scan of every ERC-20 that has ever transferred to
-        //     or from this wallet — the real answer, covering stocks, airdrops
+        //     or from this wallet - the real answer, covering stocks, airdrops
         //     and positions far older than the feed's block window.
         //
         // Kick the explorer balance read off up front so it runs WHILE the launch
-        // metadata is built — the two don't depend on each other — and cap it so a
+        // metadata is built - the two don't depend on each other - and cap it so a
         // slow explorer can't blow the budget.
         const balancesPromise = withTimeout(
           explorerBalances(chain.explorer, owner.address, 3500),
@@ -534,7 +534,7 @@ export async function POST(request) {
             if (enriched) scanTargets = [...launches, ...enriched];
           }
         } catch {
-          /* registry is optional — a feed-only scan is still useful */
+          /* registry is optional - a feed-only scan is still useful */
         }
 
         // Launches carry price + metadata; keep them keyed so a discovered token
@@ -570,7 +570,7 @@ export async function POST(request) {
 
             // No live price yet and not one of our launches: one bounded spot read
             // (WETH pair, then the stock/USDG pair). Only the handful of coins the
-            // wallet actually holds hit this — and it's skipped once the budget is
+            // wallet actually holds hit this - and it's skipped once the budget is
             // spent, so the coin still lists (just unpriced until the next refresh).
             if (priceInWeth == null && priceUsd == null && !known && !overBudget()) {
               for (const kind of [null, "stock"]) {
@@ -583,7 +583,7 @@ export async function POST(request) {
                     name = name || sp.name;
                     if (priceUsd != null || priceInWeth != null) break;
                   }
-                } catch { /* leave it unpriced — the balance still shows */ }
+                } catch { /* leave it unpriced - the balance still shows */ }
                 if (overBudget()) break;
               }
             }
@@ -673,7 +673,7 @@ export async function POST(request) {
         // fees land here as WETH and the explorer index can omit it, so read it
         // directly (through the reliable non-batching provider) and add it if it
         // isn't already listed, priced 1:1 with ETH. This read used to go through
-        // the batching provider and silently drop WETH on a coalesce error — the
+        // the batching provider and silently drop WETH on a coalesce error - the
         // reason it kept "not showing" even when the wallet plainly held it.
         const wethCandidates = [
           ...new Set(
@@ -762,7 +762,7 @@ export async function POST(request) {
 
         if (!found.ok) {
           // A ticker that looks like a stock but resolved nowhere, on a deploy
-          // with no directory configured, is not "no such token" — it is "this
+          // with no directory configured, is not "no such token" - it is "this
           // deploy cannot reach stock tokens yet". Say which.
           if (found.directoryEmpty && looksLikeTicker(command.query)) {
             return NextResponse.json({
@@ -783,7 +783,7 @@ export async function POST(request) {
               ? [
                   line(`Could not read the launch feed, so “${command.query}” cannot be resolved to an address.`, "error"),
                   line(feedError, "muted"),
-                  line("A contract address still works — it needs no feed lookup.", "muted"),
+                  line("A contract address still works - it needs no feed lookup.", "muted"),
                 ]
               : [
                   line(`No launch or listed token called “${command.query}”.`, "error"),
@@ -806,7 +806,7 @@ export async function POST(request) {
         if (command.kind === "price") {
           const l = found.launch;
 
-          // A feed launch carries full pool state — use it directly.
+          // A feed launch carries full pool state - use it directly.
           if (l && Number.isFinite(l.priceInWeth) && !l.fromDirectory) {
             return NextResponse.json(
               serialise({
@@ -849,7 +849,7 @@ export async function POST(request) {
                 },
                 lines: [
                   line(
-                    `Price is ${l.symbol}'s issuer bid/ask from Robinhood. Buy/sell here needs a pool on the swap router — try \`buy $5 ${l.symbol}\` to check.`,
+                    `Price is ${l.symbol}'s issuer bid/ask from Robinhood. Buy/sell here needs a pool on the swap router - try \`buy $5 ${l.symbol}\` to check.`,
                     "muted"
                   ),
                 ],
@@ -888,7 +888,7 @@ export async function POST(request) {
             );
           }
 
-          // No WETH pool to quote against — the tokenized-stock-vs-stablecoin
+          // No WETH pool to quote against - the tokenized-stock-vs-stablecoin
           // case, or simply an untradeable token. Show what we know, honestly.
           const meta = l || (await tokenMeta(provider, found.token));
           return NextResponse.json(

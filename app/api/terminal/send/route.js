@@ -4,12 +4,12 @@ import { ERC20_ABI, deriveSigner, getChain, tokenMeta } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 
 /**
- * POST /api/terminal/send — move funds out of the caller's X wallet.
+ * POST /api/terminal/send - move funds out of the caller's X wallet.
  *
  * A sibling of /execute, and safe for the same reason: the wallet is derived
  * from the SESSION, so a request can only ever spend the caller's own funds. The
- * recipient DOES come from the request here — that is the whole point of a
- * transfer — but nothing else does, and the amount is bounded by the balance.
+ * recipient DOES come from the request here - that is the whole point of a
+ * transfer - but nothing else does, and the amount is bounded by the balance.
  *
  * Native sends and ERC-20 sends both dry-run before they broadcast, so a send
  * that would revert costs nothing.
@@ -53,7 +53,7 @@ export async function POST(request) {
   }
   if (!session) {
     return NextResponse.json(
-      { error: "Sign in with X first — this sends from the wallet derived from your account." },
+      { error: "Sign in with X first - this sends from the wallet derived from your account." },
       { status: 401 }
     );
   }

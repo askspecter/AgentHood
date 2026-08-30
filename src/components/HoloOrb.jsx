@@ -1,7 +1,7 @@
 import { forwardRef } from 'react'
 
 /**
- * Holographic spectrum orb — image-2's iridescent color-wheel, rebuilt in layers:
+ * Holographic spectrum orb - image-2's iridescent color-wheel, rebuilt in layers:
  *   bloom halo · orbital ring · conic spectrum sphere · volume shade ·
  *   glass specular · foil grain · sweeping sheen · orbiting spark.
  * `tiltRef` receives the sphere group so the parent can drive mouse tilt.
@@ -11,7 +11,7 @@ const HoloOrb = forwardRef(function HoloOrb({ size = 300 }, tiltRef) {
   const s = size
   return (
     <div className="relative grid place-items-center" style={{ width: s * 1.7, height: s * 1.7 }}>
-      {/* spectral bloom aura — the glow that bleeds into the black */}
+      {/* spectral bloom aura - the glow that bleeds into the black */}
       <div
         className="absolute rounded-full pointer-events-none spinRev"
         style={{
@@ -29,7 +29,7 @@ const HoloOrb = forwardRef(function HoloOrb({ size = 300 }, tiltRef) {
       <div className="absolute rounded-full pointer-events-none"
         style={{ width: s * 1.14, height: s * 1.14, border: '1px solid rgba(255,255,255,0.04)' }} />
 
-      {/* the sphere group — parent tilts this */}
+      {/* the sphere group - parent tilts this */}
       <div ref={tiltRef} className="tilt floaty relative grid place-items-center"
         style={{ width: s, height: s, transformStyle: 'preserve-3d' }}>
 
@@ -42,7 +42,7 @@ const HoloOrb = forwardRef(function HoloOrb({ size = 300 }, tiltRef) {
             maskImage: 'radial-gradient(circle at 50% 50%, #000 52%, rgba(0,0,0,0.6) 64%, transparent 74%)',
           }} />
 
-        {/* volume — darken the far edge so the disc reads as a sphere */}
+        {/* volume - darken the far edge so the disc reads as a sphere */}
         <div className="absolute rounded-full pointer-events-none"
           style={{
             width: s * 0.98, height: s * 0.98,
@@ -59,7 +59,7 @@ const HoloOrb = forwardRef(function HoloOrb({ size = 300 }, tiltRef) {
             maskImage: 'radial-gradient(circle, #000 60%, transparent 73%)',
           }} />
 
-        {/* sweeping sheen — a light crossing the glass */}
+        {/* sweeping sheen - a light crossing the glass */}
         <div className="absolute inset-0 rounded-full overflow-hidden pointer-events-none">
           <div className="absolute" style={{
             top: '-30%', left: '-30%', width: '160%', height: '160%',

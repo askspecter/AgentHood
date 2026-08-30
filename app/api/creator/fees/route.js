@@ -8,7 +8,7 @@ import { resolveLaunch, escrow } from "@/lib/engine/ponsV2";
  * GET /api/creator/fees?token=0x…&network=robinhood
  *
  * The creator's currently-claimable pool fees (the token + WETH amounts), read by
- * static-calling the locker's claim function — collect-style functions return the
+ * static-calling the locker's claim function - collect-style functions return the
  * amounts they would pay, so this reads "accrued" without spending gas. Best
  * effort: if the amounts can't be read, `accrued` is null and the panel just
  * shows the Claim button. Creator-only.
@@ -65,7 +65,7 @@ export async function GET(request) {
     (entry?.xUsername && entry.xUsername.toLowerCase() === (session.username || "").replace(/^@/, "").toLowerCase());
   if (!isCreator) return NextResponse.json({ accrued: null });
 
-  // pons v2: fees accrue to the shared escrow, per recipient — a native ETH
+  // pons v2: fees accrue to the shared escrow, per recipient - a native ETH
   // ledger plus a per-asset ledger for custom-pair launches. This is the
   // recipient's total across their v2 launches (aggregate, not per-coin).
   try {
@@ -87,7 +87,7 @@ export async function GET(request) {
       return NextResponse.json({ accrued, canRead: true, v2: true, aggregate: true });
     }
   } catch {
-    /* not a v2 launch — fall through to the v1 locker path */
+    /* not a v2 launch - fall through to the v1 locker path */
   }
 
   const locker = chain.pons?.locker;
@@ -111,7 +111,7 @@ export async function GET(request) {
       const raw = await provider.call({ to: locker, data, from: wallet });
       decoded = iface.decodeFunctionResult(claimFn.name, raw);
     } catch {
-      // Reverts when there's nothing to claim — report zero rather than failing.
+      // Reverts when there's nothing to claim - report zero rather than failing.
       return NextResponse.json({ accrued: [], canRead: true });
     }
 

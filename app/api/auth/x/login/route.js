@@ -30,7 +30,7 @@ export async function GET(request) {
     .update(codeVerifier)
     .digest("base64url");
 
-  // CSRF token — the callback refuses any state it did not issue.
+  // CSRF token - the callback refuses any state it did not issue.
   const state = crypto.randomBytes(16).toString("base64url");
 
   // A referral code (?ref=HANDLE) rides along in the OAuth state cookie so it

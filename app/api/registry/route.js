@@ -80,7 +80,7 @@ export async function GET(request) {
           // whatever logo the token set on-chain.
           logo: entry.logo || l.logo || null,
           xUsername: entry.xUsername || mine || null,
-          // The wallet that deployed the coin — shown as the creator when there's
+          // The wallet that deployed the coin - shown as the creator when there's
           // no X handle, so the card credits the deploying address, not "anon".
           deployer: l.deployer || entry.deployer || null,
           official: entry.official || false,
@@ -118,7 +118,7 @@ export async function GET(request) {
       );
     }
 
-    // Never emit a coin we couldn't label — it renders as the "$TOKEN"
+    // Never emit a coin we couldn't label - it renders as the "$TOKEN"
     // placeholder. The official pin is always kept; everything else needs a real
     // symbol or name (it returns once its on-chain read succeeds).
     launches = launches.filter((l) => l.official || l.symbol || l.name);

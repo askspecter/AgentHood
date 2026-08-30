@@ -4,11 +4,11 @@ import { useStore } from '../lib/store'
 import { Back } from '../components/icons'
 
 /**
- * AI access — connect AURN to your AI through the MCP server.
+ * AI access - connect AURN to your AI through the MCP server.
  *
  * Generates a personal read-only API key (browse coins, quotes, your portfolio)
  * and shows how to wire aurn.fun/api/mcp into a client like Claude or Cursor.
- * It carries no spend authority — your own wallet signs every transaction, so an
+ * It carries no spend authority - your own wallet signs every transaction, so an
  * AI can prepare a trade but can never move your funds.
  */
 const ENDPOINT = 'https://aurn.fun/api/mcp'
@@ -79,7 +79,7 @@ export default function AiAccess() {
             <div className="px-3.5 py-3 rounded-xl panel-soft font-mono text-xs break-all">{key}</div>
             <button onClick={() => copy(key, 'key')} className="btn btn-primary w-full justify-center mt-3">{copied === 'key' ? 'Copied ✓' : 'Copy key'}</button>
             <p className="text-xs text-[var(--color-down)] mt-3">
-              Copy it now — it isn't shown again. This key gives read access to your AURN account; treat it like a password and never paste it publicly.
+              Copy it now - it isn't shown again. This key gives read access to your AURN account; treat it like a password and never paste it publicly.
             </p>
           </>
         ) : (
@@ -97,7 +97,7 @@ export default function AiAccess() {
           <Step n={1}>Add <span className="font-mono">{ENDPOINT}</span> as an MCP server in your client (Claude, Cursor, …).</Step>
           <Step n={2}>Set the auth header <span className="font-mono">Authorization: Bearer &lt;your key&gt;</span>.</Step>
           <Step n={3}>Ask your AI to list coins, quote a trade, or read your portfolio.</Step>
-          <Step n={4}>To actually trade or launch, come back to AURN and sign in your own wallet — the key never can.</Step>
+          <Step n={4}>To actually trade or launch, come back to AURN and sign in your own wallet - the key never can.</Step>
         </ol>
       </div>
     </div>

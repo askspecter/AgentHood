@@ -36,7 +36,7 @@ export class PonsV2Adapter implements LaunchStrategy {
     const pairToken = (input.pairToken ?? zeroAddress) as Address;
     const launchConfigId = BigInt(input.launchConfigId ?? 0);
 
-    // Creator tax (bps) — the creator's share of the 1% trading fee, capped at
+    // Creator tax (bps) - the creator's share of the 1% trading fee, capped at
     // 1000 bps (10% of the fee) to match the protocol's ceiling. The field is a
     // uint16 on-chain; clamp and round to a whole bp.
     const creatorTaxBps = Math.max(0, Math.min(1000, Math.round(input.creatorTaxBps ?? 0)));
@@ -45,7 +45,7 @@ export class PonsV2Adapter implements LaunchStrategy {
 
     // NON-BLOCKING whitelist check. Pons v2 launches are whitelist-gated
     // ON-CHAIN: if the wallet isn't allowlisted, launchToken() reverts no matter
-    // how correct the calldata is — the frontend cannot bypass that. We never
+    // how correct the calldata is - the frontend cannot bypass that. We never
     // block here (deploy is always attempted, per request), but we surface a
     // clear reason up front so a revert isn't a mystery.
     const allowed = await canLaunch(account).catch(() => null);
@@ -79,7 +79,7 @@ export class PonsV2Adapter implements LaunchStrategy {
         farcaster: "",
       },
       // A successful on-chain launch (selector 0xa72101af) set this to the
-      // caller's address, not the zero address — some factory paths revert on
+      // caller's address, not the zero address - some factory paths revert on
       // zero. Match the proven-working calldata.
       creatorFeeRecipient: account,
       creatorTaxBps,

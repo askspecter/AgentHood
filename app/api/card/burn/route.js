@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 /**
  * GET /api/card/burn?n=28.38M
  *
- * A branded 1200x630 share card for the $AURN burn total — the "deflationary
+ * A branded 1200x630 share card for the $AURN burn total - the "deflationary
  * milestone" image. The client passes the already-formatted number as `n`; if
  * it's absent, we read the live total from /api/aurn/burned so the card is still
  * correct when a link unfurls with no params.

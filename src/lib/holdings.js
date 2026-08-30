@@ -4,7 +4,7 @@
  * The portfolio scan is the heaviest read in the app, so the Send and Trade
  * pickers must not each pay for it fresh. This keeps the last result in memory
  * (and sessionStorage, so it survives a reload) and hands it back instantly
- * while a background refresh runs — the same "paint now, reconcile after" shape
+ * while a background refresh runs - the same "paint now, reconcile after" shape
  * the balance uses. The server already caches the scan for ~45s, so the
  * background refresh is cheap too.
  */
@@ -28,7 +28,7 @@ function readPersisted() {
 /**
  * The freshest holdings we already have, or null. Never hits the network.
  * Persisted to localStorage so the very first paint on a fresh page load is
- * instant (stale-while-revalidate — loadHoldings still refetches behind it).
+ * instant (stale-while-revalidate - loadHoldings still refetches behind it).
  */
 export function cachedHoldings() {
   if (mem) return mem.holdings
@@ -48,7 +48,7 @@ function store(holdings) {
  *
  * @param {(h: any[]) => void} onData called with cached data immediately (if any)
  *   and again with fresh data once the scan returns.
- * @returns {() => void} cancel — stops the fresh result from landing after unmount.
+ * @returns {() => void} cancel - stops the fresh result from landing after unmount.
  */
 export function loadHoldings(onData) {
   let cancelled = false
@@ -80,7 +80,7 @@ export function primeHoldings(holdings) {
   if (Array.isArray(holdings)) store(holdings)
 }
 
-/** Drop the cache — call after a trade/send so the next read rescans. */
+/** Drop the cache - call after a trade/send so the next read rescans. */
 export function invalidateHoldings() {
   mem = null
   try { localStorage.removeItem(KEY) } catch {}

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, getAddress } from "ethers";
-import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken } from "@/lib/engine";
+import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken, officialTokenAddress, officialLogo } from "@/lib/engine";
 
 const POOL_SLOT0_ABI = [
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
@@ -41,7 +41,7 @@ async function attachChange24(provider, launches, concurrency = 5) {
           if (!Number.isFinite(price24) || price24 <= 0) return;
           l.change24 = (l.priceInWeth / price24 - 1) * 100;
         } catch {
-          /* no archive data for this pool — leave change24 unset */
+          /* no archive data for this pool - leave change24 unset */
         }
       })
     );
@@ -52,7 +52,7 @@ async function attachChange24(provider, launches, concurrency = 5) {
  * Enrich token addresses with bounded concurrency.
  *
  * Reading 48 tokens in one Promise.all fires hundreds of eth_calls at once and
- * a shared RPC (Alchemy's free tier) rate-limits them all — every read fails and
+ * a shared RPC (Alchemy's free tier) rate-limits them all - every read fails and
  * nothing gets a name or price. Running a few at a time keeps every read under
  * the limit, so they actually return.
  */
@@ -60,7 +60,7 @@ async function enrichBounded(provider, chain, addresses, concurrency = 4, deadli
   const out = [];
   const start = Date.now();
   for (let i = 0; i < addresses.length; i += concurrency) {
-    // Stop enriching once the budget is spent — a slow/rate-limited node must not
+    // Stop enriching once the budget is spent - a slow/rate-limited node must not
     // drag the whole feed. Curated coins missing from `out` get a stub + explorer
     // price below, so the feed stays complete and fast.
     if (deadlineMs && Date.now() - start > deadlineMs) break;
@@ -73,12 +73,12 @@ async function enrichBounded(provider, chain, addresses, concurrency = 4, deadli
   return out;
 }
 
-/** keccak256("TokenLaunched(...)") — the factory's launch event. */
+/** keccak256("TokenLaunched(...)") - the factory's launch event. */
 const TOKEN_LAUNCHED_TOPIC =
   "0xdb51ea9ad51ab453a65a4cb7e60c3cb378c9501bb002609f8f97778fb6c4235a";
 
 /**
- * Featured pons coins — a reliable base list so the established coins never
+ * Featured pons coins - a reliable base list so the established coins never
  * drop out of the feed because auto-discovery missed them.
  *
  * These are NOT a fixed leaderboard: every one is re-priced live from the chain
@@ -89,7 +89,7 @@ const TOKEN_LAUNCHED_TOPIC =
  * PONS_SEED_TOKENS env) as the roster changes.
  */
 // No curated coins. AURN's Market shows ONLY coins launched through AURN
-// itself (the registry) plus an optional pin (OFFICIAL_TOKEN) — never a
+// itself (the registry) plus an optional pin (OFFICIAL_TOKEN) - never a
 // hardcoded roster of other projects' tokens.
 const FEATURED_PONS = [];
 const FEATURED_SYMBOL_LIST = [];
@@ -188,7 +188,7 @@ async function discoverViaExplorer(explorer, factories, pages = 2) {
  *
  * The factory-log scan only reaches the newest launches, which on a spammy chain
  * are junk. Blockscout already ranks every ERC-20 by popularity, so this is how
- * the big graduated coins (PONS, YOLO, …) surface at all — we take the top
+ * the big graduated coins (PONS, YOLO, …) surface at all - we take the top
  * tokens, then keep only the ones that turn out to be real pons launches.
  */
 async function discoverTopTokens(explorer, pages = Number(process.env.PONS_TOP_PAGES || 5)) {
@@ -225,7 +225,7 @@ async function attachHolders(explorer, launches, concurrency = 5) {
             l.holders = Number(j.holders ?? j.holders_count ?? j.holder_count) || null;
             // Fallback price + market cap from the explorer's index, used when the
             // on-chain pool read gave none (common for graduated coins whose
-            // liquidity has moved) — so the card shows a real figure, not a dash.
+            // liquidity has moved) - so the card shows a real figure, not a dash.
             const em = Number(j.circulating_market_cap ?? j.market_cap);
             if (Number.isFinite(em) && em > 0) l.explorerMcapUsd = em;
             const ep = Number(j.exchange_rate);
@@ -298,7 +298,7 @@ function stabilize(network, launches, alwaysShow) {
  * GET /api/launches?network=robinhood&limit=20
  *
  * The top launches by market cap, read straight off the pons contracts. Public
- * on-chain data — no sign-in.
+ * on-chain data - no sign-in.
  */
 export async function GET(request) {
   const url = new URL(request.url);
@@ -326,17 +326,17 @@ export async function GET(request) {
     const factories = [pons.factory, pons.legacyFactory].filter(Boolean);
 
     // The Discover feed shows ONLY coins launched through aurn.fun (the registry)
-    // plus the official $AURN pin. The wider pons universe — curated featured
-    // coins and auto-discovered launches — is included only when AURN_FEED_PONS=on.
+    // plus the official $AURN pin. The wider pons universe - curated featured
+    // coins and auto-discovered launches - is included only when AURN_FEED_PONS=on.
     // Off by default: our feed is our own launches.
-    // AURN never auto-discovers other coins on the chain — the Market is only
+    // AURN never auto-discovers other coins on the chain - the Market is only
     // what launched through AURN. Discovery/curation stays permanently off.
     const includePons = false;
 
     const [topTokens, discovered, registry, rate] = await Promise.all([
       includePons ? discoverTopTokens(chain.explorer).catch(() => []) : Promise.resolve([]),
       includePons ? discoverViaExplorer(chain.explorer, factories).catch(() => []) : Promise.resolve([]),
-      // Coins launched through AURN — always show these, even brand-new with no
+      // Coins launched through AURN - always show these, even brand-new with no
       // liquidity yet, so a creator sees their own coin the moment they refresh.
       listLaunched({ limit: 100 }).catch(() => ({ tokens: [], entries: [] })),
       getEthUsd(),
@@ -356,20 +356,20 @@ export async function GET(request) {
     const officialSet = new Set(
       (registry.entries || []).filter((e) => e?.official).map((e) => String(e.token).toLowerCase())
     );
-    // Gold-check + pin an official token ONLY when one is explicitly configured
-    // via OFFICIAL_TOKEN. By default the front shows nothing but coins launched
-    // through AURN itself — no curated or auto-discovered coins.
-    if (process.env.OFFICIAL_TOKEN) officialSet.add(process.env.OFFICIAL_TOKEN.toLowerCase());
+    // Gold-check + pin the official token ($AURN by default; OFFICIAL_TOKEN
+    // overrides, OFFICIAL_TOKEN="" drops it) so it always leads the feed.
+    const officialAddr = officialTokenAddress();
+    if (officialAddr) officialSet.add(officialAddr.toLowerCase());
 
     const seeds = [
       ...(includePons ? FEATURED_PONS : []),
       ...launchedHere,
-      process.env.OFFICIAL_TOKEN || null,
+      officialAddr,
       ...(includePons ? (process.env.PONS_SEED_TOKENS || "").split(/[\s,]+/) : []),
     ].filter(Boolean);
 
     // Enrich a bounded candidate set (newest + seeds), price each, and rank by
-    // market cap so the feed shows the biggest pons coins — not just the newest.
+    // market cap so the feed shows the biggest pons coins - not just the newest.
     const cap = Number(process.env.PONS_ENRICH_CAP || 50);
     const hidden = hiddenTokenSet();
     const seen = new Set();
@@ -394,17 +394,17 @@ export async function GET(request) {
         Number(process.env.PONS_ENRICH_CONCURRENCY || 5),
         Number(process.env.PONS_ENRICH_DEADLINE_MS || 4000)
       );
-      // Always show curated featured coins AND anything launched through AURN —
+      // Always show curated featured coins AND anything launched through AURN -
       // the latter so a creator's brand-new coin appears even before it has a
       // priced pool. Everything else must earn its place with real liquidity.
       const alwaysShow = new Set([
         ...(includePons ? FEATURED_PONS.map((a) => a.toLowerCase()) : []),
         ...launchedHere.map((a) => String(a).toLowerCase()),
-        ...(process.env.OFFICIAL_TOKEN ? [process.env.OFFICIAL_TOKEN.toLowerCase()] : []),
+        ...(officialAddr ? [officialAddr.toLowerCase()] : []),
       ]);
       const byMcap = (a, b) => (b.marketCapWeth || 0) - (a.marketCapWeth || 0);
 
-      // Featured / launched-here coins always show — even if BOTH the price and
+      // Featured / launched-here coins always show - even if BOTH the price and
       // the symbol read failed this cycle (a rate-limited node). A missing symbol
       // is backfilled from the known list so the coin never silently drops out.
       const featured = enriched
@@ -418,7 +418,7 @@ export async function GET(request) {
         })
         .sort(byMcap);
       // A curated coin whose enrich threw ENTIRELY (rate-limited node) is missing
-      // from `enriched` — add a minimal stub so it still shows. stabilize() then
+      // from `enriched` - add a minimal stub so it still shows. stabilize() then
       // fills its price/mcap from the last good read, and the final sort places it.
       const have = new Set(featured.map((l) => (l.token || "").toLowerCase()));
       for (const addr of alwaysShow) {
@@ -434,7 +434,7 @@ export async function GET(request) {
           /* skip a malformed curated address */
         }
       }
-      // Auto-discovered pons coins (not launched here) — included only when
+      // Auto-discovered pons coins (not launched here) - included only when
       // AURN_FEED_PONS=on. Off by default, so nothing outside our own launches
       // enters the feed. When on, they must be real pons launches with a priced
       // pool, so no-liquidity spam and non-pons ERC-20s are dropped.
@@ -446,7 +446,7 @@ export async function GET(request) {
 
       // Tag the source so the client can keep established (featured) coins ranked
       // ahead of freshly-discovered ones on the Top tab, and show the discovered
-      // ones first on New — without depending on a USD rate that may be missing.
+      // ones first on New - without depending on a USD rate that may be missing.
       for (const l of featured) l.featured = true;
       for (const l of extra) l.featured = false;
 
@@ -461,9 +461,10 @@ export async function GET(request) {
         if (officialSet.has(k)) {
           l.official = true;
           // The official coin always shows under the AURN brand, whatever its
-          // on-chain symbol/name reads as.
+          // on-chain symbol/name reads as, with the crisp bundled brand logo.
           l.symbol = KNOWN_SYMBOLS[k] || "AURN";
           l.name = "AURN";
+          l.logo = officialLogo();
           // The official $AURN token is @aurnfun, not the deployer/"pons" fallback.
           if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "aurnfun";
         }
@@ -495,7 +496,7 @@ export async function GET(request) {
 
       // Keep the feed stable: fill gaps from the last good read and don't let an
       // always-shown coin vanish on a transient miss. Then re-rank by USD market
-      // cap, falling back to the explorer's figure — so a big coin like PONS
+      // cap, falling back to the explorer's figure - so a big coin like PONS
       // still ranks by its real $40M even when the on-chain price read failed and
       // it would otherwise sink below fresh AURN launches.
       launches = stabilize(network, launches, alwaysShow);
@@ -510,7 +511,7 @@ export async function GET(request) {
           (mcapUsd(b) - mcapUsd(a))
       );
 
-      // Never surface a coin we couldn't label — it renders as the "$TOKEN"
+      // Never surface a coin we couldn't label - it renders as the "$TOKEN"
       // placeholder. The official pin is always kept; everything else needs a
       // real symbol or name (it returns once its on-chain read succeeds).
       launches = launches.filter((l) => l.official || l.symbol || l.name);
