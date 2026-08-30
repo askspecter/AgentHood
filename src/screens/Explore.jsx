@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import CharmAvatar from '../components/CharmAvatar'
 import { Verified } from '../components/icons'
 
@@ -11,10 +12,10 @@ import { Verified } from '../components/icons'
  */
 
 const TABS = [
-  { key: 'trending', label: 'Trending' },
-  { key: 'stock', label: 'Stock Paired' },
-  { key: 'gainers', label: 'Top Gainers' },
-  { key: 'new', label: 'New' },
+  { key: 'trending', tkey: 'filter.trending', label: 'Trending' },
+  { key: 'stock', tkey: 'filter.stock', label: 'Stock Paired' },
+  { key: 'gainers', tkey: 'filter.gainers', label: 'Top Gainers' },
+  { key: 'new', tkey: 'filter.new', label: 'New' },
 ]
 
 const capOf = (c) => (Number.isFinite(c.mcap) && c.mcap > 0 ? c.mcap : (Number.isFinite(c.marketCapWeth) ? c.marketCapWeth : 0))
@@ -34,6 +35,7 @@ const pctText = (c) => (c == null ? null : `${c >= 0 ? '▲' : '▼'} ${Math.abs
 export default function Explore() {
   const { agents, agentsLoading, loadAgents, prices } = useStore()
   const nav = useNavigate()
+  const tr = useT()
   const [tab, setTab] = useState('trending')
   const [q, setQ] = useState('')
 
@@ -54,21 +56,21 @@ export default function Explore() {
 
       <section>
         <div className="flex items-center justify-between gap-3 mb-4">
-          <h2 className="display text-3xl">Explore coins</h2>
+          <h2 className="display text-3xl">{tr('explore.title', 'Explore coins')}</h2>
           <button onClick={() => loadAgents(true)} disabled={agentsLoading}
             className="chip cursor-pointer shrink-0" title="Refresh">{agentsLoading ? '…' : '↻'}</button>
         </div>
 
         {/* filter chips */}
         <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1 mb-4">
-          {TABS.map((t) => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className={`chip cursor-pointer shrink-0 !px-3.5 !py-2 !text-[13px] ${tab === t.key ? 'chip-brand' : ''}`}>
-              {t.label}
+          {TABS.map((ftab) => (
+            <button key={ftab.key} onClick={() => setTab(ftab.key)}
+              className={`chip cursor-pointer shrink-0 !px-3.5 !py-2 !text-[13px] ${tab === ftab.key ? 'chip-brand' : ''}`}>
+              {tr(ftab.tkey, ftab.label)}
             </button>
           ))}
           <div className="relative shrink-0 ml-1">
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search…" className="input !py-2 !px-3 w-36 text-sm" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('explore.search', 'Search…')} className="input !py-2 !px-3 w-36 text-sm" />
           </div>
         </div>
 
@@ -112,6 +114,7 @@ function Creator({ charm }) {
 
 /* Swipeable hero carousel with pagination dots. */
 function HeroCarousel({ coins, prices, onTrade }) {
+  const tr = useT()
   const ref = useRef(null)
   const [active, setActive] = useState(0)
   const onScroll = () => {
@@ -154,7 +157,7 @@ function HeroCarousel({ coins, prices, onTrade }) {
                       {c.change24 != null && <div className={`font-mono num text-xs ${up ? 'text-[var(--color-up)]' : 'text-[var(--color-down)]'}`}>{pctText(c.change24)}</div>}
                     </div>
                   </div>
-                  <button onClick={(e) => { e.stopPropagation(); onTrade(c) }} className="btn btn-holo w-full mt-3 !py-2.5">Trade</button>
+                  <button onClick={(e) => { e.stopPropagation(); onTrade(c) }} className="btn btn-holo w-full mt-3 !py-2.5">{tr('action.trade', 'Trade')}</button>
                 </div>
               </div>
             </div>
@@ -174,13 +177,14 @@ function HeroCarousel({ coins, prices, onTrade }) {
 
 /* feel.cash-style coin card: big image, name/ticker, price/change, creator. */
 function GridCard({ charm, price, onOpen }) {
+  const tr = useT()
   const up = (charm.change24 ?? 0) >= 0
   return (
     <div onClick={onOpen} className="card card-hover overflow-hidden cursor-pointer flex flex-col">
       <div className="aspect-[4/3] relative">
         <CoinImage charm={charm} />
         {charm.graduated === true && (
-          <span className="absolute top-2 right-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">Grad</span>
+          <span className="absolute top-2 right-2 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-black/60 text-white">{tr('explore.badge.grad', 'Grad')}</span>
         )}
       </div>
       <div className="p-3">
@@ -207,16 +211,17 @@ function GridCard({ charm, price, onOpen }) {
 }
 
 function EmptyState({ q, tab, onLaunch }) {
-  if (q) return <div className="card text-center py-16 text-[var(--color-ink-soft)]">No coins match “{q}”.</div>
-  if (tab === 'stock') return <div className="card text-center py-16 text-[var(--color-ink-soft)]">No stock-paired coins yet.</div>
+  const tr = useT()
+  if (q) return <div className="card text-center py-16 text-[var(--color-ink-soft)]">{tr('explore.noMatch', 'No coins match')} “{q}”.</div>
+  if (tab === 'stock') return <div className="card text-center py-16 text-[var(--color-ink-soft)]">{tr('explore.noStock', 'No stock-paired coins yet.')}</div>
   return (
     <div className="card text-center px-6 py-16">
       <div className="mx-auto mb-5 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)', boxShadow: '0 0 30px -6px rgba(170,200,245,0.7)' }}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0a0c15" strokeWidth="2.6" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
       </div>
-      <h3 className="font-serif text-2xl mb-1.5">No coins yet</h3>
-      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">Be the first - mint a token that thinks, talks, and trades on AURN.</p>
-      <button onClick={onLaunch} className="btn btn-holo !py-3 !px-7 mx-auto">Launch the first coin</button>
+      <h3 className="font-serif text-2xl mb-1.5">{tr('explore.emptyTitle', 'No coins yet')}</h3>
+      <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-6">{tr('explore.emptyBody', 'Be the first - mint a token that thinks, talks, and trades on AURN.')}</p>
+      <button onClick={onLaunch} className="btn btn-holo !py-3 !px-7 mx-auto">{tr('explore.emptyCta', 'Launch the first coin')}</button>
     </div>
   )
 }

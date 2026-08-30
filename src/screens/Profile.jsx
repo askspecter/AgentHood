@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import { Gear, XGlyph, Coin, Verified } from '../components/icons'
 import CharmAvatar from '../components/CharmAvatar'
 import WalletActions from '../components/WalletActions'
@@ -39,6 +40,7 @@ const fmtSignedUsd = (n) =>
 export default function Profile() {
   const nav = useNavigate()
   const { wallet, connect, ethUsd: storeEthUsd, agents } = useStore()
+  const tr = useT()
 
   // The live feed carries each coin's real 24h change and logo. Match holdings
   // to it by address so the portfolio can show a coloured +/- and a proper icon.
@@ -110,9 +112,9 @@ export default function Profile() {
     return (
       <div className="max-w-md mx-auto text-center py-24">
         <div className="orb-spin mx-auto mb-6 w-14 h-14 rounded-2xl grid place-items-center" style={{ background: 'var(--holo)' }}><XGlyph size={20} color="#0b0a12" /></div>
-        <h1 className="font-serif text-3xl mb-2">Your portfolio</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to see its balance and every coin it holds.</p>
-        <button onClick={connect} className="btn btn-primary mx-auto">Connect Wallet</button>
+        <h1 className="font-serif text-3xl mb-2">{tr('portfolio.yourTitle', 'Your portfolio')}</h1>
+        <p className="text-[var(--color-ink-soft)] mb-7">{tr('portfolio.connectBody', 'Connect your wallet to see its balance and every coin it holds.')}</p>
+        <button onClick={connect} className="btn btn-primary mx-auto">{tr('wallet.connect', 'Connect Wallet')}</button>
       </div>
     )
   }
@@ -156,7 +158,7 @@ export default function Profile() {
           <div className="font-semibold text-lg leading-tight truncate">{wallet.name || wallet.handle}</div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="text-sm text-[var(--color-ink-soft)] truncate">{wallet.handle}</span>
-            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-soft)] shrink-0"><Verified size={13} /> Verified</span>
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-soft)] shrink-0"><Verified size={13} /> {tr('portfolio.verified', 'Verified')}</span>
           </div>
         </div>
         <button onClick={() => nav('/settings')} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)] shrink-0"><Gear size={18} /></button>
@@ -164,7 +166,7 @@ export default function Profile() {
 
       {/* real wallet balance card */}
       <div className="card p-5 sm:p-6 mb-4">
-        <div className="eyebrow mb-1">Total value</div>
+        <div className="eyebrow mb-1">{tr('portfolio.totalValue', 'Total value')}</div>
         <div className="flex items-center flex-wrap gap-x-3 gap-y-1">
           <div className="font-mono num text-3xl sm:text-4xl font-semibold">{totalUsd != null ? fmtUsd(totalUsd) : '-'}</div>
           {pnl && (
@@ -177,26 +179,26 @@ export default function Profile() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 mt-5 pt-5 border-t hairline">
-          <Mini label="ETH balance" value={eth != null ? fmtEth(eth) : '-'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
-          <Mini label="Coins held" value={haveHoldings ? String(holdings.length) : (loading ? '…' : '0')} sub={folio ? `of ${folio.scanned} scanned` : null} />
+          <Mini label={tr('portfolio.ethBalance', 'ETH balance')} value={eth != null ? fmtEth(eth) : '-'} sub={rate && eth != null ? fmtUsd(eth * rate) : null} />
+          <Mini label={tr('portfolio.coinsHeld', 'Coins held')} value={haveHoldings ? String(holdings.length) : (loading ? '…' : '0')} sub={folio ? `of ${folio.scanned} scanned` : null} />
         </div>
 
         <div className="mt-5">
           <WalletActions />
         </div>
-        <Link to="/launch" className="btn btn-holo static w-full justify-center mt-2">Launch a coin</Link>
+        <Link to="/launch" className="btn btn-holo static w-full justify-center mt-2">{tr('portfolio.launchCoin', 'Launch a coin')}</Link>
       </div>
 
       {/* holdings - real coins in the wallet */}
       <div className="flex items-center justify-between mb-3">
-        <div className="eyebrow">Holdings</div>
-        <button onClick={load} disabled={loading} className="text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">{loading ? 'Reading…' : '↻ Refresh'}</button>
+        <div className="eyebrow">{tr('portfolio.holdings', 'Holdings')}</div>
+        <button onClick={load} disabled={loading} className="text-xs text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">{loading ? tr('common.reading', 'Reading…') : `↻ ${tr('common.refresh', 'Refresh')}`}</button>
       </div>
 
       {holdings.length === 0 ? (
         <Empty
-          title={loading ? 'Reading your wallet…' : 'No coins held'}
-          subtitle={loading ? 'Scanning balances on Robinhood Chain.' : 'Coins you buy or launch will show up here, priced live.'}
+          title={loading ? tr('portfolio.readingWallet', 'Reading your wallet…') : tr('portfolio.noCoins', 'No coins held')}
+          subtitle={loading ? tr('portfolio.scanningSub', 'Scanning balances on Robinhood Chain.') : tr('portfolio.noCoinsSub', 'Coins you buy or launch will show up here, priced live.')}
           action={!loading && <Link to="/" className="btn btn-primary">Discover coins</Link>}
         />
       ) : (

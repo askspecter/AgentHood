@@ -8,8 +8,12 @@ import { v2TokenLaunchedEvent } from '../lib/pons/abisV2'
 import { robinhoodChain } from '../lib/chain'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import CharmAvatar, { TONES } from '../components/CharmAvatar'
 import { XGlyph, Verified, Back } from '../components/icons'
+
+/* Fill a {name} placeholder in a translated string. */
+const withName = (s, name) => String(s || '').replace('{name}', name)
 
 /**
  * Launch - create an agent, mint a real token on pons.
@@ -194,6 +198,7 @@ function Pencil({ size = 13 }) {
 
 export default function Launch() {
   const nav = useNavigate()
+  const tr = useT()
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, ''), id: wallet.id } : null
 
@@ -506,7 +511,7 @@ export default function Launch() {
           <div className="flex-1 h-1.5 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden">
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, background: 'var(--holo-line)' }} />
           </div>
-          <span className="eyebrow w-14 text-right">{step === 4 ? 'Final' : `${Math.min(step + 1, 3)}/3`}</span>
+          <span className="eyebrow w-14 text-right">{step === 4 ? tr('launch.final', 'Final') : `${Math.min(step + 1, 3)}/3`}</span>
         </div>
       )}
 
@@ -524,25 +529,26 @@ export default function Launch() {
 
 /* ---------- 1 · Name ---------- */
 function StepName({ d, setName, setTicker, onNext, nameIdea, nameBusy }) {
+  const tr = useT()
   return (
     <div className="flex-1 flex flex-col justify-center">
-      <div className="eyebrow mb-3">Identity</div>
-      <h1 className="display text-4xl sm:text-5xl mb-10">Name your agent.</h1>
+      <div className="eyebrow mb-3">{tr('launch.identity', 'Identity')}</div>
+      <h1 className="display text-4xl sm:text-5xl mb-10">{tr('launch.nameTitle', 'Name your agent.')}</h1>
       <div className="relative mb-8">
         <div className="flex items-end gap-3">
           <input autoFocus value={d.name} onChange={(e) => setName(e.target.value)} placeholder="Nova"
             className="flex-1 min-w-0 bg-transparent outline-none border-0 pb-3 text-4xl sm:text-5xl font-bold tracking-tight placeholder:text-[var(--color-ink-faint)]" />
-          <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : 'Idea'}</button>
+          <button onClick={nameIdea} disabled={nameBusy} className="chip chip-brand shrink-0 mb-3 !py-1.5">{nameBusy ? '…' : tr('launch.idea', 'Idea')}</button>
         </div>
         <span className="absolute left-0 bottom-0 h-[3px] w-full rounded-full" style={{ background: 'var(--holo-line)', opacity: 0.9 }} />
       </div>
-      <label className="eyebrow block mb-2">Coin ticker <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· follows the name</span></label>
+      <label className="eyebrow block mb-2">{tr('launch.ticker', 'Coin ticker')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {tr('launch.tickerHint', 'follows the name')}</span></label>
       <div className="flex items-center input !py-2.5 max-w-[220px] mb-10">
         <span className="text-[var(--color-ink-faint)] mr-1">$</span>
         <input value={d.ticker} onChange={(e) => setTicker(e.target.value)} placeholder="NOVA"
           className="w-full bg-transparent outline-none font-mono num text-lg border-0 p-0" />
       </div>
-      <button onClick={onNext} disabled={!d.name.trim()} className="btn btn-holo w-full !py-3.5">Next</button>
+      <button onClick={onNext} disabled={!d.name.trim()} className="btn btn-holo w-full !py-3.5">{tr('action.next', 'Next')}</button>
     </div>
   )
 }
@@ -581,6 +587,7 @@ function StyleTile({ st, on, onClick }) {
 }
 
 function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setLogoFromFile }) {
+  const tr = useT()
   const [open, setOpen] = useState(null) // 'gender' | 'style' | 'image' | null
   const fileRef = useRef(null)
   const toggle = (k) => setOpen((o) => (o === k ? null : k))
@@ -594,19 +601,19 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
         <div className="floaty relative"><CharmAvatar charm={preview} size={150} ring square /></div>
       </div>
 
-      <h1 className="display text-3xl sm:text-4xl text-center mb-6">What does {d.name || 'it'} look like?</h1>
+      <h1 className="display text-3xl sm:text-4xl text-center mb-6">{withName(tr('launch.lookTitle', 'What does {name} look like?'), d.name || 'it')}</h1>
 
       <div className="card p-4 sm:p-5">
         {/* chips */}
         <div className="flex flex-wrap gap-2 mb-3">
           <ChipBtn active={open === 'gender'} onClick={() => toggle('gender')}>
-            {d.gender ? GENDERS.find((g) => g.key === d.gender)?.label : 'Gender'}
+            {d.gender ? GENDERS.find((g) => g.key === d.gender)?.label : tr('launch.gender', 'Gender')}
           </ChipBtn>
           <ChipBtn active={open === 'style'} onClick={() => toggle('style')}>
-            {d.style ? STYLES.find((s) => s.key === d.style)?.label : 'Style'}
+            {d.style ? STYLES.find((s) => s.key === d.style)?.label : tr('launch.style', 'Style')}
           </ChipBtn>
           <ChipBtn active={open === 'image' || !!d.logo} onClick={() => toggle('image')}>
-            {d.logo ? 'Image ✓' : 'Image'}
+            {d.logo ? `${tr('launch.image', 'Image')} ✓` : tr('launch.image', 'Image')}
           </ChipBtn>
         </div>
 
@@ -633,24 +640,24 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
         {open === 'image' && (
           <div className="mb-3 fade-up flex items-center gap-2">
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
-            <button onClick={() => fileRef.current?.click()} className="btn btn-secondary !py-2 text-sm">{d.logo ? 'Change image' : 'Upload image'}</button>
-            {d.logo && <button onClick={() => set('logo', '')} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">Remove</button>}
-            <span className="text-xs text-[var(--color-ink-faint)]">Shown as the coin logo</span>
+            <button onClick={() => fileRef.current?.click()} className="btn btn-secondary !py-2 text-sm">{d.logo ? tr('launch.changeImage', 'Change image') : tr('launch.uploadImage', 'Upload image')}</button>
+            {d.logo && <button onClick={() => set('logo', '')} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">{tr('launch.remove', 'Remove')}</button>}
+            <span className="text-xs text-[var(--color-ink-faint)]">{tr('launch.logoHint', 'Shown as the coin logo')}</span>
           </div>
         )}
 
         {/* appearance description */}
         <div className="relative">
           <textarea value={d.look} onChange={(e) => set('look', e.target.value.slice(0, 240))} rows={3}
-            placeholder={`Pick a style, then describe ${d.name || 'it'}: colors, symbol, mood, details.`}
+            placeholder={withName(tr('launch.lookPlaceholder', 'Pick a style, then describe {name}: colors, symbol, mood, details.'), d.name || 'it')}
             className="input resize-none pr-20" />
-          <button onClick={lookIdea} disabled={lookBusy} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">{lookBusy ? '…' : 'Idea'}</button>
+          <button onClick={lookIdea} disabled={lookBusy} className="chip chip-brand !py-1 absolute bottom-2.5 right-2.5">{lookBusy ? '…' : tr('launch.idea', 'Idea')}</button>
         </div>
       </div>
 
-      <button onClick={onNext} className="btn btn-holo w-full !py-3.5 mt-6">Generate {d.name || 'it'}</button>
+      <button onClick={onNext} className="btn btn-holo w-full !py-3.5 mt-6">{withName(tr('launch.generate', 'Generate {name}'), d.name || 'it')}</button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Upload an image to use it directly, or let AI generate one from your description.
+        {tr('launch.lookHelp', 'Upload an image to use it directly, or let AI generate one from your description.')}
       </p>
     </div>
   )
@@ -658,6 +665,7 @@ function StepLook({ d, preview, set, onNext, pickStyle, lookIdea, lookBusy, setL
 
 /* ---------- 3 · Forge → look ready ---------- */
 function StepForge({ preview, pct, onContinue, onEdit }) {
+  const tr = useT()
   const ready = pct >= 100
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center">
@@ -669,20 +677,20 @@ function StepForge({ preview, pct, onContinue, onEdit }) {
 
       {ready ? (
         <>
-          <h1 className="display text-3xl sm:text-4xl mb-1">The look is ready.</h1>
+          <h1 className="display text-3xl sm:text-4xl mb-1">{tr('launch.ready', 'The look is ready.')}</h1>
           <div className="flex items-center justify-center gap-1.5 text-[var(--color-ink-soft)] mb-9">
             <span className="font-serif text-xl">{preview.name}</span><Verified size={14} />
             <span className="font-mono text-xs text-[var(--color-ink-faint)]">${preview.ticker}</span>
           </div>
           <div className="w-full max-w-sm space-y-2">
-            <button onClick={onContinue} className="btn btn-holo w-full !py-3.5">Continue</button>
-            <button onClick={onEdit} className="btn btn-secondary w-full">Edit look</button>
+            <button onClick={onContinue} className="btn btn-holo w-full !py-3.5">{tr('action.continue', 'Continue')}</button>
+            <button onClick={onEdit} className="btn btn-secondary w-full">{tr('launch.editLook', 'Edit look')}</button>
           </div>
         </>
       ) : (
         <>
           <div className="font-mono num text-5xl font-bold holo-text">{pct}%</div>
-          <div className="eyebrow mt-3">Generating {preview.name}…</div>
+          <div className="eyebrow mt-3">{withName(tr('launch.generating', 'Generating {name}…'), preview.name)}</div>
         </>
       )}
     </div>
@@ -691,6 +699,7 @@ function StepForge({ preview, pct, onContinue, onEdit }) {
 
 /* ---------- 4 · Soul ---------- */
 function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBusy, aiTraits, moreTraits, traitBusy, onNext, canLaunch }) {
+  const tr = useT()
   const [seed, setSeed] = useState(1)
   // AI-suggested traits when available (GPT-4o-mini); otherwise a rotating subset
   // of the local pool. "more" asks the AI first and falls back to a reshuffle.
@@ -705,12 +714,12 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
           <span className="font-serif text-2xl">{preview.name}</span><Verified size={15} />
           <span className="font-mono text-xs text-[var(--color-ink-faint)]">${preview.ticker}</span>
         </div>
-        <h1 className="display text-3xl mt-4">Give {d.name || 'it'} a soul.</h1>
+        <h1 className="display text-3xl mt-4">{withName(tr('launch.soulTitle', 'Give {name} a soul.'), d.name || 'it')}</h1>
       </div>
 
       {/* Vibe - up to five */}
       <div className="flex items-center justify-between mb-2">
-        <label className="eyebrow">Vibe <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 5</span></label>
+        <label className="eyebrow">{tr('launch.vibe', 'Vibe')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {tr('launch.upTo5', 'up to 5')}</span></label>
       </div>
       <div className="flex flex-wrap gap-2 mb-6">
         {VIBES.map((v) => {
@@ -725,8 +734,8 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
 
       {/* Personality - up to three trait cards */}
       <div className="flex items-center justify-between mb-2">
-        <label className="eyebrow">Personality <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· up to 3</span></label>
-        <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : 'more'}</button>
+        <label className="eyebrow">{tr('launch.personality', 'Personality')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {tr('launch.upTo3', 'up to 3')}</span></label>
+        <button onClick={onMore} disabled={traitBusy} className="chip chip-brand !py-1">{traitBusy ? '…' : tr('launch.more', 'more')}</button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-6">
         {traits.map((p) => {
@@ -743,25 +752,26 @@ function StepSoul({ d, preview, set, toggleVibe, togglePersonality, idea, soulBu
 
       {/* Extra soul detail */}
       <div className="flex items-center justify-between mb-1.5">
-        <label className="eyebrow">Anything else <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
-        <button onClick={idea} disabled={soulBusy} className="chip chip-brand !py-1">{soulBusy ? '…' : 'Idea'}</button>
+        <label className="eyebrow">{tr('launch.anythingElse', 'Anything else')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {tr('launch.optional', 'optional')}</span></label>
+        <button onClick={idea} disabled={soulBusy} className="chip chip-brand !py-1">{soulBusy ? '…' : tr('launch.idea', 'Idea')}</button>
       </div>
-      <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder={`Add any extra traits, behaviours or details that define ${d.name || 'it'}.`} className="input resize-none mb-5" />
+      <textarea value={d.lore} onChange={(e) => set('lore', e.target.value.slice(0, 200))} rows={3} placeholder={withName(tr('launch.soulPlaceholder', 'Add any extra traits, behaviours or details that define {name}.'), d.name || 'it')} className="input resize-none mb-5" />
 
-      <label className="eyebrow block mb-1.5">Your first buy (ETH) <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· optional</span></label>
+      <label className="eyebrow block mb-1.5">{tr('launch.firstBuy', 'Your first buy (ETH)')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {tr('launch.optional', 'optional')}</span></label>
       <input value={d.firstBuy} onChange={(e) => set('firstBuy', e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" inputMode="decimal" className="input mb-6" />
 
-      <button onClick={onNext} disabled={!canLaunch} className="btn btn-holo w-full !py-3.5">Continue</button>
+      <button onClick={onNext} disabled={!canLaunch} className="btn btn-holo w-full !py-3.5">{tr('action.continue', 'Continue')}</button>
     </div>
   )
 }
 
 /* ---------- 5 · Review & launch (REAL) ---------- */
 function StepReview({ d, set, setDescription, generateDescription, descBusy, preview, meta, metaError, onEdit, onLaunch, user, busy, error }) {
+  const tr = useT()
   const fee = meta?.launchFeeEth
   return (
     <div className="flex-1 flex flex-col">
-      <h1 className="display text-3xl sm:text-4xl text-center mb-7">One last look.</h1>
+      <h1 className="display text-3xl sm:text-4xl text-center mb-7">{tr('launch.reviewTitle', 'One last look.')}</h1>
 
       <div className="glass card-glow rounded-3xl p-6 text-center relative overflow-hidden mb-6">
         <span className="pointer-events-none absolute inset-0 opacity-[0.06] font-serif text-[7rem] leading-none grid place-items-center select-none">{preview.ticker}</span>
@@ -784,14 +794,14 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
 
       {/* Launch model - Pons v1 or v2 */}
       <div className="card p-4 mb-6">
-        <span className="text-sm font-medium">Launch model</span>
+        <span className="text-sm font-medium">{tr('launch.model', 'Launch model')}</span>
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           <VersionCard active={d.version !== 'v2'} onClick={() => set('version', 'v1')}
-            tag="v1" title="Instant Pool"
-            desc="One tx deploys the token + a locked Uniswap V3 pool (WETH). Tradable at once - open, no whitelist." />
+            tag="v1" title={tr('launch.v1Title', 'Instant Pool')}
+            desc={tr('launch.v1Desc', 'One tx deploys the token + a locked Uniswap V3 pool (WETH). Tradable at once - open, no whitelist.')} />
           <VersionCard active={d.version === 'v2'} onClick={() => set('version', 'v2')}
-            tag="v2" title="Bonding Curve"
-            desc="Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain." />
+            tag="v2" title={tr('launch.v2Title', 'Bonding Curve')}
+            desc={tr('launch.v2Desc', 'Fair launch on a bonding curve that graduates to Uniswap V4. Whitelist-gated on-chain.')} />
         </div>
         {d.version === 'v2' && <PairedAssetPicker d={d} set={set} />}
         {d.version === 'v2' && <CreatorTax d={d} set={set} />}
@@ -801,12 +811,12 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
       <div className="card p-4 mb-6 space-y-3">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Description <span className="text-xs text-[var(--color-ink-faint)] font-normal">· auto-written by AI</span></span>
-            <button onClick={() => generateDescription(true)} disabled={descBusy} className="chip chip-brand !py-1">{descBusy ? '…' : 'Regenerate'}</button>
+            <span className="text-sm font-medium">{tr('launch.description', 'Description')} <span className="text-xs text-[var(--color-ink-faint)] font-normal">· {tr('launch.autoAi', 'auto-written by AI')}</span></span>
+            <button onClick={() => generateDescription(true)} disabled={descBusy} className="chip chip-brand !py-1">{descBusy ? '…' : tr('launch.regenerate', 'Regenerate')}</button>
           </div>
           <textarea
             value={d.description ?? ''} onChange={(e) => setDescription(e.target.value)}
-            rows={3} placeholder={descBusy ? 'Writing a description…' : 'Generating from your agent - or write your own.'}
+            rows={3} placeholder={descBusy ? tr('launch.descBusyPh', 'Writing a description…') : tr('launch.descPh', 'Generating from your agent - or write your own.')}
             className="input resize-none" />
         </div>
         <div className="grid sm:grid-cols-2 gap-2.5">
@@ -822,21 +832,21 @@ function StepReview({ d, set, setDescription, generateDescription, descBusy, pre
       </div>
 
       <div className="card p-4 mb-6 text-sm text-[var(--color-ink-soft)] space-y-1.5">
-        <Row k="Network" v="Robinhood Chain · Pons" />
-        <Row k="Supply" v="1,000,000,000 (fixed)" />
-        <Row k="Liquidity" v={d.version === 'v2' ? 'Bonding curve → Uniswap V4' : 'Uniswap V3 · WETH · 1%'} />
-        <Row k="Launch fee" v={d.version === 'v2' ? 'Read live from factory' : '0.0005 ETH'} />
-        {d.version === 'v2' && <Row k="Creator tax" v={`${Number(d.creatorTax) || 0}% of the 1% fee`} />}
-        {user && <Row k="Signs with" v={user.username} />}
+        <Row k={tr('launch.network', 'Network')} v="Robinhood Chain · Pons" />
+        <Row k={tr('launch.supply', 'Supply')} v="1,000,000,000 (fixed)" />
+        <Row k={tr('launch.liquidity', 'Liquidity')} v={d.version === 'v2' ? 'Bonding curve → Uniswap V4' : 'Uniswap V3 · WETH · 1%'} />
+        <Row k={tr('launch.launchFee', 'Launch fee')} v={d.version === 'v2' ? tr('launch.launchFeeLive', 'Read live from factory') : '0.0005 ETH'} />
+        {d.version === 'v2' && <Row k={tr('launch.creatorTax', 'Creator tax')} v={`${Number(d.creatorTax) || 0}% of the 1% fee`} />}
+        {user && <Row k={tr('launch.signsWith', 'Signs with')} v={user.username} />}
       </div>
 
       {error && <div className="chip chip-down w-full mb-4">{friendly(error)}</div>}
 
       <button onClick={onLaunch} disabled={busy} className="btn btn-holo w-full !py-3.5 mt-auto">
-        {busy ? 'Launching…' : !user ? 'Connect Wallet to launch' : `Deploy · ${(d.version === 'v2' ? 'v2' : 'v1').toUpperCase()}`}
+        {busy ? tr('launch.launching', 'Launching…') : !user ? tr('launch.connectToLaunch', 'Connect Wallet to launch') : `${tr('launch.deploy', 'Deploy')} · ${(d.version === 'v2' ? 'v2' : 'v1').toUpperCase()}`}
       </button>
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-3">
-        Non-custodial launch on Robinhood Chain via Pons - signed by your own wallet.
+        {tr('launch.reviewFooter', 'Non-custodial launch on Robinhood Chain via Pons - signed by your own wallet.')}
       </p>
     </div>
   )
@@ -878,6 +888,7 @@ function AssetLogo({ src, symbol, size = 24 }) {
    by default, or one of the factory-approved RWA/quote tokens, each shown with
    its real logo from Robinhood's asset directory. */
 function PairedAssetPicker({ d, set }) {
+  const tr = useT()
   const [q, setQ] = useState('')
   // Curated list as the instant fallback; enriched with real logos/names async.
   const [assets, setAssets] = useState(() => V2_QUOTE_TOKENS.map((t) => ({ ...t, logo: null })))
@@ -896,7 +907,7 @@ function PairedAssetPicker({ d, set }) {
   return (
     <div className="mt-4 pt-4 border-t hairline">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <span className="text-sm font-medium">Paired asset</span>
+        <span className="text-sm font-medium">{tr('launch.pairedAsset', 'Paired asset')}</span>
         <div className="seg shrink-0">
           <button onClick={() => { set('pairToken', ''); set('pairSymbol', '') }} className={`!px-2.5 !text-[13px] ${!paired ? 'on' : ''}`}>ETH</button>
           <button onClick={() => { if (!d.pairToken) { set('pairToken', assets[0].address); set('pairSymbol', assets[0].symbol) } }} className={`!px-2.5 !text-[13px] ${paired ? 'on' : ''}`}>Token</button>
@@ -906,7 +917,7 @@ function PairedAssetPicker({ d, set }) {
         <p className="text-[11px] text-[var(--color-ink-faint)]">The curve is quoted in ETH (native). Creators are paid in ETH.</p>
       ) : (
         <div className="mt-1">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search asset…" className="input mb-2" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('launch.searchAsset', 'Search asset…')} className="input mb-2" />
           <div className="max-h-44 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
             {list.map((t) => (
               <button key={t.address} onClick={() => { set('pairToken', t.address); set('pairSymbol', t.symbol) }}
@@ -930,6 +941,7 @@ function PairedAssetPicker({ d, set }) {
    Pons "Creator tax" control: traders always pay 1% total, up to 10% of which
    the creator keeps. Sent on-chain as basis points (10% → 1000 bps). */
 function CreatorTax({ d, set }) {
+  const tr = useT()
   const onChange = (raw) => {
     // digits + one dot, clamped to a 0–10 range once it parses to a number.
     let v = raw.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
@@ -942,7 +954,7 @@ function CreatorTax({ d, set }) {
   return (
     <div className="mt-4 pt-4 border-t hairline">
       <div className="flex items-center justify-between gap-3 mb-2">
-        <span className="text-sm font-medium">Creator tax</span>
+        <span className="text-sm font-medium">{tr('launch.creatorTax', 'Creator tax')}</span>
         <div className="flex items-center input !py-1.5 w-24">
           <input
             value={d.creatorTax ?? ''} onChange={(e) => onChange(e.target.value)}
@@ -1036,11 +1048,14 @@ function PoolPairing({ d, set }) {
 
 /* ---------- 6 · Done (REAL result) ---------- */
 function StepDone({ charm, result, meta, onTrade }) {
+  const tr = useT()
+  // "{name} is live." with the name rendered as a holo span - split around the token.
+  const [livePre, livePost] = tr('launch.isLive', '{name} is live.').split('{name}')
   return (
     <div className="flex-1 flex flex-col items-center justify-center text-center py-6">
-      <div className="eyebrow mb-2">Live on Robinhood Chain</div>
-      <h1 className="display text-4xl sm:text-5xl mb-2"><span className="holo-text">{charm.name}</span> is live.</h1>
-      <p className="text-[var(--color-ink-soft)] mb-9">Launched via Pons on Robinhood Chain - tradeable now, with creator fees flowing to your wallet.</p>
+      <div className="eyebrow mb-2">{tr('launch.live', 'Live on Robinhood Chain')}</div>
+      <h1 className="display text-4xl sm:text-5xl mb-2">{livePre}<span className="holo-text">{charm.name}</span>{livePost ?? ''}</h1>
+      <p className="text-[var(--color-ink-soft)] mb-9">{tr('launch.doneDesc', 'Launched via Pons on Robinhood Chain - tradeable now, with creator fees flowing to your wallet.')}</p>
 
       <div className="glass card-glow rounded-3xl p-8 w-full max-w-sm relative overflow-hidden mb-7">
         <span className="pointer-events-none absolute inset-x-0 bottom-2 text-center font-serif text-6xl opacity-[0.05] select-none">AURN</span>
@@ -1056,11 +1071,11 @@ function StepDone({ charm, result, meta, onTrade }) {
       </div>
 
       <div className="w-full max-w-sm space-y-2">
-        {result?.token && <button onClick={onTrade} className="btn btn-holo w-full !py-3.5">Trade {charm.name}</button>}
+        {result?.token && <button onClick={onTrade} className="btn btn-holo w-full !py-3.5">{tr('action.trade', 'Trade')} {charm.name}</button>}
         {meta?.explorer && result?.txHash && (
-          <a href={`${meta.explorer}/tx/${result.txHash}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary w-full">View transaction ↗</a>
+          <a href={`${meta.explorer}/tx/${result.txHash}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary w-full">{tr('launch.viewTx', 'View transaction')} ↗</a>
         )}
-        <Link to="/" className="btn btn-ghost w-full">Back to Discover</Link>
+        <Link to="/" className="btn btn-ghost w-full">{tr('launch.backToDiscover', 'Back to Discover')}</Link>
       </div>
     </div>
   )
