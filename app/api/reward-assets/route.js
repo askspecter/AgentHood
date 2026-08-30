@@ -1,18 +1,18 @@
 import { NextResponse } from "next/server";
-import { Contract, JsonRpcProvider } from "ethers";
+import { JsonRpcProvider, getAddress } from "ethers";
 import { getChain } from "@/lib/engine";
+import { resolveTokenLogo } from "@/lib/tokenLogo";
+import { REWARD_POOL } from "@/src/lib/rewards";
 
 /**
  * GET /api/reward-assets?network=robinhood
  *
- * The one logo we can only read on-chain: $PONS is a pons launch token, so its
- * real logo lives in its logo() method. Returned as { PONS: url|null }; the page
- * prepends it to the static per-company logo candidates. The tokenized stocks use
- * their real company logos client-side (Robinhood's directory only carries the
- * generic Robinhood mark, not each company's), so they aren't fetched here.
+ * Real logos for the reward tokens, resolved the same way the Locked feature
+ * does — each token's on-chain logo(), falling back to its Blockscout explorer
+ * icon. That's how $PONS (whose logo() is empty) still gets its real image.
+ * Returned as { [symbol]: url|null }; the page prefers it for $PONS and uses it
+ * as a fallback behind the per-company logos for the stock tokens.
  */
-const PONS = "0x39dBED3a2bd333467115dE45665cC57F813C4571";
-
 export async function GET(request) {
   const url = new URL(request.url);
   const network = url.searchParams.get("network") || "robinhood";
@@ -24,14 +24,18 @@ export async function GET(request) {
     return NextResponse.json({ assets: {} });
   }
 
-  let pons = null;
-  try {
-    const provider = new JsonRpcProvider(chain.rpc, chain.chainId);
-    const lg = await new Contract(PONS, ["function logo() view returns (string)"], provider).logo();
-    if (lg && typeof lg === "string" && lg.trim()) pons = lg.trim();
-  } catch {
-    /* no logo() — the page falls back to static $PONS candidates */
-  }
+  const provider = new JsonRpcProvider(chain.rpc, chain.chainId, { staticNetwork: true });
 
-  return NextResponse.json({ assets: { PONS: pons } });
+  const assets = {};
+  await Promise.all(
+    REWARD_POOL.filter((r) => r.address).map(async (r) => {
+      try {
+        assets[r.key] = await resolveTokenLogo(provider, chain.explorer, getAddress(r.address));
+      } catch {
+        assets[r.key] = null;
+      }
+    })
+  );
+
+  return NextResponse.json({ assets });
 }
