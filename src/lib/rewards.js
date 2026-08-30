@@ -20,14 +20,15 @@ export const REWARD_SUPPLY = 1_000_000_000
 export const EPOCH_MS = 7 * 24 * 60 * 60 * 1000
 const EPOCH_ANCHOR = Date.UTC(2025, 0, 6, 0, 0, 0)
 
-/** What the current epoch distributes to holders. `pool` is the whole-epoch pool. */
+/** What the current epoch distributes to holders. `pool` is the whole-epoch pool.
+ *  `address` is the token on Robinhood Chain (used to fetch its real logo). */
 export const REWARD_POOL = [
-  { key: 'PONS', label: '$PONS', sub: 'Pons protocol token', pool: 750_000, unit: '', tint: ['#cdd9f2', '#5f79c6'] },
-  { key: 'NVDA', label: 'NVDA', sub: 'NVIDIA', pool: 14, unit: 'sh', tint: ['#b6cbee', '#43589f'] },
-  { key: 'TSLA', label: 'TSLA', sub: 'Tesla', pool: 9, unit: 'sh', tint: ['#e6eefc', '#7f9bcf'] },
-  { key: 'AAPL', label: 'AAPL', sub: 'Apple', pool: 18, unit: 'sh', tint: ['#dbe7ff', '#8fb0e6'] },
-  { key: 'SPY', label: 'SPY', sub: 'S&P 500 ETF', pool: 6, unit: 'sh', tint: ['#9fb8e2', '#4a5f9c'] },
-  { key: 'COIN', label: 'COIN', sub: 'Coinbase', pool: 11, unit: 'sh', tint: ['#c3ccdf', '#6f8bd0'] },
+  { key: 'PONS', label: '$PONS', sub: 'Pons protocol token', pool: 750_000, unit: '', tint: ['#cdd9f2', '#5f79c6'], address: '0x39dBED3a2bd333467115dE45665cC57F813C4571' },
+  { key: 'NVDA', label: 'NVDA', sub: 'NVIDIA', pool: 14, unit: 'sh', tint: ['#b6cbee', '#43589f'], address: '0xd0601CE157Db5bdC3162BbaC2a2C8aF5320D9EEC' },
+  { key: 'TSLA', label: 'TSLA', sub: 'Tesla', pool: 9, unit: 'sh', tint: ['#e6eefc', '#7f9bcf'], address: '0x322F0929c4625eD5bAd873c95208D54E1c003b2d' },
+  { key: 'AAPL', label: 'AAPL', sub: 'Apple', pool: 18, unit: 'sh', tint: ['#dbe7ff', '#8fb0e6'], address: '0xaF3D76f1834A1d425780943C99Ea8A608f8a93f9' },
+  { key: 'SPY', label: 'SPY', sub: 'S&P 500 ETF', pool: 6, unit: 'sh', tint: ['#9fb8e2', '#4a5f9c'], address: '0x117cc2133c37B721F49dE2A7a74833232B3B4C0C' },
+  { key: 'COIN', label: 'COIN', sub: 'Coinbase', pool: 11, unit: 'sh', tint: ['#c3ccdf', '#6f8bd0'], address: '0x6330D8C3178a418788dF01a47479c0ce7CCF450b' },
 ]
 
 /** Current epoch window + how long is left in it. */

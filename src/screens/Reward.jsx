@@ -17,6 +17,9 @@ import {
 const NETWORK = 'robinhood'
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
 const isAddr = (s) => /^0x[a-fA-F0-9]{40}$/.test(String(s || '').trim())
+// Load a remote logo through the same-origin image proxy so it never gets
+// blocked on mobile (raw IPFS gateways sometimes are). Same-origin/data URLs pass.
+const proxied = (u) => (u && /^https?:\/\//.test(u) ? `/api/img?src=${encodeURIComponent(u)}` : u)
 
 export default function Reward() {
   const nav = useNavigate()
@@ -30,6 +33,17 @@ export default function Reward() {
   const [now, setNow] = useState(Date.now())
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t) }, [])
   const epoch = epochInfo(now)
+
+  // Real reward-token logos (stocks from Robinhood's directory, $PONS on-chain).
+  const [logos, setLogos] = useState({})
+  useEffect(() => {
+    let cancelled = false
+    fetch(`/api/reward-assets?network=${NETWORK}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (!cancelled && j?.assets) setLogos(j.assets) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
 
   // Which address we're checking — the connected wallet by default; editable.
   const [addr, setAddr] = useState('')
@@ -127,7 +141,7 @@ export default function Reward() {
 
       <div className="grid grid-cols-2 gap-3">
         {rewards.map((r) => (
-          <RewardCard key={r.key} r={r} showAmount={!!checkAddr} />
+          <RewardCard key={r.key} r={r} logo={logos[r.key]} showAmount={!!checkAddr} />
         ))}
       </div>
 
@@ -139,14 +153,26 @@ export default function Reward() {
   )
 }
 
-function RewardCard({ r, showAmount }) {
+function RewardLogo({ r, logo, size = 36 }) {
+  const [broken, setBroken] = useState(false)
+  const src = proxied(logo)
+  if (src && !broken) {
+    return <img src={src} alt="" width={size} height={size} onError={() => setBroken(true)}
+      className="rounded-xl object-cover shrink-0 bg-[var(--color-paper-2)]" style={{ width: size, height: size }} />
+  }
+  return (
+    <span className="rounded-xl grid place-items-center font-mono text-[10px] font-bold shrink-0"
+      style={{ width: size, height: size, background: `linear-gradient(150deg, ${r.tint[0]}, ${r.tint[1]})`, color: '#0a0c15' }}>
+      {r.key === 'PONS' ? 'P' : r.key.slice(0, 4)}
+    </span>
+  )
+}
+
+function RewardCard({ r, logo, showAmount }) {
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2.5 mb-3">
-        <span className="w-9 h-9 rounded-xl grid place-items-center font-mono text-[10px] font-bold shrink-0"
-          style={{ background: `linear-gradient(150deg, ${r.tint[0]}, ${r.tint[1]})`, color: '#0a0c15' }}>
-          {r.key === 'PONS' ? 'P' : r.key.slice(0, 4)}
-        </span>
+        <RewardLogo r={r} logo={logo} />
         <div className="min-w-0">
           <div className="font-semibold text-sm leading-tight">{r.label}</div>
           <div className="text-[10px] text-[var(--color-ink-faint)] truncate">{r.sub}</div>
