@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Back, Crown, Verified } from '../components/icons'
 import { usd, num } from '../lib/format'
+import { useT } from '../lib/i18n'
 
 /**
  * Leaderboard - three boards, all live and all real.
@@ -17,30 +18,23 @@ import { usd, num } from '../lib/format'
 const NETWORK = 'robinhood'
 
 const TABS = [
-  { key: 'creator', label: 'Top creator' },
-  { key: 'volume', label: 'Trade volume' },
-  { key: 'referral', label: 'Top referral' },
+  { key: 'creator', tkey: 'lb.tabCreator', label: 'Top creator' },
+  { key: 'volume', tkey: 'lb.tabVolume', label: 'Trade volume' },
+  { key: 'referral', tkey: 'lb.tabReferral', label: 'Top referral' },
 ]
 
 const short = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '-')
 
-const EMPTY = {
-  creator: {
-    title: 'Creator board is warming up',
-    body: "This ranks people by the coins they launch on AURN - measured by the market cap they create here. It fills in as coins are launched; launch one to take the top spot.",
-  },
-  volume: {
-    title: 'Trade volume board is warming up',
-    body: 'This ranks the accounts trading the most on AURN, by real WETH volume as swaps settle on-chain - no placeholder names. It fills in as trading picks up here.',
-  },
-  referral: {
-    title: 'Referral board is warming up',
-    body: 'Share your referral link from the Referral page. Once friends sign in through it, the biggest referrers show up here - ranked by real sign-ups, nothing invented.',
-  },
+const EMPTY_KEYS = {
+  creator: { t: 'lb.creatorTitle', b: 'lb.creatorBody' },
+  volume: { t: 'lb.volumeTitle', b: 'lb.volumeBody' },
+  referral: { t: 'lb.referralTitle', b: 'lb.referralBody' },
 }
+const FOOT_KEYS = { creator: 'lb.footCreator', volume: 'lb.footVolume', referral: 'lb.footReferral' }
 
 export default function Leaderboard() {
   const nav = useNavigate()
+  const tr = useT()
   const [tab, setTab] = useState('creator')
   const [data, setData] = useState({}) // board -> { loading, rows }
 
@@ -69,12 +63,12 @@ export default function Leaderboard() {
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
-        <h1 className="font-serif text-3xl">Leaderboard</h1>
+        <h1 className="font-serif text-3xl">{tr('nav.leaderboard', 'Leaderboard')}</h1>
       </div>
 
       <div className="seg no-scrollbar mb-6 flex overflow-x-auto max-w-full">
         {TABS.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{t.label}</button>
+          <button key={t.key} onClick={() => setTab(t.key)} className={`shrink-0 ${tab === t.key ? 'on' : ''}`}>{tr(t.tkey, t.label)}</button>
         ))}
       </div>
 
@@ -84,14 +78,14 @@ export default function Leaderboard() {
         </div>
       ) : cur.rows.length > 0 ? (
         <div className="space-y-2">
-          {cur.rows.map((r) => <Row key={r.rank} board={tab} row={r} />)}
-          <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">{FOOTNOTE[tab]}</p>
+          {cur.rows.map((r) => <Row key={r.rank} board={tab} row={r} tr={tr} />)}
+          <p className="text-xs text-[var(--color-ink-faint)] text-center pt-3">{tr(FOOT_KEYS[tab])}</p>
         </div>
       ) : cur.error ? (
         <div className="card text-center py-14 px-6">
-          <h3 className="font-serif text-2xl mb-1">Couldn’t load the board</h3>
-          <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-5">The network was slow just now. Give it another try.</p>
-          <button onClick={retry} className="btn btn-primary mx-auto">Try again</button>
+          <h3 className="font-serif text-2xl mb-1">{tr('lb.loadError', 'Couldn’t load the board')}</h3>
+          <p className="text-[var(--color-ink-soft)] max-w-sm mx-auto mb-5">{tr('lb.loadErrorBody', 'The network was slow just now. Give it another try.')}</p>
+          <button onClick={retry} className="btn btn-primary mx-auto">{tr('common.tryAgain', 'Try again')}</button>
         </div>
       ) : cur.kv === false ? (
         <Soon
@@ -99,19 +93,13 @@ export default function Leaderboard() {
           body="The boards record real activity in Vercel KV. Connect a KV (Upstash Redis) store to this project in Vercel → Storage, and the volume, referral and creator boards start filling in immediately."
         />
       ) : (
-        <Soon title={EMPTY[tab].title} body={EMPTY[tab].body} />
+        <Soon title={tr(EMPTY_KEYS[tab].t)} body={tr(EMPTY_KEYS[tab].b)} />
       )}
     </div>
   )
 }
 
-const FOOTNOTE = {
-  creator: 'Ranked by total market cap of coins launched on AURN · priced live on-chain',
-  volume: 'Ranked by cumulative WETH traded on AURN · updates as swaps settle',
-  referral: 'Ranked by friends who signed in through your referral link',
-}
-
-function Row({ board, row }) {
+function Row({ board, row, tr }) {
   const medal = row.rank <= 3
   const rank = (
     <span className={`grid place-items-center w-8 h-8 rounded-lg shrink-0 font-mono text-sm ${medal ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'}`}
@@ -127,7 +115,7 @@ function Row({ board, row }) {
         <div className="flex-1 min-w-0"><span className="font-semibold truncate">@{row.handle}</span></div>
         <div className="text-right shrink-0">
           <div className="font-mono num">{row.volumeUsd != null ? usd(row.volumeUsd) : `${num(row.volumeWeth)} WETH`}</div>
-          <div className="eyebrow">volume traded</div>
+          <div className="eyebrow">{tr('lb.volumeTraded', 'volume traded')}</div>
         </div>
       </div>
     )
@@ -140,7 +128,7 @@ function Row({ board, row }) {
         <div className="flex-1 min-w-0"><span className="font-semibold truncate">@{row.code}</span></div>
         <div className="text-right shrink-0">
           <div className="font-mono num">{num(row.count)}</div>
-          <div className="eyebrow">friend{row.count === 1 ? '' : 's'} joined</div>
+          <div className="eyebrow">{tr(row.count === 1 ? 'lb.friendJoined' : 'lb.friendsJoined', 'friends joined')}</div>
         </div>
       </div>
     )
@@ -157,12 +145,12 @@ function Row({ board, row }) {
           {row.official && <Verified size={13} gold />}
         </div>
         <div className="text-xs text-[var(--color-ink-faint)] font-mono truncate">
-          {row.coins} coin{row.coins === 1 ? '' : 's'}{row.topSymbol ? ` · top $${String(row.topSymbol).replace(/^\$/, '')}` : ''}
+          {row.coins} {tr(row.coins === 1 ? 'lb.coin' : 'lb.coins', 'coins')}{row.topSymbol ? ` · ${tr('lb.top', 'top')} $${String(row.topSymbol).replace(/^\$/, '')}` : ''}
         </div>
       </div>
       <div className="text-right shrink-0">
         <div className="font-mono num">{row.mcapUsd > 0 ? usd(row.mcapUsd) : '-'}</div>
-        <div className="eyebrow">mcap created</div>
+        <div className="eyebrow">{tr('lb.mcapCreated', 'mcap created')}</div>
       </div>
     </div>
   )

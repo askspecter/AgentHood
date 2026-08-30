@@ -4,6 +4,7 @@ import { formatEther, formatUnits } from 'viem'
 import { erc20MiniAbi } from '../lib/pons/abis'
 import { robinhoodChain, explorerTx } from '../lib/chain'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 
 const NETWORK = 'robinhood'
 
@@ -15,6 +16,7 @@ const NETWORK = 'robinhood'
  */
 export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bare = false, onDone, initialSide, initialAmount }) {
   const { connect } = useStore()
+  const tr = useT()
   const { address, isConnected, chainId } = useAccount()
   const { sendTransactionAsync } = useSendTransaction()
   const { switchChainAsync } = useSwitchChain()
@@ -123,36 +125,36 @@ export default function TradePanel({ token, symbol = 'TOKEN', decimals = 18, bar
   return (
     <section className={bare ? '' : 'card p-4'}>
       <div className="seg w-full mb-3">
-        <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 ${side === 'buy' ? 'on' : ''}`}>Buy</button>
-        <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 ${side === 'sell' ? 'on' : ''}`}>Sell</button>
+        <button onClick={() => { setSide('buy'); setAmount('') }} className={`flex-1 ${side === 'buy' ? 'on' : ''}`}>{tr('action.buy', 'Buy')}</button>
+        <button onClick={() => { setSide('sell'); setAmount('') }} className={`flex-1 ${side === 'sell' ? 'on' : ''}`}>{tr('action.sell', 'Sell')}</button>
       </div>
 
       <div className="flex items-center justify-between text-xs text-[var(--color-ink-soft)] mb-1">
-        <span>{side === 'buy' ? 'Amount in ETH' : `Amount in ${sym}`}</span>
-        {isConnected && <span>Balance <span className="font-mono num text-[var(--color-ink)]">{fmtBal(balance)}</span> {balanceSymbol}</span>}
+        <span>{side === 'buy' ? tr('trade.amountInEth', 'Amount in ETH') : `${tr('trade.amountIn', 'Amount in')} ${sym}`}</span>
+        {isConnected && <span>{tr('trade.balance', 'Balance')} <span className="font-mono num text-[var(--color-ink)]">{fmtBal(balance)}</span> {balanceSymbol}</span>}
       </div>
       <div className="flex items-stretch gap-2">
         <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.0" inputMode="decimal" className="input font-mono" />
-        {isConnected && <button onClick={setMax} className="btn btn-secondary shrink-0 !px-3 text-xs" disabled={balance <= 0}>Max</button>}
+        {isConnected && <button onClick={setMax} className="btn btn-secondary shrink-0 !px-3 text-xs" disabled={balance <= 0}>{tr('trade.max', 'Max')}</button>}
       </div>
-      {(estimate || quoting) && <p className="mt-2 text-xs text-[var(--color-ink-soft)]">{quoting ? 'Pricing…' : estimate}</p>}
-      {insufficient && <p className="mt-2 text-xs text-[var(--color-down)]">Insufficient {balanceSymbol} balance.</p>}
+      {(estimate || quoting) && <p className="mt-2 text-xs text-[var(--color-ink-soft)]">{quoting ? tr('trade.pricing', 'Pricing…') : estimate}</p>}
+      {insufficient && <p className="mt-2 text-xs text-[var(--color-down)]">{tr('trade.insufficient', 'Insufficient')} {balanceSymbol} {tr('trade.balanceSuffix', 'balance.')}</p>}
 
       <div className="mt-3 flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
-        <span>Slippage</span>
+        <span>{tr('trade.slippage', 'Slippage')}</span>
         {[1, 5, 10, 25].map((sv) => (
           <button key={sv} onClick={() => setSlippage(sv)} className={`chip cursor-pointer ${slippage === sv ? 'chip-brand' : ''}`}>{sv}%</button>
         ))}
       </div>
 
       <button className="btn btn-holo w-full mt-3 !py-3" disabled={busy || (isConnected && (!amount || insufficient))} onClick={trade}>
-        {busy ? (stepMsg || 'Working…') : !isConnected ? 'Connect Wallet' : insufficient ? `Insufficient ${balanceSymbol}` : side === 'buy' ? `Buy ${sym}` : `Sell ${sym}`}
+        {busy ? (stepMsg || tr('common.working', 'Working…')) : !isConnected ? tr('wallet.connect', 'Connect Wallet') : insufficient ? `${tr('trade.insufficient', 'Insufficient')} ${balanceSymbol}` : side === 'buy' ? `${tr('action.buy', 'Buy')} ${sym}` : `${tr('action.sell', 'Sell')} ${sym}`}
       </button>
 
       {status === 'done' && txHash && (
-        <a className="mt-2 block text-xs text-center underline text-[var(--color-ink-soft)]" href={explorerTx(txHash)} target="_blank" rel="noreferrer">Trade sent - view on explorer ↗</a>
+        <a className="mt-2 block text-xs text-center underline text-[var(--color-ink-soft)]" href={explorerTx(txHash)} target="_blank" rel="noreferrer">{tr('trade.sent', 'Trade sent - view on explorer')} ↗</a>
       )}
-      {side === 'sell' && <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">A pool sell settles in WETH - unwrap to ETH in your wallet.</p>}
+      {side === 'sell' && <p className="mt-2 text-[10px] text-[var(--color-ink-faint)]">{tr('trade.sellNote', 'A pool sell settles in WETH - unwrap to ETH in your wallet.')}</p>}
       {error && <p className="mt-2 whitespace-pre-wrap text-xs text-[var(--color-down)]">{error}</p>}
     </section>
   )

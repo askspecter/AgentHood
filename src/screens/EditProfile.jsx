@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import { Back, Verified } from '../components/icons'
 
 /**
@@ -40,6 +41,7 @@ function fileToAvatar(file, size = 256) {
 export default function EditProfile() {
   const nav = useNavigate()
   const { wallet, connect, updateProfile } = useStore()
+  const tr = useT()
   const fileRef = useRef(null)
 
   const [name, setName] = useState(wallet?.name || '')
@@ -51,9 +53,9 @@ export default function EditProfile() {
   if (!wallet) {
     return (
       <div className="max-w-md mx-auto text-center py-24">
-        <h1 className="font-serif text-3xl mb-2">Edit profile</h1>
-        <p className="text-[var(--color-ink-soft)] mb-7">Connect your wallet to edit your name and photo.</p>
-        <button onClick={connect} className="btn btn-primary mx-auto">Connect Wallet</button>
+        <h1 className="font-serif text-3xl mb-2">{tr('settings.editProfile', 'Edit profile')}</h1>
+        <p className="text-[var(--color-ink-soft)] mb-7">{tr('edit.connectBody', 'Connect your wallet to edit your name and photo.')}</p>
+        <button onClick={connect} className="btn btn-primary mx-auto">{tr('wallet.connect', 'Connect Wallet')}</button>
       </div>
     )
   }
@@ -65,12 +67,12 @@ export default function EditProfile() {
     const file = e.target.files?.[0]
     e.target.value = '' // let the same file be re-picked later
     if (!file) return
-    if (!/^image\//.test(file.type)) { setError('Please choose an image file.'); return }
+    if (!/^image\//.test(file.type)) { setError(tr('edit.errImage', 'Please choose an image file.')); return }
     setError(null); setBusy(true)
     try {
       setAvatar(await fileToAvatar(file))
     } catch {
-      setError('That image could not be read. Try another.')
+      setError(tr('edit.errRead', 'That image could not be read. Try another.'))
     } finally {
       setBusy(false)
     }
@@ -99,12 +101,12 @@ export default function EditProfile() {
     <div className="max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
-        <h1 className="font-serif text-3xl">Edit profile</h1>
+        <h1 className="font-serif text-3xl">{tr('settings.editProfile', 'Edit profile')}</h1>
       </div>
 
       {/* photo */}
       <div className="card p-6 mb-4 flex flex-col items-center text-center">
-        <div className="eyebrow mb-4 self-start">Photo</div>
+        <div className="eyebrow mb-4 self-start">{tr('edit.photo', 'Photo')}</div>
         <span className="p-[2px] rounded-full mb-4" style={{ background: 'var(--holo)' }}>
           {avatar ? (
             <img src={avatar} alt="" className="w-24 h-24 rounded-full object-cover block" />
@@ -114,9 +116,9 @@ export default function EditProfile() {
         </span>
         <input ref={fileRef} type="file" accept="image/*" onChange={pickPhoto} className="hidden" />
         <div className="flex items-center gap-2">
-          <button onClick={() => fileRef.current?.click()} disabled={busy} className="btn btn-secondary !py-2">{busy ? 'Reading…' : avatar ? 'Change photo' : 'Upload photo'}</button>
+          <button onClick={() => fileRef.current?.click()} disabled={busy} className="btn btn-secondary !py-2">{busy ? tr('edit.reading', 'Reading…') : avatar ? tr('edit.changePhoto', 'Change photo') : tr('edit.uploadPhoto', 'Upload photo')}</button>
           {avatar && !usingXPhoto && (
-            <button onClick={() => setAvatar(wallet.baseAvatar || null)} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">Remove</button>
+            <button onClick={() => setAvatar(wallet.baseAvatar || null)} className="btn btn-ghost !py-2 text-sm text-[var(--color-ink-soft)]">{tr('launch.remove', 'Remove')}</button>
           )}
         </div>
       </div>
@@ -124,26 +126,26 @@ export default function EditProfile() {
       {/* name + handle */}
       <div className="card p-6 mb-4">
         <label className="block">
-          <span className="eyebrow">Display name</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Your name" className="input mt-2" />
+          <span className="eyebrow">{tr('edit.displayName', 'Display name')}</span>
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder={tr('edit.namePh', 'Your name')} className="input mt-2" />
         </label>
 
         <div className="mt-5">
-          <span className="eyebrow">Wallet</span>
+          <span className="eyebrow">{tr('edit.wallet', 'Wallet')}</span>
           <div className="mt-2 flex items-center gap-2 px-3.5 py-2.5 rounded-xl panel-soft">
             <span className="font-mono text-sm text-[var(--color-ink-soft)] flex-1">{handle}</span>
-            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]"><Verified size={12} /> connected</span>
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--color-ink-faint)]"><Verified size={12} /> {tr('edit.connected', 'connected')}</span>
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">This is your connected wallet address - your identity on-chain.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">{tr('edit.walletHint', 'This is your connected wallet address - your identity on-chain.')}</p>
         </div>
       </div>
 
       {error && <div className="text-sm text-[var(--color-down)] mb-3">{error}</div>}
 
       <div className="flex items-center gap-2">
-        <button onClick={save} disabled={!dirty || saved} className="btn btn-primary flex-1 justify-center">{saved ? 'Saved ✓' : 'Save changes'}</button>
+        <button onClick={save} disabled={!dirty || saved} className="btn btn-primary flex-1 justify-center">{saved ? `${tr('edit.saved', 'Saved')} ✓` : tr('edit.save', 'Save changes')}</button>
         {(!usingXName || !usingXPhoto) && (
-          <button onClick={resetToX} className="btn btn-secondary">Reset</button>
+          <button onClick={resetToX} className="btn btn-secondary">{tr('common.reset', 'Reset')}</button>
         )}
       </div>
     </div>

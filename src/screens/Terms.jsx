@@ -1,9 +1,11 @@
 import { LegalLayout, Sec, UL } from '../components/LegalPage'
+import { useT } from '../lib/i18n'
 
 export default function Terms() {
+  const t = useT()
   return (
     <LegalLayout
-      title="Terms of Service"
+      title={t('legal.termsTitle', 'Terms of Service')}
       updated="August 28, 2026"
       lead="Welcome to AURN. These Terms of Service (“Terms”) govern your access to and use of the AURN website, app, and related services (together, the “Service”), operated at aurn.fun. By signing in, connecting a wallet, or otherwise using the Service, you agree to these Terms. If you do not agree, do not use the Service."
     >

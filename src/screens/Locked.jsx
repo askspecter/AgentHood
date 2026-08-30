@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAccount, usePublicClient, useSwitchChain, useWriteContract } from 'wagmi'
 import { parseUnits } from 'viem'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import CharmAvatar from '../components/CharmAvatar'
 import { Back } from '../components/icons'
 import { robinhoodChain, explorerTx } from '../lib/chain'
@@ -25,6 +26,7 @@ const proxied = (u) => (u && /^https?:\/\//.test(u) ? `/api/img?src=${encodeURIC
 export default function Locked() {
   const nav = useNavigate()
   const { wallet, connect, agents } = useStore()
+  const tr = useT()
   const { address, chainId } = useAccount()
   const publicClient = usePublicClient()
   const { switchChainAsync } = useSwitchChain()
@@ -180,42 +182,42 @@ export default function Locked() {
     <div className="max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
-        <h1 className="font-serif text-3xl">Locked</h1>
+        <h1 className="font-serif text-3xl">{tr('settings.locked', 'Locked')}</h1>
       </div>
 
       {/* New lock */}
       <div className="card p-6 mb-5">
-        <div className="font-semibold">Lock token supply</div>
+        <div className="font-semibold">{tr('locked.lockTitle', 'Lock token supply')}</div>
         <p className="text-sm text-[var(--color-ink-soft)] mt-1">
           {lockerLive
-            ? 'Lock a token you hold on Robinhood Chain for a fixed term. Tokens move into the AurnLocker contract and only you can withdraw them, only after the term ends.'
-            : 'Lock a token you hold on Robinhood Chain for a fixed term. Recorded to your wallet until the on-chain locker is set.'}
+            ? tr('locked.descLive', 'Lock a token you hold on Robinhood Chain for a fixed term. Tokens move into the AurnLocker contract and only you can withdraw them, only after the term ends.')
+            : tr('locked.descLocal', 'Lock a token you hold on Robinhood Chain for a fixed term. Recorded to your wallet until the on-chain locker is set.')}
         </p>
 
         {!wallet ? (
-          <button onClick={connect} className="btn btn-primary w-full mt-5">Connect Wallet to lock</button>
+          <button onClick={connect} className="btn btn-primary w-full mt-5">{tr('locked.connectToLock', 'Connect Wallet to lock')}</button>
         ) : (
           <>
-            <div className="eyebrow mt-5 mb-2">Token</div>
+            <div className="eyebrow mt-5 mb-2">{tr('locked.token', 'Token')}</div>
             {sel ? (
               <button onClick={() => { setPicker(true); setSel(null) }} className="w-full flex items-center justify-between gap-3 input !py-2.5">
                 <span className="flex items-center gap-2.5 min-w-0">
                   <TokenLogo sel={sel} size={28} />
                   <span className="min-w-0 text-left"><span className="font-medium">{sel.symbol}</span><span className="text-xs text-[var(--color-ink-faint)] ml-1.5 font-mono">{short(sel.token)}</span></span>
                 </span>
-                <span className="text-xs text-[var(--color-accent)]">Change</span>
+                <span className="text-xs text-[var(--color-accent)]">{tr('locked.change', 'Change')}</span>
               </button>
             ) : (
-              <button onClick={() => setPicker(true)} className="w-full input !py-3 text-left text-[var(--color-ink-soft)]">Select a token…</button>
+              <button onClick={() => setPicker(true)} className="w-full input !py-3 text-left text-[var(--color-ink-soft)]">{tr('locked.selectToken', 'Select a token…')}</button>
             )}
 
             {picker && (
               <div className="mt-2 rounded-xl panel-soft p-2 fade-up">
-                <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search AURN coins or paste a token address…" className="input !py-2 mb-2" />
+                <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('locked.searchPh', 'Search AURN coins or paste a token address…')} className="input !py-2 mb-2" />
                 <div className="max-h-56 overflow-y-auto no-scrollbar divide-y divide-[var(--color-line)]">
                   {isAddr(q) && (
                     <button onClick={pickPasted} className="w-full flex items-center justify-between gap-3 px-2.5 py-2.5 text-left hover:bg-[var(--color-paper-2)] rounded-lg">
-                      <span className="font-mono text-sm truncate">{q.trim()}</span><span className="text-xs text-[var(--color-accent)] shrink-0">Use address</span>
+                      <span className="font-mono text-sm truncate">{q.trim()}</span><span className="text-xs text-[var(--color-accent)] shrink-0">{tr('locked.useAddress', 'Use address')}</span>
                     </button>
                   )}
                   {list.map((a) => (
@@ -224,7 +226,7 @@ export default function Locked() {
                       <span className="min-w-0"><span className="font-medium">{a.name}</span> <span className="text-xs text-[var(--color-ink-faint)] font-mono uppercase">{a.ticker}</span></span>
                     </button>
                   ))}
-                  {!list.length && !isAddr(q) && <div className="px-3 py-3 text-sm text-[var(--color-ink-faint)]">No match. Paste a token address to lock any Robinhood Chain token.</div>}
+                  {!list.length && !isAddr(q) && <div className="px-3 py-3 text-sm text-[var(--color-ink-faint)]">{tr('locked.noMatch', 'No match. Paste a token address to lock any Robinhood Chain token.')}</div>}
                 </div>
               </div>
             )}
@@ -232,26 +234,26 @@ export default function Locked() {
             {sel && (
               <>
                 <div className="flex items-center justify-between mt-5 mb-2">
-                  <span className="eyebrow">Amount</span>
-                  <span className="text-xs text-[var(--color-ink-faint)] font-mono">{balBusy ? 'reading…' : sel.balance != null ? `Balance: ${sel.balance} ${sel.symbol}` : 'Balance -'}</span>
+                  <span className="eyebrow">{tr('locked.amount', 'Amount')}</span>
+                  <span className="text-xs text-[var(--color-ink-faint)] font-mono">{balBusy ? tr('locked.reading', 'reading…') : sel.balance != null ? `${tr('locked.balance', 'Balance')}: ${sel.balance} ${sel.symbol}` : `${tr('locked.balance', 'Balance')} -`}</span>
                 </div>
                 <div className="flex items-center input !py-2.5">
                   <input value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'))} inputMode="decimal" placeholder="0.0" className="flex-1 min-w-0 bg-transparent outline-none border-0 p-0 font-mono num text-lg" />
-                  <button onClick={setMax} disabled={sel.balance == null} className="chip chip-brand !py-1 shrink-0 disabled:opacity-40">Max</button>
+                  <button onClick={setMax} disabled={sel.balance == null} className="chip chip-brand !py-1 shrink-0 disabled:opacity-40">{tr('locked.max', 'Max')}</button>
                 </div>
 
-                <div className="eyebrow mt-5 mb-2">Lock for</div>
+                <div className="eyebrow mt-5 mb-2">{tr('locked.lockFor', 'Lock for')}</div>
                 <div className="flex flex-wrap gap-2">
                   {DURATIONS.map((d) => (
                     <button key={d.key} onClick={() => setDur(d.key)} className={`chip ${dur === d.key ? 'chip-brand' : 'hover:bg-[var(--color-line)]'}`}>{d.label}</button>
                   ))}
                 </div>
-                <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">Unlocks {fmtDate(Date.now() + (DURATIONS.find((x) => x.key === dur)?.ms || 0))}.</p>
+                <p className="text-[11px] text-[var(--color-ink-faint)] mt-3">{tr('locked.unlocks', 'Unlocks')} {fmtDate(Date.now() + (DURATIONS.find((x) => x.key === dur)?.ms || 0))}.</p>
 
                 {error && <div className="chip chip-down w-full mt-4">{error}</div>}
-                {doneHash && <a href={explorerTx(doneHash)} target="_blank" rel="noreferrer" className="mt-3 block text-xs text-center underline text-[var(--color-ink-soft)]">Locked on-chain - view ↗</a>}
+                {doneHash && <a href={explorerTx(doneHash)} target="_blank" rel="noreferrer" className="mt-3 block text-xs text-center underline text-[var(--color-ink-soft)]">{tr('locked.lockedOnchain', 'Locked on-chain - view')} ↗</a>}
                 <button onClick={submit} disabled={!canLock || busy} className="btn btn-holo w-full !py-3.5 mt-4">
-                  {busy ? (step || 'Working…') : `Lock ${sel.symbol}`}
+                  {busy ? (step || tr('common.working', 'Working…')) : `${tr('locked.lockBtn', 'Lock')} ${sel.symbol}`}
                 </button>
               </>
             )}
@@ -263,10 +265,10 @@ export default function Locked() {
       {/* Your locks */}
       {address && mine.length > 0 && (
         <>
-          <div className="eyebrow mb-3">Your locks <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {mine.length}</span></div>
+          <div className="eyebrow mb-3">{tr('locked.yourLocks', 'Your locks')} <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {mine.length}</span></div>
           <div className="space-y-2.5 mb-6">
             {mine.map((l) => (
-              <LockRow key={l.id} lock={l} now={now} mine
+              <LockRow key={l.id} lock={l} now={now} mine tr={tr}
                 onUnlock={l.unlockAt <= now ? () => (l.onchain ? unlockChain(l.id) : unlockLocal(l.id)) : null} />
             ))}
           </div>
@@ -274,25 +276,25 @@ export default function Locked() {
       )}
 
       {/* Public list - visible to anyone, no wallet needed */}
-      <div className="eyebrow mb-3">Locked tokens {lockerLive && publicLocks && <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {publicLocks.length} on-chain</span>}</div>
+      <div className="eyebrow mb-3">{tr('locked.lockedTokens', 'Locked tokens')} {lockerLive && publicLocks && <span className="text-[var(--color-ink-faint)] normal-case tracking-normal">· {publicLocks.length} {tr('locked.onchain', 'on-chain')}</span>}</div>
       {!lockerLive ? (
         <div className="card text-center py-10 px-6 text-sm text-[var(--color-ink-soft)]">
-          The on-chain locker isn’t deployed yet. Deploy <span className="font-mono">AurnLocker</span> and set <span className="font-mono text-[var(--color-ink)]">NEXT_PUBLIC_LOCKER_ADDRESS</span> - then every lock shows here publicly, no wallet needed.
+          {tr('locked.notDeployedA', 'The on-chain locker isn’t deployed yet. Deploy')} <span className="font-mono">AurnLocker</span> {tr('locked.notDeployedB', 'and set')} <span className="font-mono text-[var(--color-ink)]">NEXT_PUBLIC_LOCKER_ADDRESS</span> {tr('locked.notDeployedC', '- then every lock shows here publicly, no wallet needed.')}
         </div>
       ) : publicLocks === null ? (
-        <div className="card text-center py-10 text-[var(--color-ink-soft)]">Reading the lock registry…</div>
+        <div className="card text-center py-10 text-[var(--color-ink-soft)]">{tr('locked.reg', 'Reading the lock registry…')}</div>
       ) : publicLocks.length === 0 ? (
-        <div className="card text-center py-10 text-[var(--color-ink-soft)]">No tokens are locked yet. Be the first - lock supply above.</div>
+        <div className="card text-center py-10 text-[var(--color-ink-soft)]">{tr('locked.noneYet', 'No tokens are locked yet. Be the first - lock supply above.')}</div>
       ) : (
         <div className="space-y-2.5">
           {publicLocks.map((l) => (
-            <LockRow key={l.id} lock={withLogo({ ...l, startedAt: l.lockedAt, durationLabel: '' })} now={now} showOwner />
+            <LockRow key={l.id} lock={withLogo({ ...l, startedAt: l.lockedAt, durationLabel: '' })} now={now} showOwner tr={tr} />
           ))}
         </div>
       )}
 
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-6">
-        Non-custodial - AURN never holds your keys. {lockerLive ? 'Locks are enforced on-chain by the AurnLocker contract.' : 'On-chain enforcement activates once the locker contract is deployed.'}
+        {lockerLive ? tr('locked.footerLive', 'Non-custodial - AURN never holds your keys. Locks are enforced on-chain by the AurnLocker contract.') : tr('locked.footerLocal', 'Non-custodial - AURN never holds your keys. On-chain enforcement activates once the locker contract is deployed.')}
       </p>
     </div>
   )
@@ -306,7 +308,7 @@ function TokenLogo({ sel, size = 28 }) {
   return <CharmAvatar charm={{ name: sel?.name || sel?.symbol || '?', tone: sel?.tone, ticker: sel?.symbol }} size={size} square />
 }
 
-function LockRow({ lock, now, onUnlock, mine, showOwner }) {
+function LockRow({ lock, now, onUnlock, mine, showOwner, tr }) {
   const remaining = lock.unlockAt - now
   const ready = remaining <= 0
   const total = (lock.unlockAt - (lock.startedAt || lock.lockedAt)) || 1
@@ -321,17 +323,17 @@ function LockRow({ lock, now, onUnlock, mine, showOwner }) {
             {lock.durationLabel && <span className="text-xs text-[var(--color-ink-faint)]">· {lock.durationLabel}</span>}
           </div>
           <div className="font-mono num text-sm text-[var(--color-ink-soft)]">{lock.amount} <span className="text-[var(--color-ink-faint)]">{lock.symbol}</span></div>
-          {showOwner && lock.owner && <div className="text-[10px] text-[var(--color-ink-faint)] font-mono mt-0.5">by {short(lock.owner)}</div>}
+          {showOwner && lock.owner && <div className="text-[10px] text-[var(--color-ink-faint)] font-mono mt-0.5">{tr('locked.by', 'by')} {short(lock.owner)}</div>}
         </div>
         <div className="text-right shrink-0">
           {ready && mine && onUnlock ? (
-            <button onClick={onUnlock} className="btn btn-holo !py-2 !px-4 text-sm">Unlock</button>
+            <button onClick={onUnlock} className="btn btn-holo !py-2 !px-4 text-sm">{tr('locked.unlock', 'Unlock')}</button>
           ) : ready ? (
-            <div className="chip chip-up">Unlocked</div>
+            <div className="chip chip-up">{tr('locked.unlocked', 'Unlocked')}</div>
           ) : (
             <>
               <div className="font-mono num text-sm holo-text font-semibold">{fmtCountdown(remaining)}</div>
-              <div className="text-[10px] text-[var(--color-ink-faint)] font-mono">until unlock</div>
+              <div className="text-[10px] text-[var(--color-ink-faint)] font-mono">{tr('locked.untilUnlock', 'until unlock')}</div>
             </>
           )}
         </div>
@@ -340,8 +342,8 @@ function LockRow({ lock, now, onUnlock, mine, showOwner }) {
         <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${pctDone}%`, background: 'var(--holo-line)' }} />
       </div>
       <div className="flex items-center justify-between mt-2 text-[10px] text-[var(--color-ink-faint)] font-mono">
-        <span>Locked {fmtDate(lock.startedAt || lock.lockedAt)}</span>
-        <span>{ready ? 'Ready' : fmtDate(lock.unlockAt)}</span>
+        <span>{tr('locked.lockedOn', 'Locked')} {fmtDate(lock.startedAt || lock.lockedAt)}</span>
+        <span>{ready ? tr('locked.ready', 'Ready') : fmtDate(lock.unlockAt)}</span>
       </div>
     </div>
   )

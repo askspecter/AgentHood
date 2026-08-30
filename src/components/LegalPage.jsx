@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Back } from './icons'
+import { useT } from '../lib/i18n'
 
 /**
  * Shared layout for the long-form legal pages (Terms, Privacy). Keeps both
@@ -8,6 +9,7 @@ import { Back } from './icons'
  */
 export function LegalLayout({ title, updated, lead, children }) {
   const nav = useNavigate()
+  const t = useT()
   return (
     <div className="max-w-2xl mx-auto pb-10">
       <div className="flex items-center gap-3 mb-6">
@@ -16,13 +18,13 @@ export function LegalLayout({ title, updated, lead, children }) {
       </div>
 
       <div className="card p-6 sm:p-8">
-        <div className="eyebrow mb-4">Last updated · {updated}</div>
+        <div className="eyebrow mb-4">{t('legal.updated', 'Last updated')} · {updated}</div>
         {lead && <p className="text-[var(--color-ink-soft)] leading-relaxed mb-7 text-[15px]">{lead}</p>}
         <div className="space-y-8">{children}</div>
       </div>
 
       <p className="text-[11px] text-[var(--color-ink-faint)] leading-relaxed mt-4 px-1">
-        This document is provided for transparency about how AURN works and is written in plain language. It is not legal advice. For questions, reach us at <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@aurn.fun">contact@aurn.fun</a>.
+        {t('legal.disclaimer', 'This document is provided for transparency about how AURN works and is written in plain language. It is not legal advice. For questions, reach us at')} <a className="text-[var(--color-accent)] hover:underline" href="mailto:contact@aurn.fun">contact@aurn.fun</a>.
       </p>
     </div>
   )

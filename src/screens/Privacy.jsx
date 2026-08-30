@@ -1,9 +1,11 @@
 import { LegalLayout, Sec, UL } from '../components/LegalPage'
+import { useT } from '../lib/i18n'
 
 export default function Privacy() {
+  const t = useT()
   return (
     <LegalLayout
-      title="Privacy Policy"
+      title={t('legal.privacyTitle', 'Privacy Policy')}
       updated="August 28, 2026"
       lead="This Privacy Policy explains what information AURN collects when you use aurn.fun, how we use it, and the choices you have. AURN is built to lean on public blockchain data and to keep as little about you as possible on our servers. By using the Service you agree to this Policy."
     >

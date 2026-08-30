@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import { Back } from '../components/icons'
 import { num } from '../lib/format'
 import {
@@ -10,7 +11,7 @@ import {
 
 /**
  * Settings → Rewards. Check what a wallet earns for holding $AURN: a pro-rata
- * share of this epoch's pool — $PONS plus tokenized Robinhood-Chain stocks —
+ * share of this epoch's pool - $PONS plus tokenized Robinhood-Chain stocks -
  * with a live countdown to the next distribution. Public: anyone can check any
  * address, no wallet connect required.
  */
@@ -24,6 +25,7 @@ const proxied = (u) => (u && /^https?:\/\//.test(u) ? `/api/img?src=${encodeURIC
 export default function Reward() {
   const nav = useNavigate()
   const { wallet, connect, agents } = useStore()
+  const tr = useT()
 
   // The official $AURN coin (live token address, price and logo from the feed).
   const official = useMemo(() => agents.find((a) => a.official) || null, [agents])
@@ -45,7 +47,7 @@ export default function Reward() {
     return () => { cancelled = true }
   }, [])
 
-  // Which address we're checking — the connected wallet by default; editable.
+  // Which address we're checking - the connected wallet by default; editable.
   const [addr, setAddr] = useState('')
   const [editing, setEditing] = useState(false)
   const checkAddr = (addr && isAddr(addr)) ? addr.trim() : (wallet?.address || '')
@@ -76,18 +78,18 @@ export default function Reward() {
     <div className="max-w-lg mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
-        <h1 className="font-serif text-3xl">Rewards</h1>
+        <h1 className="font-serif text-3xl">{tr('settings.rewards', 'Rewards')}</h1>
       </div>
 
       {/* Position / hero */}
       <div className="glass card-glow rounded-3xl p-6 mb-5 relative overflow-hidden">
         <span className="pointer-events-none absolute -right-6 -top-8 w-40 h-40 rounded-full blur-3xl opacity-40" style={{ background: 'radial-gradient(circle,#8fb0e6,transparent 62%)' }} />
         <div className="relative">
-          <div className="eyebrow mb-1">Hold $AURN · earn the pool</div>
+          <div className="eyebrow mb-1">{tr('reward.holdEarn', 'Hold $AURN · earn the pool')}</div>
           {!checkAddr ? (
             <>
-              <div className="font-serif text-2xl mt-2 mb-4">Connect to check your rewards.</div>
-              <button onClick={connect} className="btn btn-holo !py-3">Connect Wallet</button>
+              <div className="font-serif text-2xl mt-2 mb-4">{tr('reward.connectCheck', 'Connect to check your rewards.')}</div>
+              <button onClick={connect} className="btn btn-holo !py-3">{tr('wallet.connect', 'Connect Wallet')}</button>
             </>
           ) : (
             <>
@@ -96,11 +98,11 @@ export default function Reward() {
                   <div className="font-mono num text-4xl font-bold holo-text leading-none">
                     {busy && balance == null ? '…' : num(balance || 0)}
                   </div>
-                  <div className="text-sm text-[var(--color-ink-soft)] mt-1.5">$AURN held{holdingUsd != null && <span className="text-[var(--color-ink-faint)]"> · ${num(holdingUsd)}</span>}</div>
+                  <div className="text-sm text-[var(--color-ink-soft)] mt-1.5">{tr('reward.held', '$AURN held')}{holdingUsd != null && <span className="text-[var(--color-ink-faint)]"> · ${num(holdingUsd)}</span>}</div>
                 </div>
                 <div className="text-right shrink-0">
                   <div className="font-mono num text-lg font-semibold">{(share * 100).toLocaleString(undefined, { maximumFractionDigits: share < 0.0001 ? 4 : 3 })}%</div>
-                  <div className="text-[11px] text-[var(--color-ink-faint)]">of supply</div>
+                  <div className="text-[11px] text-[var(--color-ink-faint)]">{tr('reward.ofSupply', 'of supply')}</div>
                 </div>
               </div>
               <div className="mt-4 h-1.5 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden">
@@ -115,25 +117,25 @@ export default function Reward() {
       <div className="card p-3.5 mb-5 flex items-center gap-2">
         {editing || (!wallet && !checkAddr) ? (
           <>
-            <input autoFocus value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="Paste any 0x address to check…"
+            <input autoFocus value={addr} onChange={(e) => setAddr(e.target.value)} placeholder={tr('reward.pastePh', 'Paste any 0x address to check…')}
               className="input !py-2 flex-1 font-mono text-sm" />
-            <button onClick={() => setEditing(false)} className="btn btn-secondary !py-2 text-sm shrink-0">Done</button>
+            <button onClick={() => setEditing(false)} className="btn btn-secondary !py-2 text-sm shrink-0">{tr('common.done', 'Done')}</button>
           </>
         ) : (
           <>
             <span className="text-xs text-[var(--color-ink-faint)] font-mono flex-1 truncate">
-              Checking {addr && isAddr(addr) ? 'address' : 'your wallet'} · {short(checkAddr)}
+              {tr('reward.checking', 'Checking')} {addr && isAddr(addr) ? tr('reward.checkingAddress', 'address') : tr('reward.checkingWallet', 'your wallet')} · {short(checkAddr)}
             </span>
-            <button onClick={() => setEditing(true)} className="chip !py-1 shrink-0">Check another</button>
-            {addr && <button onClick={() => { setAddr(''); setEditing(false) }} className="chip !py-1 shrink-0">Reset</button>}
+            <button onClick={() => setEditing(true)} className="chip !py-1 shrink-0">{tr('reward.checkAnother', 'Check another')}</button>
+            {addr && <button onClick={() => { setAddr(''); setEditing(false) }} className="chip !py-1 shrink-0">{tr('common.reset', 'Reset')}</button>}
           </>
         )}
       </div>
 
       {/* This epoch */}
       <div className="flex items-center justify-between mb-3">
-        <div className="eyebrow">This epoch's rewards</div>
-        <span className="chip chip-brand !py-1 font-mono num">{fmtCountdown(epoch.msLeft)} left</span>
+        <div className="eyebrow">{tr('reward.epochTitle', "This epoch's rewards")}</div>
+        <span className="chip chip-brand !py-1 font-mono num">{fmtCountdown(epoch.msLeft)} {tr('reward.left', 'left')}</span>
       </div>
       <div className="mb-3 h-1 rounded-full bg-[rgba(255,255,255,0.06)] overflow-hidden">
         <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${epoch.progress * 100}%`, background: 'var(--holo-line)' }} />
@@ -146,8 +148,7 @@ export default function Reward() {
       </div>
 
       <p className="text-[11px] text-center text-[var(--color-ink-faint)] mt-6 leading-relaxed">
-        Estimated from the current pool and your live $AURN balance, split across the {num(REWARD_SUPPLY)} supply.
-        Rewards accrue to holders each epoch — keep holding $AURN to keep earning. Non-custodial: AURN never holds your keys.
+        {tr('reward.footer', 'Estimated from the current pool and your live $AURN balance, split across the supply. Rewards accrue to holders each epoch - keep holding $AURN to keep earning. Non-custodial: AURN never holds your keys.')}
       </p>
     </div>
   )
@@ -185,6 +186,7 @@ function RewardLogo({ r, logo, size = 36 }) {
 }
 
 function RewardCard({ r, logo, showAmount }) {
+  const tr = useT()
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2.5 mb-3">
@@ -195,10 +197,10 @@ function RewardCard({ r, logo, showAmount }) {
         </div>
       </div>
       <div className="font-mono num text-xl font-semibold holo-text leading-none">
-        {showAmount ? fmtReward(r.amount) : '—'}<span className="text-xs text-[var(--color-ink-faint)] font-normal ml-1">{r.unit}</span>
+        {showAmount ? fmtReward(r.amount) : '-'}<span className="text-xs text-[var(--color-ink-faint)] font-normal ml-1">{r.unit}</span>
       </div>
       <div className="text-[10px] text-[var(--color-ink-faint)] font-mono mt-1.5">
-        pool {fmtReward(r.pool)}{r.unit ? ' ' + r.unit : ''}
+        {tr('reward.pool', 'pool')} {fmtReward(r.pool)}{r.unit ? ' ' + r.unit : ''}
       </div>
     </div>
   )

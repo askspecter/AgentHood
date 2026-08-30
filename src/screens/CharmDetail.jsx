@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import { tokenToAgent } from '../lib/agents'
 import CharmAvatar from '../components/CharmAvatar'
 import PriceChart from '../components/PriceChart'
@@ -16,6 +17,7 @@ import { Verified, Back } from '../components/icons'
 export default function CharmDetail() {
   const { id } = useParams()
   const [searchParams] = useSearchParams()
+  const tr = useT()
   const { getAgent, prices, explorer, agentsLoading } = useStore()
   const feedCharm = getAgent(id)
 
@@ -84,7 +86,7 @@ export default function CharmDetail() {
   if (!charm) {
     return (
       <div className="text-center py-20 text-[var(--color-ink-soft)]">
-        {agentsLoading || fetching ? 'Loading agent…' : <>Agent not found. <Link className="underline" to="/">Back to Discover</Link></>}
+        {agentsLoading || fetching ? tr('common.loadingAgent', 'Loading agent…') : <>{tr('chat.notFound', 'Agent not found.')} <Link className="underline" to="/">{tr('launch.backToDiscover', 'Back to Discover')}</Link></>}
       </div>
     )
   }
@@ -106,7 +108,7 @@ export default function CharmDetail() {
   return (
     <div className="max-w-xl mx-auto space-y-4">
       <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]">
-        <Back size={15} /> Discover
+        <Back size={15} /> {tr('common.discover', 'Discover')}
       </Link>
 
       {/* header */}
@@ -118,7 +120,7 @@ export default function CharmDetail() {
               <h1 className="font-serif text-3xl">{charm.name}</h1>
               <Verified size={16} gold={charm.official} />
               <span className="font-mono text-sm text-[var(--color-ink-faint)]">${charm.ticker}</span>
-              {grad === true && <span className="chip chip-up">Graduated</span>}
+              {grad === true && <span className="chip chip-up">{tr('charm.graduated', 'Graduated')}</span>}
             </div>
             <div className="flex items-center gap-1.5 text-sm text-[var(--color-ink-soft)] mt-1 flex-wrap">
               <span>Robinhood Chain</span>
@@ -131,10 +133,10 @@ export default function CharmDetail() {
           </div>
         </div>
         <div className="mt-5 flex gap-2">
-          <Link to={`/chat/${charm.id}`} className="btn btn-primary flex-1 justify-center">Chat with {charm.name}</Link>
+          <Link to={`/chat/${charm.id}`} className="btn btn-primary flex-1 justify-center">{tr('charm.chatWith', 'Chat with {name}').replace('{name}', charm.name)}</Link>
           <button onClick={shareCoin} title="Copy link" className="btn btn-secondary shrink-0 inline-flex items-center gap-1.5">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>
-            {shared ? 'Copied' : 'Share'}
+            {shared ? tr('common.copied', 'Copied') : tr('action.share', 'Share')}
           </button>
         </div>
       </div>
@@ -144,7 +146,7 @@ export default function CharmDetail() {
 
       {/* about */}
       <div className="card p-6">
-        <div className="eyebrow mb-2">About</div>
+        <div className="eyebrow mb-2">{tr('charm.about', 'About')}</div>
         <p className="text-[var(--color-ink)] leading-relaxed">{charm.lore}</p>
       </div>
 
@@ -157,7 +159,7 @@ export default function CharmDetail() {
       <div className="card p-6">
         <div className="flex items-end justify-between mb-5">
           <div>
-            <div className="eyebrow mb-1">Price</div>
+            <div className="eyebrow mb-1">{tr('market.price', 'Price')}</div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="font-mono num text-3xl font-semibold">{price ? usd(price) : '-'}</div>
               {charm.change24 != null && (
@@ -168,13 +170,13 @@ export default function CharmDetail() {
         </div>
         <PriceChart seed={charm.history} live={price} up={charm.change24 == null ? true : charm.change24 >= 0} />
         <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t hairline">
-          <Stat label="Market cap" value={charm.mcap ? usd(charm.mcap) : '-'} />
-          <Stat label="Holders" value={charm.holders != null ? num(charm.holders) : '-'} />
-          <Stat label="Supply" value={num(charm.supply)} />
+          <Stat label={tr('market.marketCap', 'Market cap')} value={charm.mcap ? usd(charm.mcap) : '-'} />
+          <Stat label={tr('market.holders', 'Holders')} value={charm.holders != null ? num(charm.holders) : '-'} />
+          <Stat label={tr('market.supply', 'Supply')} value={num(charm.supply)} />
         </div>
         {explorer && addr && (
           <a href={`${explorer}/token/${addr}`} target="_blank" rel="noopener noreferrer"
-            className="inline-block mt-4 text-xs text-[var(--color-accent)] hover:underline">View on explorer ↗</a>
+            className="inline-block mt-4 text-xs text-[var(--color-accent)] hover:underline">{tr('charm.viewExplorer', 'View on explorer')} ↗</a>
         )}
       </div>
     </div>

@@ -3,6 +3,7 @@ import { useAccount, usePublicClient, useWriteContract } from 'wagmi'
 import { formatUnits, formatEther } from 'viem'
 import { v1LockerAbi } from '../lib/pons/abis'
 import { robinhoodChain, explorerTx } from '../lib/chain'
+import { useT } from '../lib/i18n'
 
 /**
  * Creator fees - non-custodial. Pool fees accrue to the permanent liquidity
@@ -17,6 +18,7 @@ const fmtAmt = (n) => Number(n).toLocaleString('en-US', { maximumFractionDigits:
 const fmtUsd = (n) => (n == null ? null : '$' + Number(n).toLocaleString('en-US', { maximumFractionDigits: n >= 1 ? 2 : 4 }))
 
 export default function CreatorFees({ token, symbol }) {
+  const tr = useT()
   const { address } = useAccount()
   const publicClient = usePublicClient()
   const { writeContractAsync } = useWriteContract()
@@ -93,8 +95,8 @@ export default function CreatorFees({ token, symbol }) {
           </svg>
         </span>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold">Creator fees</div>
-          <p className="text-sm text-[var(--color-ink-soft)] mt-0.5">Pool fees accrue without unlocking the permanent liquidity position. Signed by your own wallet.</p>
+          <div className="font-semibold">{tr('fees.title', 'Creator fees')}</div>
+          <p className="text-sm text-[var(--color-ink-soft)] mt-0.5">{tr('fees.desc', 'Pool fees accrue without unlocking the permanent liquidity position. Signed by your own wallet.')}</p>
         </div>
       </div>
 
@@ -102,7 +104,7 @@ export default function CreatorFees({ token, symbol }) {
         {rows.map((a) => (
           <div key={a.symbol} className="flex items-center justify-between p-3 rounded-xl panel-soft">
             <div>
-              <div className="eyebrow">Accrued {a.symbol}</div>
+              <div className="eyebrow">{tr('fees.accrued', 'Accrued')} {a.symbol}</div>
               <div className="font-mono num text-lg mt-0.5">{fmtAmt(a.amount)}</div>
             </div>
             {a.usd != null && <div className="font-mono num text-sm text-[var(--color-ink-soft)]">{fmtUsd(a.usd)}</div>}
@@ -110,25 +112,25 @@ export default function CreatorFees({ token, symbol }) {
         ))}
       </div>
 
-      <div className="mt-4 text-sm text-[var(--color-ink-soft)] font-mono num">{share}% you · {100 - share}% protocol</div>
+      <div className="mt-4 text-sm text-[var(--color-ink-soft)] font-mono num">{share}% {tr('fees.you', 'you')} · {100 - share}% {tr('fees.protocol', 'protocol')}</div>
 
       <div className="mt-4 flex items-center justify-between gap-3 p-3 rounded-xl panel-soft">
         <div className="min-w-0">
-          <div className="eyebrow">Payout wallet</div>
+          <div className="eyebrow">{tr('fees.payout', 'Payout wallet')}</div>
           <div className="font-mono text-sm truncate">{short(payout)}</div>
         </div>
-        <span className="text-xs text-[var(--color-ink-faint)] shrink-0">{info.redirected ? 'fee redirect' : 'your wallet'}</span>
+        <span className="text-xs text-[var(--color-ink-faint)] shrink-0">{info.redirected ? tr('fees.redirect', 'fee redirect') : tr('fees.yourWallet', 'your wallet')}</span>
       </div>
 
       {(txHash || error) && (
         <div className={`mt-3 text-sm ${error ? 'text-[var(--color-down)]' : 'text-[var(--color-up)]'}`}>
-          {error || 'Fees claimed to your wallet.'}
-          {txHash && <a href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer" className="underline ml-1">view ↗</a>}
+          {error || tr('fees.claimed', 'Fees claimed to your wallet.')}
+          {txHash && <a href={explorerTx(txHash)} target="_blank" rel="noopener noreferrer" className="underline ml-1">{tr('fees.view', 'view')} ↗</a>}
         </div>
       )}
 
       <button onClick={claim} disabled={busy || (tokNum <= 0 && wethNum <= 0)} className="btn btn-holo w-full !py-3 mt-4">
-        {busy ? 'Claiming…' : (tokNum <= 0 && wethNum <= 0) ? 'No fees to claim yet' : 'Claim fees'}
+        {busy ? tr('fees.claiming', 'Claiming…') : (tokNum <= 0 && wethNum <= 0) ? tr('fees.noneYet', 'No fees to claim yet') : tr('fees.claim', 'Claim fees')}
       </button>
     </div>
   )

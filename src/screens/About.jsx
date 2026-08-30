@@ -1,4 +1,5 @@
 import { LegalLayout, Sec, UL } from '../components/LegalPage'
+import { useT } from '../lib/i18n'
 
 /**
  * About / Company - the official description of AURN. Kept factual (no invented
@@ -6,9 +7,10 @@ import { LegalLayout, Sec, UL } from '../components/LegalPage'
  * channels, so anyone verifying the brand can confirm identity from one page.
  */
 export default function About() {
+  const t = useT()
   return (
     <LegalLayout
-      title="About AURN"
+      title={t('legal.aboutTitle', 'About AURN')}
       updated="August 28, 2026"
       lead="AURN is a mobile-first app for launching and trading agent-style tokens on Robinhood Chain. Every agent is a real coin: you can chat with it, trade it, and launch your own - from your pocket. AURN operates at aurn.fun."
     >

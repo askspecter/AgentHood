@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import CharmAvatar from '../components/CharmAvatar'
 import { timeAgo } from '../lib/format'
 
@@ -8,6 +9,7 @@ import { timeAgo } from '../lib/format'
  */
 export default function Chats() {
   const { chats, getAgent, agents, agentsLoading } = useStore()
+  const tr = useT()
 
   const threads = Object.entries(chats)
     .map(([id, msgs]) => ({ agent: getAgent(id), last: msgs[msgs.length - 1] }))
@@ -18,8 +20,8 @@ export default function Chats() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <h1 className="font-serif text-4xl mb-1">Chats</h1>
-      <p className="text-[var(--color-ink-soft)] mb-8">Every coin on Robinhood Chain is an agent. Talk to it, then trade it.</p>
+      <h1 className="font-serif text-4xl mb-1">{tr('chats.title', 'Chats')}</h1>
+      <p className="text-[var(--color-ink-soft)] mb-8">{tr('chats.subtitle', 'Every coin on Robinhood Chain is an agent. Talk to it, then trade it.')}</p>
 
       {threads.length > 0 && (
         <div className="card overflow-hidden mb-10">
@@ -33,7 +35,7 @@ export default function Chats() {
                   <span className="text-xs text-[var(--color-ink-faint)]">{timeAgo(last.ts)}</span>
                 </div>
                 <div className="text-sm text-[var(--color-ink-soft)] truncate">
-                  {last.role === 'user' ? 'You: ' : ''}{last.text}
+                  {last.role === 'user' ? tr('chats.youPrefix', 'You: ') : ''}{last.text}
                 </div>
               </div>
             </Link>
@@ -41,11 +43,11 @@ export default function Chats() {
         </div>
       )}
 
-      <h2 className="font-serif text-2xl mb-4">{threads.length ? 'Talk to another coin' : 'Start a conversation'}</h2>
+      <h2 className="font-serif text-2xl mb-4">{threads.length ? tr('chats.talkAnother', 'Talk to another coin') : tr('chats.start', 'Start a conversation')}</h2>
       {agentsLoading && suggestions.length === 0 ? (
-        <div className="text-[var(--color-ink-soft)] text-sm">Loading agents…</div>
+        <div className="text-[var(--color-ink-soft)] text-sm">{tr('chats.loading', 'Loading agents…')}</div>
       ) : suggestions.length === 0 ? (
-        <div className="text-[var(--color-ink-soft)] text-sm">No coins available to chat with yet. <Link to="/" className="underline">Discover</Link> or <Link to="/launch" className="underline">launch one</Link>.</div>
+        <div className="text-[var(--color-ink-soft)] text-sm">{tr('chats.noneA', 'No coins available to chat with yet.')} <Link to="/" className="underline">{tr('common.discover', 'Discover')}</Link> {tr('common.or', 'or')} <Link to="/launch" className="underline">{tr('chats.launchOne', 'launch one')}</Link>.</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {suggestions.map((c) => (
