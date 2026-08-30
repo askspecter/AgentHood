@@ -237,6 +237,9 @@ export default function Launch() {
       style: st ? st.key : s.style,
       tone: st ? st.tone : s.tone,
       vibe: st ? [...new Set([st.vibe, ...s.vibe])].slice(0, 5) : s.vibe,
+      // v2 paired asset (e.g. an index coin tracking a lead stock).
+      pairToken: g('pairToken') || s.pairToken,
+      pairSymbol: g('pairSymbol') || s.pairSymbol,
     }))
     // Land a fully-specified launch straight on the review step to sign.
     if (g('to') === 'review' && g('name')) setStep(4)

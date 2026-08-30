@@ -14,6 +14,7 @@ import Profile from './screens/Profile'
 import Settings from './screens/Settings'
 import EditProfile from './screens/EditProfile'
 import Leaderboard from './screens/Leaderboard'
+import Indexes from './screens/Indexes'
 import Referral from './screens/Referral'
 import AiAccess from './screens/AiAccess'
 import Locked from './screens/Locked'
@@ -51,6 +52,7 @@ export default function App() {
               <Route path="settings/locked" element={<Locked />} />
               <Route path="settings/reward" element={<Reward />} />
               <Route path="leaderboard" element={<Leaderboard />} />
+              <Route path="baskets" element={<Indexes />} />
               <Route path="terms" element={<Terms />} />
               <Route path="privacy" element={<Privacy />} />
               <Route path="about" element={<About />} />

@@ -52,6 +52,18 @@ export default function Explore() {
 
   return (
     <div className="space-y-8">
+      {/* Index baskets entry point - track a basket of tokenized stocks. */}
+      <button onClick={() => nav('/baskets')}
+        className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left card-hover"
+        style={{ background: 'var(--holo)' }}>
+        <span className="text-xl">🌎</span>
+        <span className="flex-1 min-w-0">
+          <span className="block font-semibold text-[#0b0a12] leading-tight">{tr('index.exploreCta', 'Track a basket of stocks')}</span>
+          <span className="block text-xs text-[#0b0a12]/70 truncate">{tr('index.title', 'Index baskets')}</span>
+        </span>
+        <span className="text-[#0b0a12] text-lg shrink-0">→</span>
+      </button>
+
       {featured.length > 0 && <HeroCarousel coins={featured} prices={prices} onTrade={(c) => nav(`/c/${c.id}`)} />}
 
       <section>

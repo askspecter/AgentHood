@@ -356,6 +356,18 @@ const DICT = {
   'legal.termsTitle': { en: 'Terms of Service', zh: '服务条款', ko: '서비스 약관' },
   'legal.privacyTitle': { en: 'Privacy Policy', zh: '隐私政策', ko: '개인정보 처리방침' },
 
+  // Index baskets (RWA)
+  'index.title': { en: 'Index baskets', zh: '指数篮子', ko: '인덱스 바스켓' },
+  'index.subtitle': { en: 'Themes of tokenized stocks on Robinhood Chain. Launch a coin that tracks one, priced live from real on-chain quotes.', zh: 'Robinhood Chain 上代币化股票的主题组合。发射一个追踪它的代币，价格实时来自链上真实报价。', ko: 'Robinhood Chain의 토큰화 주식 테마예요. 하나를 추적하는 코인을 런치하세요, 실제 온체인 시세로 실시간 산정돼요.' },
+  'index.disclaimer': { en: 'Index coins are thematic tracking coins. They are not collateralized by, backed by, or redeemable for the underlying stocks. NAV is a reference number from live issuer quotes.', zh: '指数代币是主题追踪代币，并非由标的股票抵押、支持或可赎回。NAV 仅为来自实时报价的参考数值。', ko: '인덱스 코인은 테마 추적 코인이에요. 기초 주식으로 담보되거나 상환되지 않아요. NAV는 실시간 시세로 만든 참고 수치예요.' },
+  'index.nav': { en: 'Live NAV', zh: '实时 NAV', ko: '실시간 NAV' },
+  'index.perUnit': { en: 'per basket unit', zh: '每篮子单位', ko: '바스켓 단위당' },
+  'index.tracks': { en: 'Tracks', zh: '追踪', ko: '추적' },
+  'index.pricedLive': { en: 'priced live', zh: '实时定价', ko: '실시간 가격' },
+  'index.launchTracking': { en: 'Launch a coin tracking this', zh: '发射追踪此篮子的代币', ko: '이 바스켓을 추적하는 코인 런치' },
+  'index.exploreCta': { en: 'Track a basket of stocks', zh: '追踪一篮子股票', ko: '주식 바스켓을 추적하세요' },
+  'index.loading': { en: 'Pricing baskets from the chain…', zh: '正在从链上为篮子定价…', ko: '체인에서 바스켓 가격 산정 중…' },
+
   // Language switcher
   'lang.choose': { en: 'Language', zh: '语言', ko: '언어' },
 }
