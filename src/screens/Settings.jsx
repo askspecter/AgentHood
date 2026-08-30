@@ -16,8 +16,8 @@ export default function Settings() {
         <h1 className="font-serif text-3xl">{t('settings.title', 'Settings')}</h1>
       </div>
 
-      <Section title="Account">
-        <Row icon="editProfile" label="Edit profile" onClick={() => nav('/settings/profile')} />
+      <Section title={t('settings.account', 'Account')}>
+        <Row icon="editProfile" label={t('settings.editProfile', 'Edit profile')} onClick={() => nav('/settings/profile')} />
         <Row icon="appearance" label={t('settings.appearance', 'Appearance')} right={
           <div className="seg shrink-0">
             {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize !px-2.5 !text-[13px] ${theme === k ? 'on' : ''}`}>{k}</button>)}
@@ -28,29 +28,29 @@ export default function Settings() {
             {LANGS.map((l) => <button key={l.code} onClick={() => setLang(l.code)} className={`!px-2.5 !text-[13px] ${lang === l.code ? 'on' : ''}`}>{l.short}</button>)}
           </div>
         } />
-        <Row icon="reward" label="Rewards" onClick={() => nav('/settings/reward')} />
-        <Row icon="lock" label="Locked" onClick={() => nav('/settings/locked')} />
-        <Row icon="gift" label="Referral code" onClick={() => nav('/settings/referral')} />
-        <Row icon="terminal" label="AI access (MCP)" onClick={() => nav('/settings/ai')} last />
+        <Row icon="reward" label={t('settings.rewards', 'Rewards')} onClick={() => nav('/settings/reward')} />
+        <Row icon="lock" label={t('settings.locked', 'Locked')} onClick={() => nav('/settings/locked')} />
+        <Row icon="gift" label={t('settings.referral', 'Referral code')} onClick={() => nav('/settings/referral')} />
+        <Row icon="terminal" label={t('settings.aiAccess', 'AI access (MCP)')} onClick={() => nav('/settings/ai')} last />
       </Section>
 
-      <Section title="Resources">
-        <Row icon="docs" label="About AURN" onClick={() => nav('/about')} />
-        <Row icon="tos" label="Terms of service" onClick={() => nav('/terms')} />
-        <Row icon="privacy" label="Privacy policy" onClick={() => nav('/privacy')} />
-        <Row icon="x" label="Follow us on X" href="https://x.com/aurnfun" external />
-        <Row icon="support" label="Support" href="mailto:contact@aurn.fun" />
-        <Row icon="docs" label="Documentation" href="https://docs.aurn.fun" external last />
+      <Section title={t('settings.resources', 'Resources')}>
+        <Row icon="docs" label={t('settings.about', 'About AURN')} onClick={() => nav('/about')} />
+        <Row icon="tos" label={t('settings.terms', 'Terms of service')} onClick={() => nav('/terms')} />
+        <Row icon="privacy" label={t('settings.privacy', 'Privacy policy')} onClick={() => nav('/privacy')} />
+        <Row icon="x" label={t('settings.followX', 'Follow us on X')} href="https://x.com/aurnfun" external />
+        <Row icon="support" label={t('settings.support', 'Support')} href="mailto:contact@aurn.fun" />
+        <Row icon="docs" label={t('settings.docs', 'Documentation')} href="https://docs.aurn.fun" external last />
       </Section>
 
       <div className="card overflow-hidden mb-4">
         <button onClick={() => { disconnect(); nav('/') }} className="w-full flex items-center gap-3 p-4 hover:bg-[var(--color-paper-2)]">
           <span className="w-9 h-9 grid place-items-center rounded-lg bg-[var(--color-down-soft)]"><RowIcon name="logout" stroke="var(--color-down)" /></span>
-          <span className="font-medium text-[var(--color-down)]">Disconnect wallet</span>
+          <span className="font-medium text-[var(--color-down)]">{t('settings.disconnect', 'Disconnect wallet')}</span>
         </button>
       </div>
 
-      <div className="text-center text-xs text-[var(--color-ink-faint)]">AURN v0.1.0</div>
+      <div className="text-center text-xs text-[var(--color-ink-faint)]">{t('settings.version', 'AURN v0.1.0')}</div>
     </div>
   )
 }
