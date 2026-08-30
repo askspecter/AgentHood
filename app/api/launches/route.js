@@ -115,6 +115,39 @@ async function fetchJson(url, timeoutMs = 7000) {
   }
 }
 
+/**
+ * Dexscreener USD price fallback for a single token.
+ *
+ * The official $AURN coin trades on a Uniswap V4 pool that the on-chain enricher
+ * can't always resolve, so its pool read can come back with no price and the
+ * feed shows it as "—". Dexscreener already aggregates the pool, so this reads
+ * the USD price + market cap straight from it as a fallback. Best-effort: any
+ * failure returns null and the coin simply shows without a price, as before.
+ * (Only reachable from the deployment's network, not local dev sandboxes.)
+ */
+async function dexscreenerUsd(token) {
+  try {
+    const j = await fetchJson(`https://api.dexscreener.com/latest/dex/tokens/${token}`, 6000);
+    const pairs = Array.isArray(j?.pairs) ? j.pairs : [];
+    // Prefer Robinhood Chain pairs, deepest liquidity first.
+    const ranked = pairs
+      .filter((p) => String(p?.chainId || "").toLowerCase() === "robinhood")
+      .sort((a, b) => (Number(b?.liquidity?.usd) || 0) - (Number(a?.liquidity?.usd) || 0));
+    const best = ranked[0] || pairs[0];
+    if (!best) return null;
+    const priceUsd = Number(best.priceUsd);
+    const mcapUsd = Number(best.marketCap) || Number(best.fdv) || 0;
+    const change24 = Number(best?.priceChange?.h24);
+    return {
+      priceUsd: Number.isFinite(priceUsd) && priceUsd > 0 ? priceUsd : null,
+      mcapUsd: Number.isFinite(mcapUsd) && mcapUsd > 0 ? mcapUsd : null,
+      change24: Number.isFinite(change24) ? change24 : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 async function discoverViaExplorer(explorer, factories, pages = 2) {
   const found = [];
   for (const factory of factories) {
@@ -436,6 +469,25 @@ export async function GET(request) {
           if (!l.xUsername) l.xUsername = process.env.OFFICIAL_TOKEN_HANDLE || "aurnfun";
         }
       }
+
+      // Official $AURN price fallback: when its on-chain pool read gave no price
+      // (it trades on a V4 pool the enricher can't resolve), fill the USD figures
+      // from Dexscreener. Scoped to the official coin, never overriding a real
+      // on-chain price.
+      await Promise.all(
+        launches
+          .filter((l) => l.official
+            && !(Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
+            && !(Number(l.explorerMcapUsd) > 0))
+          .map(async (l) => {
+            const dx = await dexscreenerUsd(l.token);
+            if (!dx) return;
+            if (dx.priceUsd != null) l.explorerPriceUsd = dx.priceUsd;
+            if (dx.mcapUsd != null) l.explorerMcapUsd = dx.mcapUsd;
+            if (l.change24 == null && dx.change24 != null) l.change24 = dx.change24;
+          })
+      );
+
       const shown = launches.slice(0, 24);
       await Promise.all([
         attachHolders(chain.explorer, shown),
