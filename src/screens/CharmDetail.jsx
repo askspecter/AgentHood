@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { tokenToAgent } from '../lib/agents'
 import CharmAvatar from '../components/CharmAvatar'
@@ -15,8 +15,18 @@ import { Verified, Back } from '../components/icons'
  */
 export default function CharmDetail() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const { getAgent, prices, explorer, agentsLoading } = useStore()
   const feedCharm = getAgent(id)
+
+  // Deep-link trade intent: /c/<token>?action=trade&side=buy&amount=0.1 - lands
+  // from a prepared MCP link. Prefills the swap and scrolls it into focus so the
+  // user just signs in their own wallet (non-custodial).
+  const dlSide = searchParams.get('side')
+  const dlAmount = searchParams.get('amount')
+  const wantsTrade = searchParams.get('action') === 'trade' || dlSide != null || dlAmount != null
+  const tradeRef = useRef(null)
+  const [flash, setFlash] = useState(false)
 
   // A brand-new coin (or a deep link before the feed loads) may not be in the
   // in-memory feed yet. Fetch it directly from the launched-here registry so the
@@ -58,6 +68,18 @@ export default function CharmDetail() {
   }, [id, feedCharm, fallback])
 
   const charm = feedCharm || fallback
+
+  // Once the coin resolves, bring the (pre-filled) swap into view and flash it.
+  useEffect(() => {
+    if (!charm || !wantsTrade || !tradeRef.current) return
+    const el = tradeRef.current
+    const t = setTimeout(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      setFlash(true)
+      setTimeout(() => setFlash(false), 1600)
+    }, 250)
+    return () => clearTimeout(t)
+  }, [charm, wantsTrade])
 
   if (!charm) {
     return (
@@ -127,7 +149,9 @@ export default function CharmDetail() {
       </div>
 
       {/* trade - pons-style */}
-      <TradePanel token={addr} symbol={charm.ticker} />
+      <div ref={tradeRef} className={`rounded-2xl transition-shadow duration-700 ${flash ? 'ring-2 ring-[var(--color-accent)] ring-offset-2 ring-offset-[var(--color-paper)]' : ''}`}>
+        <TradePanel token={addr} symbol={charm.ticker} initialSide={dlSide} initialAmount={dlAmount} />
+      </div>
 
       {/* price + chart */}
       <div className="card p-6">

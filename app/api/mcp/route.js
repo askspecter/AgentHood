@@ -10,13 +10,17 @@ import { verifyKey } from "@/lib/apikey";
  * a single JSON response (no SSE session needed for a request/response server).
  *
  * ── Auth & safety ────────────────────────────────────────────────────────────
- * AURN is non-custodial, so the MCP server is READ-ONLY - it can never move
- * funds. Read tools (list/get/quote/burned/leaderboard) are open (public on-chain
- * data). The `portfolio` tool needs a valid AURN API key in
- * `Authorization: Bearer …` (minted in Settings → AI access for a connected
- * wallet); the key carries only that wallet address and grants read access to its
- * public balances. To trade or launch, the owner signs in their own wallet in the
- * app - the MCP server has no way to sign for them.
+ * AURN is non-custodial, so the MCP server never touches funds or keys. Read
+ * tools (list/get/quote/burned/leaderboard) are open (public on-chain data). The
+ * `portfolio` tool needs a valid AURN API key in `Authorization: Bearer …`
+ * (minted in Settings → AI access for a connected wallet); the key carries only
+ * that wallet address and grants read access to its public balances.
+ *
+ * The write-shaped tools (`prepare_trade`, `prepare_launch`) don't move anything
+ * either: they build the exact trade/launch and return a one-tap aurn.fun link
+ * that opens the app pre-filled, where the owner signs in their OWN wallet. This
+ * is how "launch & trade from your AI assistant" works while staying fully
+ * non-custodial - the server prepares, the user's wallet signs.
  */
 
 const NAME = "AURN";
@@ -78,6 +82,39 @@ const TOOLS = [
     name: "portfolio",
     description: "Read-only: your connected wallet's address, ETH balance, and (optionally) one token's balance. Requires your AURN API key. Public on-chain data - it can't move funds.",
     inputSchema: { type: "object", properties: { token: { type: "string", description: "Optional token address to also read your balance of (0x…)." } } },
+  },
+  {
+    name: "prepare_trade",
+    description: "Prepare a buy or sell and return a one-tap link that opens aurn.fun with the swap pre-filled, for the user to sign in their OWN wallet (non-custodial - AURN never holds funds or keys). Also returns a live price quote. Hand the returned `link` to the user to execute the trade.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        token: { type: "string", description: "Token address to trade (0x…)." },
+        side: { type: "string", enum: ["buy", "sell"], description: "buy spends ETH; sell spends the token." },
+        amount: { type: "string", description: "Amount of the input asset (ETH for buy, tokens for sell), e.g. \"0.1\"." },
+      },
+      required: ["token", "side", "amount"],
+    },
+  },
+  {
+    name: "prepare_launch",
+    description: "Prepare a new coin launch on AURN and return a one-tap link that opens the launch flow on aurn.fun pre-filled and ready to review + sign in the user's OWN wallet (non-custodial). Supply as much as you like; only `name` is required. Hand the returned `link` to the user to deploy.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Coin / agent name (required), up to 24 chars." },
+        ticker: { type: "string", description: "Ticker symbol, up to 6 letters/digits. Defaults to the name if omitted." },
+        description: { type: "string", description: "Short description of the coin, up to 500 chars." },
+        version: { type: "string", enum: ["v1", "v2"], description: "v1 = instant Uniswap V3 pool; v2 = bonding curve that graduates to V4. Default v1." },
+        style: { type: "string", description: "Art style for the AI-generated logo, e.g. anime, pixel, cyberpunk, realistic, ghibli, mascot." },
+        look: { type: "string", description: "Free-text description of how the coin should look (feeds logo generation)." },
+        firstBuy: { type: "string", description: "Optional first buy in ETH, e.g. \"0.05\"." },
+        creatorTax: { type: "string", description: "v2 only: creator's cut of the 1% trading fee, 0-10 (percent)." },
+        twitter: { type: "string", description: "Optional X/Twitter handle or link." },
+        telegram: { type: "string", description: "Optional Telegram handle or link." },
+      },
+      required: ["name"],
+    },
   },
 ];
 
@@ -149,6 +186,49 @@ async function callTool(params, ctx) {
           note: "Read-only. To trade or launch, sign in your own wallet on aurn.fun.",
         });
       }
+      case "prepare_trade": {
+        if (!/^0x[a-fA-F0-9]{40}$/.test(String(args.token || ""))) return asErr("Provide a valid token address (0x…).");
+        const side = args.side === "sell" ? "sell" : "buy";
+        const amount = String(args.amount || "").replace(/[^0-9.]/g, "");
+        if (!amount || Number(amount) <= 0) return asErr("Provide a positive amount.");
+        // Live quote for the human summary (non-fatal if the venue can't price yet).
+        const q = await postJson(`${origin}/api/quote`, { token: args.token, side, amount, network: net });
+        const link = `${origin}/c/${args.token}?action=trade&side=${side}&amount=${encodeURIComponent(amount)}`;
+        return asText({
+          action: `${side} ${side === "buy" ? "with " + amount + " ETH" : amount + " tokens"}`,
+          token: args.token,
+          quote: q.error ? { note: `Couldn't price yet: ${q.error}` } : { spend: q.amountInLabel, receive: q.amountOutLabel },
+          link,
+          note: "Open this link to review and sign in your own wallet. AURN is non-custodial - it cannot execute the trade for you.",
+        });
+      }
+      case "prepare_launch": {
+        const name = String(args.name || "").trim().slice(0, 24);
+        if (!name) return asErr("A coin name is required.");
+        const p = new URLSearchParams();
+        p.set("name", name);
+        if (args.ticker) p.set("ticker", String(args.ticker).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6));
+        if (args.description) p.set("description", String(args.description).slice(0, 500));
+        if (args.version === "v2" || args.version === "v1") p.set("version", args.version);
+        if (args.style) p.set("style", String(args.style).toLowerCase());
+        if (args.look) p.set("look", String(args.look).slice(0, 240));
+        if (args.firstBuy) p.set("firstBuy", String(args.firstBuy).replace(/[^0-9.]/g, ""));
+        if (args.creatorTax) p.set("creatorTax", String(args.creatorTax).replace(/[^0-9.]/g, ""));
+        if (args.twitter) p.set("twitter", String(args.twitter));
+        if (args.telegram) p.set("telegram", String(args.telegram));
+        p.set("to", "review");
+        const link = `${origin}/launch?${p.toString()}`;
+        return asText({
+          launch: {
+            name,
+            ticker: p.get("ticker") || name.replace(/[^A-Za-z0-9]/g, "").slice(0, 5).toUpperCase(),
+            version: p.get("version") || "v1",
+            style: p.get("style") || null,
+          },
+          link,
+          note: "Open this link to review and sign the launch in your own wallet. Supply is fixed at 1,000,000,000. AURN is non-custodial - it cannot deploy for you.",
+        });
+      }
       default:
         return asErr(`Unknown tool: ${name}`);
     }
@@ -165,7 +245,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "AURN MCP (read-only) - discover coins, quote trades, and read a portfolio on aurn.fun (Robinhood Chain). The `portfolio` tool needs an AURN API key. AURN is non-custodial: to trade or launch, the user signs in their own wallet in the app.",
+      instructions: "AURN MCP - discover coins, quote trades, read a portfolio, and prepare trades & launches on aurn.fun (Robinhood Chain). `prepare_trade` and `prepare_launch` return a one-tap link the user opens to sign in their OWN wallet - AURN is non-custodial, so the server prepares but never signs or moves funds. Give the user the returned `link` to finish. The `portfolio` tool needs an AURN API key (Settings → AI access).",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response

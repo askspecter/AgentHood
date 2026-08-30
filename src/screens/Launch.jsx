@@ -6,7 +6,7 @@ import { V2_QUOTE_TOKENS } from '../lib/pons/registry'
 import { tokenLaunchedEvent } from '../lib/pons/abis'
 import { v2TokenLaunchedEvent } from '../lib/pons/abisV2'
 import { robinhoodChain } from '../lib/chain'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { useT } from '../lib/i18n'
 import CharmAvatar, { TONES } from '../components/CharmAvatar'
@@ -199,12 +199,49 @@ function Pencil({ size = 13 }) {
 export default function Launch() {
   const nav = useNavigate()
   const tr = useT()
+  const [searchParams] = useSearchParams()
   const { wallet, connect } = useStore()
   const user = wallet ? { username: (wallet.handle || '').replace(/^@/, ''), id: wallet.id } : null
 
   const [step, setStep] = useState(0) // 0 name · 1 look · 2 forge/ready · 3 soul · 4 review · 5 done
   const [pct, setPct] = useState(0)
   const [d, setD] = useState({ name: '', ticker: '', tone: TONES[0], logo: '', tagline: '', lore: '', voice: '', firstBuy: '', vibe: [], personality: [], gender: '', style: '', look: '', tickerEdited: false, version: 'v1', description: '', descEdited: false, creatorTax: '' })
+
+  // Prefill from a prepared launch link (from the AURN MCP server, so an AI
+  // assistant can hand the user a ready-to-sign launch):
+  // /launch?name=Nova&ticker=NOVA&description=…&version=v2&style=anime&firstBuy=0.1
+  //         &twitter=@nova&telegram=t.me/nova&look=…&creatorTax=5&to=review
+  // Prefilled fields still land in the same review-and-sign flow - non-custodial.
+  useEffect(() => {
+    const g = (k) => searchParams.get(k)
+    if (![...searchParams.keys()].length) return
+    const styleKey = (g('style') || '').toLowerCase()
+    const st = STYLES.find((s) => s.key === styleKey)
+    const clean = (s, n) => (s || '').slice(0, n)
+    setD((s) => ({
+      ...s,
+      name: clean(g('name'), 24) || s.name,
+      ticker: g('ticker') ? g('ticker').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) : s.ticker,
+      tickerEdited: g('ticker') ? true : s.tickerEdited,
+      description: g('description') ? clean(g('description'), 500) : s.description,
+      descEdited: g('description') ? true : s.descEdited,
+      look: g('look') ? clean(g('look'), 240) : s.look,
+      lore: g('lore') ? clean(g('lore'), 200) : s.lore,
+      tagline: g('tagline') ? clean(g('tagline'), 120) : s.tagline,
+      version: g('version') === 'v2' ? 'v2' : (g('version') === 'v1' ? 'v1' : s.version),
+      firstBuy: g('firstBuy') ? g('firstBuy').replace(/[^0-9.]/g, '') : s.firstBuy,
+      creatorTax: g('creatorTax') ? g('creatorTax').replace(/[^0-9.]/g, '') : s.creatorTax,
+      twitter: g('twitter') || s.twitter,
+      telegram: g('telegram') || s.telegram,
+      website: g('website') || s.website,
+      style: st ? st.key : s.style,
+      tone: st ? st.tone : s.tone,
+      vibe: st ? [...new Set([st.vibe, ...s.vibe])].slice(0, 5) : s.vibe,
+    }))
+    // Land a fully-specified launch straight on the review step to sign.
+    if (g('to') === 'review' && g('name')) setStep(4)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Non-custodial deploy - the connected wallet signs the Pons launch tx.
   const { address, chainId } = useAccount()

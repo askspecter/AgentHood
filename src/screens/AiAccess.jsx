@@ -8,8 +8,9 @@ import { Back } from '../components/icons'
  *
  * Generates a personal read-only API key (browse coins, quotes, your portfolio)
  * and shows how to wire aurn.fun/api/mcp into a client like Claude or Cursor.
- * It carries no spend authority - your own wallet signs every transaction, so an
- * AI can prepare a trade but can never move your funds.
+ * The AI can also prepare a trade or a launch and hand you a one-tap link to
+ * sign - your own wallet signs every transaction, so it can never move your
+ * funds. The key carries no spend authority.
  */
 const ENDPOINT = 'https://aurn.fun/api/mcp'
 
@@ -60,7 +61,7 @@ export default function AiAccess() {
       <div className="card p-6 mb-4">
         <div className="font-semibold">Connect AURN to your AI</div>
         <p className="text-sm text-[var(--color-ink-soft)] mt-1">
-          AURN runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, and read your portfolio. It's read-only: your wallet signs every trade and launch itself, so your AI can never move your funds.
+          AURN runs an <b>MCP server</b>, so an AI client (Claude, Cursor, …) can browse coins, get quotes, read your portfolio, and even <b>prepare a trade or launch a coin</b> for you. It stays non-custodial: the AI hands you a one-tap link and your own wallet signs, so it can never move your funds.
         </p>
 
         <div className="mt-5">
@@ -96,8 +97,8 @@ export default function AiAccess() {
         <ol className="space-y-3 text-sm text-[var(--color-ink-soft)]">
           <Step n={1}>Add <span className="font-mono">{ENDPOINT}</span> as an MCP server in your client (Claude, Cursor, …).</Step>
           <Step n={2}>Set the auth header <span className="font-mono">Authorization: Bearer &lt;your key&gt;</span>.</Step>
-          <Step n={3}>Ask your AI to list coins, quote a trade, or read your portfolio.</Step>
-          <Step n={4}>To actually trade or launch, come back to AURN and sign in your own wallet - the key never can.</Step>
+          <Step n={3}>Ask your AI to list coins, quote a trade, read your portfolio, or launch a coin.</Step>
+          <Step n={4}>When it prepares a trade or launch, it gives you a one-tap link. Open it, review, and sign in your own wallet - the AI never can.</Step>
         </ol>
       </div>
     </div>
