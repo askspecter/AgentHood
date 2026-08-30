@@ -158,8 +158,11 @@ function RewardLogo({ r, logo, size = 36 }) {
   // give up to the tinted letter tile. Rendered on a light tile so a dark mark
   // (e.g. Apple's) stays visible.
   const candidates = useMemo(() => {
+    // $PONS: prefer its real on-chain/explorer logo (the Locked way). Stocks:
+    // prefer the true company logo, with the explorer-resolved one as a backup.
+    const ordered = r.key === 'PONS' ? [logo, ...(r.logos || [])] : [...(r.logos || []), logo]
     const seen = new Set()
-    return [logo, ...(r.logos || [])]
+    return ordered
       .filter((u) => u && typeof u === 'string' && !seen.has(u) && seen.add(u))
       .map(proxied)
   }, [logo, r])
