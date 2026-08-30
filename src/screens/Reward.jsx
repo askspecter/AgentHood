@@ -154,11 +154,24 @@ export default function Reward() {
 }
 
 function RewardLogo({ r, logo, size = 36 }) {
-  const [broken, setBroken] = useState(false)
-  const src = proxied(logo)
-  if (src && !broken) {
-    return <img src={src} alt="" width={size} height={size} onError={() => setBroken(true)}
-      className="rounded-xl object-cover shrink-0 bg-[var(--color-paper-2)]" style={{ width: size, height: size }} />
+  // Try the on-chain/live logo first, then each static real-logo candidate, then
+  // give up to the tinted letter tile. Rendered on a light tile so a dark mark
+  // (e.g. Apple's) stays visible.
+  const candidates = useMemo(() => {
+    const seen = new Set()
+    return [logo, ...(r.logos || [])]
+      .filter((u) => u && typeof u === 'string' && !seen.has(u) && seen.add(u))
+      .map(proxied)
+  }, [logo, r])
+  const [i, setI] = useState(0)
+
+  if (i < candidates.length) {
+    return (
+      <span className="rounded-xl grid place-items-center shrink-0 overflow-hidden" style={{ width: size, height: size, background: '#eef2fb' }}>
+        <img src={candidates[i]} alt="" onError={() => setI((n) => n + 1)}
+          className="w-full h-full object-contain p-[3px]" />
+      </span>
+    )
   }
   return (
     <span className="rounded-xl grid place-items-center font-mono text-[10px] font-bold shrink-0"
