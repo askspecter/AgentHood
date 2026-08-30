@@ -118,6 +118,7 @@ export const V2_QUOTE_TOKENS: { symbol: string; name: string; address: `0x${stri
   { symbol: "COIN", name: "Coinbase", address: "0x6330D8C3178a418788dF01a47479c0ce7CCF450b" },
   { symbol: "MU", name: "Micron", address: "0xfF080c8ce2E5feadaCa0Da81314Ae59D232d4afD" },
   { symbol: "PLTR", name: "Palantir", address: "0x894e1ec2d74ffe5aef8dc8a9e84686accb964f2a" },
+  { symbol: "cbBTC", name: "Coinbase Wrapped BTC", address: "0xCEC185eB182c47d1bA1EFc84e6959e18cd620Be4" },
 ];
 
 /** v2 graduation threshold in ETH (from Pons v2 docs). */
