@@ -73,6 +73,17 @@ export async function GET(request) {
     }
   } catch { /* DEX unavailable - NAV falls back to whatever the directory had */ }
 
+  // Real per-asset logo. The Robinhood token directory returns a generic feather
+  // placeholder for these, so we point at the real brand mark by symbol (proxied
+  // and cached client-side through /api/img). Crypto/stable names fall back to a
+  // lettered tile in the UI when there's no clean stock logo.
+  const CRYPTO = new Set(["CBBTC", "USDG", "USDC", "WETH", "ETH"]);
+  const logoFor = (symbol) => {
+    const s = String(symbol || "").toUpperCase();
+    if (!s || CRYPTO.has(s)) return null;
+    return `https://financialmodelingprep.com/image-stock/${s}.png`;
+  };
+
   const priceOf = (addr) => {
     if (!addr) return { priceUsd: null, change24: null };
     const k = addr.toLowerCase();
@@ -95,7 +106,7 @@ export async function GET(request) {
         weight: c.weight,
         priceUsd,
         change24,
-        logo: dir?.logoURI || null,
+        logo: logoFor(c.symbol),
       };
     });
 
