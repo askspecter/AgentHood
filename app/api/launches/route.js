@@ -129,11 +129,11 @@ async function dexscreenerUsd(token) {
   try {
     const j = await fetchJson(`https://api.dexscreener.com/latest/dex/tokens/${token}`, 6000);
     const pairs = Array.isArray(j?.pairs) ? j.pairs : [];
-    // Prefer Robinhood Chain pairs, deepest liquidity first.
-    const ranked = pairs
-      .filter((p) => String(p?.chainId || "").toLowerCase() === "robinhood")
-      .sort((a, b) => (Number(b?.liquidity?.usd) || 0) - (Number(a?.liquidity?.usd) || 0));
-    const best = ranked[0] || pairs[0];
+    if (!pairs.length) return null;
+    const liq = (p) => Number(p?.liquidity?.usd) || 0;
+    // Prefer Robinhood Chain pairs (tolerate slug variants); else any. Deepest first.
+    const rh = pairs.filter((p) => String(p?.chainId || "").toLowerCase().includes("robinhood"));
+    const best = (rh.length ? rh : pairs).sort((a, b) => liq(b) - liq(a))[0];
     if (!best) return null;
     const priceUsd = Number(best.priceUsd);
     const mcapUsd = Number(best.marketCap) || Number(best.fdv) || 0;
