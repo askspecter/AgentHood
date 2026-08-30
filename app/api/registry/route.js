@@ -30,6 +30,51 @@ function serialise(value) {
   );
 }
 
+/**
+ * Dexscreener USD price fallback for a token.
+ *
+ * The official $AURN coin trades on a Uniswap V4 pool the on-chain enricher can't
+ * always resolve, so its pool read comes back with no price and the coin shows
+ * "—". Dexscreener already aggregates the pool, so this reads the USD price +
+ * market cap straight from it. Best-effort and time-boxed; any failure returns
+ * null and the coin shows without a price, exactly as before. (Only reachable
+ * from the deployment's network, not local dev sandboxes.)
+ */
+async function dexscreenerUsd(token) {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 6000);
+    let j = null;
+    try {
+      const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${token}`, {
+        cache: "no-store",
+        signal: ctrl.signal,
+        headers: { accept: "application/json" },
+      });
+      j = res.ok ? await res.json() : null;
+    } finally {
+      clearTimeout(timer);
+    }
+    const pairs = Array.isArray(j?.pairs) ? j.pairs : [];
+    if (!pairs.length) return null;
+    const liq = (p) => Number(p?.liquidity?.usd) || 0;
+    // Prefer Robinhood Chain pairs (tolerate slug variants); else any. Deepest first.
+    const rh = pairs.filter((p) => String(p?.chainId || "").toLowerCase().includes("robinhood"));
+    const best = (rh.length ? rh : pairs).sort((a, b) => liq(b) - liq(a))[0];
+    if (!best) return null;
+    const priceUsd = Number(best.priceUsd);
+    const mcapUsd = Number(best.marketCap) || Number(best.fdv) || 0;
+    const change24 = Number(best?.priceChange?.h24);
+    return {
+      priceUsd: Number.isFinite(priceUsd) && priceUsd > 0 ? priceUsd : null,
+      mcapUsd: Number.isFinite(mcapUsd) && mcapUsd > 0 ? mcapUsd : null,
+      change24: Number.isFinite(change24) ? change24 : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request) {
   const url = new URL(request.url);
   const network = url.searchParams.get("network") || "robinhood";
@@ -115,6 +160,25 @@ export async function GET(request) {
             /* leave the v1-derived values as-is */
           }
         })
+      );
+
+      // Official $AURN price fallback: its V4 pool doesn't always resolve
+      // on-chain, so fill the USD price + market cap from Dexscreener when it
+      // reads empty. Scoped to the official coin; never overrides an on-chain
+      // price. This is the coin page's authoritative source, so it also fixes the
+      // store (registry entries dedupe ahead of the feed).
+      await Promise.all(
+        launches
+          .filter((l) => l.official
+            && !(Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
+            && !(Number(l.explorerMcapUsd) > 0))
+          .map(async (l) => {
+            const dx = await dexscreenerUsd(l.token);
+            if (!dx) return;
+            if (dx.priceUsd != null) l.explorerPriceUsd = dx.priceUsd;
+            if (dx.mcapUsd != null) l.explorerMcapUsd = dx.mcapUsd;
+            if (l.change24 == null && dx.change24 != null) l.change24 = dx.change24;
+          })
       );
     }
 
