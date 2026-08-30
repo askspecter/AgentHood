@@ -1,23 +1,31 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
 import { Back, RowIcon, Chevron } from '../components/icons'
+import { LANGS, useLang, useT } from '../lib/i18n'
 
 export default function Settings() {
   const nav = useNavigate()
   const { disconnect, theme, setTheme } = useStore()
+  const { lang, setLang } = useLang()
+  const t = useT()
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <button onClick={() => nav(-1)} className="grid place-items-center w-10 h-10 rounded-lg border hairline hover:bg-[var(--color-paper-2)]"><Back size={18} /></button>
-        <h1 className="font-serif text-3xl">Settings</h1>
+        <h1 className="font-serif text-3xl">{t('settings.title', 'Settings')}</h1>
       </div>
 
       <Section title="Account">
         <Row icon="editProfile" label="Edit profile" onClick={() => nav('/settings/profile')} />
-        <Row icon="appearance" label="Appearance" right={
+        <Row icon="appearance" label={t('settings.appearance', 'Appearance')} right={
           <div className="seg shrink-0">
             {['light', 'dark', 'auto'].map((k) => <button key={k} onClick={() => setTheme(k)} className={`capitalize !px-2.5 !text-[13px] ${theme === k ? 'on' : ''}`}>{k}</button>)}
+          </div>
+        } />
+        <Row icon="language" label={t('settings.language', 'Language')} right={
+          <div className="seg shrink-0">
+            {LANGS.map((l) => <button key={l.code} onClick={() => setLang(l.code)} className={`!px-2.5 !text-[13px] ${lang === l.code ? 'on' : ''}`}>{l.short}</button>)}
           </div>
         } />
         <Row icon="reward" label="Rewards" onClick={() => nav('/settings/reward')} />

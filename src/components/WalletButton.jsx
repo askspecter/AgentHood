@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 
 /**
  * Connect-wallet button (disconnected) and the account chip + menu (connected).
@@ -20,12 +21,13 @@ export default function WalletButton() {
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const nav = useNavigate()
+  const t = useT()
 
   if (!wallet) {
     return (
-      <button className="btn btn-holo" onClick={connect} title="Connect wallet">
+      <button className="btn btn-holo" onClick={connect} title={t('wallet.connect', 'Connect Wallet')}>
         <WalletGlyph size={14} color="#0b0a12" />
-        <span>Connect Wallet</span>
+        <span>{t('wallet.connect', 'Connect Wallet')}</span>
       </button>
     )
   }
@@ -60,7 +62,7 @@ export default function WalletButton() {
             {copied ? 'Copied ✓' : wallet.address}
           </button>
           <button className="btn btn-secondary w-full text-sm mb-2" onClick={() => { setOpen(false); nav('/you') }}>Portfolio</button>
-          <button className="btn btn-danger w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>Disconnect</button>
+          <button className="btn btn-danger w-full text-sm" onClick={() => { disconnect(); setOpen(false) }}>{t('wallet.disconnect', 'Disconnect')}</button>
         </div>
       )}
     </div>

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import Providers from './lib/Providers'
 import { StoreProvider } from './lib/store'
+import { LanguageProvider } from './lib/i18n'
 import ErrorBoundary from './components/ErrorBoundary'
 import Shell from './components/Shell'
 import Explore from './screens/Explore'
@@ -30,6 +31,7 @@ function ScrollTop() {
 export default function App() {
   return (
     <Providers>
+    <LanguageProvider>
     <StoreProvider>
       <BrowserRouter>
         <ScrollTop />
@@ -57,6 +59,7 @@ export default function App() {
         </ErrorBoundary>
       </BrowserRouter>
     </StoreProvider>
+    </LanguageProvider>
     </Providers>
   )
 }

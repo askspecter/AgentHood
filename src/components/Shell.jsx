@@ -1,12 +1,14 @@
 import { NavLink, Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { useStore } from '../lib/store'
+import { useT } from '../lib/i18n'
 import LoginButton from './WalletButton'
+import LanguageSwitcher from './LanguageSwitcher'
 
 const TABS = [
-  { to: '/', label: 'Market', end: true, icon: HomeIcon },
-  { to: '/chats', label: 'Chat', icon: ChatIcon },
-  { to: '/you', label: 'Portfolio', icon: YouIcon },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/', tkey: 'nav.market', label: 'Market', end: true, icon: HomeIcon },
+  { to: '/chats', tkey: 'nav.chat', label: 'Chat', icon: ChatIcon },
+  { to: '/you', tkey: 'nav.portfolio', label: 'Portfolio', icon: YouIcon },
+  { to: '/settings', tkey: 'nav.settings', label: 'Settings', icon: SettingsIcon },
 ]
 
 function Wordmark({ className = '' }) {
@@ -24,6 +26,7 @@ export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
   const { wallet } = useStore()
+  const t = useT()
 
   return (
     <div className="min-h-full flex flex-col">
@@ -33,18 +36,19 @@ export default function Shell() {
           <Link to="/"><Wordmark /></Link>
 
           <nav className="hidden md:flex items-center gap-1 ml-2">
-            {[...TABS, { to: '/launch', label: 'Launch' }].map((t) => (
-              <NavLink key={t.to} to={t.to} end={t.end}
+            {[...TABS, { to: '/launch', tkey: 'nav.launch', label: 'Launch' }].map((tab) => (
+              <NavLink key={tab.to} to={tab.to} end={tab.end}
                 className={({ isActive }) =>
                   `px-3 py-1.5 rounded-lg text-sm font-medium transition ${
                     isActive ? 'text-[var(--color-ink)] bg-[var(--color-paper-2)]' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]'
                   }`}>
-                {t.label}
+                {t(tab.tkey, tab.label)}
               </NavLink>
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center">
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher />
             {wallet ? (
               <Link to="/you" className="flex items-center gap-2 pl-1 pr-3.5 py-1 rounded-full border hairline hover:bg-[var(--color-paper-2)] transition max-w-[190px]">
                 <span className="shrink-0 p-[1.5px] rounded-full" style={{ background: 'var(--holo)' }}>
@@ -72,10 +76,10 @@ export default function Shell() {
         style={{ bottom: 'calc(0.7rem + env(safe-area-inset-bottom, 0px))' }}>
         <div className="pointer-events-auto flex items-center gap-1 rounded-[24px] p-1.5 border border-[var(--pill-border)]
                         bg-[var(--pill-bg)] backdrop-blur-2xl shadow-[0_18px_44px_-14px_rgba(0,0,0,0.55)]">
-          {TABS.map((t) => {
-            const Icon = t.icon
+          {TABS.map((tab) => {
+            const Icon = tab.icon
             return (
-              <NavLink key={t.to} to={t.to} end={t.end}
+              <NavLink key={tab.to} to={tab.to} end={tab.end}
                 className={({ isActive }) =>
                   `relative flex flex-col items-center justify-center gap-1 w-[56px] py-2 rounded-[18px] text-[11px] font-medium transition-colors ${
                     isActive ? 'text-[var(--color-ink)]' : 'text-[var(--color-ink-faint)]'
@@ -87,7 +91,7 @@ export default function Shell() {
                         style={{ background: 'var(--pill-active)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.28), 0 0 22px -6px rgba(160,192,240,0.55)' }} />
                     )}
                     <span className="relative h-6 grid place-items-center"><Icon active={isActive} /></span>
-                    <span className="relative leading-none">{t.label}</span>
+                    <span className="relative leading-none">{t(tab.tkey, tab.label)}</span>
                   </>
                 )}
               </NavLink>
@@ -102,7 +106,7 @@ export default function Shell() {
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0b0a12" strokeWidth="3.2" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
               </span>
             </span>
-            <span className="relative leading-none">Launch</span>
+            <span className="relative leading-none">{t('nav.launch', 'Launch')}</span>
           </button>
         </div>
       </div>

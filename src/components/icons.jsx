@@ -144,6 +144,7 @@ const P = {
   linkedSocials: <><path d="M9 13a4 4 0 006 0l2-2a4 4 0 10-5.6-5.6L10 7" /><path d="M15 11a4 4 0 00-6 0l-2 2a4 4 0 105.6 5.6L14 17" /></>,
   leaderboard: <><rect x="4" y="12" width="4" height="8" rx="1" /><rect x="10" y="7" width="4" height="13" rx="1" /><rect x="16" y="14" width="4" height="6" rx="1" /></>,
   appearance: <><circle cx="12" cy="12" r="8.5" /><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor" stroke="none" /></>,
+  language: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18" strokeLinecap="round" /></>,
   gift: <><rect x="4" y="10" width="16" height="10" rx="1.5" /><path d="M4 13h16M12 10v10" /><path d="M12 10C11.2 7 9 6 8 7.5S9.5 10 12 10zM12 10c.8-3 3-4 4-2.5S14.5 10 12 10z" /></>,
   tos: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5M12 8h.01" strokeLinecap="round" /></>,
   privacy: <><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" strokeLinecap="round" /></>,
