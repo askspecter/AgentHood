@@ -16,6 +16,7 @@ import Leaderboard from './screens/Leaderboard'
 import Referral from './screens/Referral'
 import AiAccess from './screens/AiAccess'
 import Locked from './screens/Locked'
+import Reward from './screens/Reward'
 import Terms from './screens/Terms'
 import Privacy from './screens/Privacy'
 import About from './screens/About'
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="settings/referral" element={<Referral />} />
               <Route path="settings/ai" element={<AiAccess />} />
               <Route path="settings/locked" element={<Locked />} />
+              <Route path="settings/reward" element={<Reward />} />
               <Route path="leaderboard" element={<Leaderboard />} />
               <Route path="terms" element={<Terms />} />
               <Route path="privacy" element={<Privacy />} />

@@ -2,20 +2,41 @@ import { useEffect, useRef, useState } from 'react'
 
 // Live area chart that appends the current live price each tick.
 export default function PriceChart({ seed = [], live, up = true, height = 220 }) {
-  const clean = (arr) => arr.filter((v) => Number.isFinite(v))
+  const clean = (arr) => arr.filter((v) => Number.isFinite(v) && v > 0)
   const [series, setSeries] = useState(() => clean(seed).slice(-60))
   const width = 640
+
+  const median = (arr) => {
+    if (!arr.length) return 0
+    const s = [...arr].sort((a, b) => a - b)
+    return s[Math.floor(s.length / 2)] || 0
+  }
 
   useEffect(() => {
     // Only append a real, finite live price - a 0/undefined tick would flatten
     // or break (NaN path → invisible) the whole line.
     if (!Number.isFinite(live) || live <= 0) return
-    setSeries((s) => [...s, live].slice(-60))
+    setSeries((s) => {
+      if (!s.length) return [live, live]
+      // Guard against a scale mismatch: the synthetic seed can be generated on a
+      // different price scale than the real live price (e.g. a placeholder base
+      // of 1 vs a $0.00007 token). Appending across scales would render as a
+      // cliff to the floor. When live is wildly off the series' scale, sit flat
+      // at the real price instead of drawing a plunge.
+      const med = median(s)
+      if (med > 0 && (live > med * 4 || live < med / 4)) return Array(Math.min(s.length, 40) || 2).fill(live)
+      return [...s, live].slice(-60)
+    })
   }, [live])
 
   // Never bail to a blank box: a coin with no price history still gets a flat
   // baseline so the chart area reads as a chart, not an empty panel.
-  const data = series.length >= 2 ? series : [1, 1]
+  const raw = series.length >= 2 ? series : (Number.isFinite(live) && live > 0 ? [live, live] : [1, 1])
+  // Winsorize to a robust band around the median so a single stray point (an
+  // off-scale seed value or a bad tick) can't render as a cliff, while a real
+  // ±40% move still shows in full.
+  const med = median(raw) || 1
+  const data = raw.map((v) => Math.min(med * 3, Math.max(med * 0.3, v)))
   const min = Math.min(...data)
   const max = Math.max(...data)
   const span = max - min

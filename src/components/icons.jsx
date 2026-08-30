@@ -154,6 +154,7 @@ const P = {
   logout: <><path d="M14 4H6v16h8" /><path d="M18 12H10M15 9l3 3-3 3" strokeLinecap="round" /></>,
   wallet: <><rect x="3.5" y="6" width="17" height="13" rx="3" /><path d="M16 12h2" strokeLinecap="round" /></>,
   lock: <><rect x="4.5" y="10.5" width="15" height="9.5" rx="2.4" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none" /></>,
+  reward: <><ellipse cx="12" cy="6.4" rx="7" ry="2.6" /><path d="M5 6.4v5.2c0 1.44 3.13 2.6 7 2.6s7-1.16 7-2.6V6.4" /><path d="M5 11.6v5.2c0 1.44 3.13 2.6 7 2.6s7-1.16 7-2.6v-5.2" /></>,
   terminal: <><rect x="3.5" y="4.5" width="17" height="15" rx="3" /><path d="M7.5 9.5l3 2.5-3 2.5M12.5 15h4" strokeLinecap="round" strokeLinejoin="round" /></>,
 }
 export function RowIcon({ name, size = 20, stroke = 'var(--color-ink)' }) {
