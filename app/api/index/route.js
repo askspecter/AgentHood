@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { getChain, loadDirectory } from "@/lib/engine";
+import { getChain, loadDirectory, readChainlinkPrices } from "@/lib/engine";
 import { V2_QUOTE_TOKENS } from "@/src/lib/pons/registry";
 import { BASKETS, getBasket } from "@/src/lib/indexes";
 
 /**
  * GET /api/index?network=robinhood[&basket=mag7]
  *
- * Live reference NAV for the AURN index baskets, computed from the issuer's
- * on-chain stock quotes (the same directory the terminal prices stocks from).
- * No pool required - each constituent is priced from its live bid/ask mid.
+ * Live reference NAV for the AURN index baskets. Each constituent is priced,
+ * in order of preference, from: the Chainlink Data Feed on Robinhood Chain (the
+ * chain's own oracle - verifiable on-chain), the issuer's directory quote, then
+ * the on-chain DEX. Chainlink-priced constituents carry their feed address and
+ * last-update time so the UI can show a "verified by Chainlink" badge.
  *
  * With ?basket= it returns one basket in full; without it, every basket with a
  * lightweight summary. The NAV is a weighted USD price of the basket ("one unit
@@ -84,21 +86,35 @@ export async function GET(request) {
     return `https://financialmodelingprep.com/image-stock/${s}.png`;
   };
 
-  const priceOf = (addr) => {
-    if (!addr) return { priceUsd: null, change24: null };
-    const k = addr.toLowerCase();
-    const dir = priceByAddr.get(k);
-    if (dir?.priceUsd != null && Number.isFinite(dir.priceUsd)) return { priceUsd: dir.priceUsd, change24: null };
-    const dex = dexByAddr.get(k);
-    if (dex) return { priceUsd: dex.priceUsd, change24: dex.change24 };
-    return { priceUsd: null, change24: null };
+  // Chainlink Data Feeds on Robinhood Chain - the chain's own oracle layer, read
+  // on-chain and verifiable. This is the primary price for every constituent.
+  let linkBySym = new Map();
+  try {
+    const which = one ? [getBasket(one)].filter(Boolean) : BASKETS;
+    const syms = [...new Set(which.flatMap((b) => b.constituents.map((c) => c.symbol)))];
+    linkBySym = await readChainlinkPrices(syms, network);
+  } catch { /* oracle unreachable - fall back to issuer/DEX below */ }
+
+  const priceOf = (symbol, addr) => {
+    const link = symbol ? linkBySym.get(String(symbol).toUpperCase()) : null;
+    if (link?.priceUsd != null) {
+      return { priceUsd: link.priceUsd, change24: null, source: "chainlink", feed: link.feed, updatedAt: link.updatedAt };
+    }
+    if (addr) {
+      const k = addr.toLowerCase();
+      const dir = priceByAddr.get(k);
+      if (dir?.priceUsd != null && Number.isFinite(dir.priceUsd)) return { priceUsd: dir.priceUsd, change24: null, source: "issuer" };
+      const dex = dexByAddr.get(k);
+      if (dex) return { priceUsd: dex.priceUsd, change24: dex.change24, source: "dex" };
+    }
+    return { priceUsd: null, change24: null, source: null };
   };
 
   const compute = (basket) => {
     const rows = basket.constituents.map((c) => {
       const meta = bySymbol.get(c.symbol.toUpperCase());
       const dir = meta ? priceByAddr.get(meta.address.toLowerCase()) : null;
-      const { priceUsd, change24 } = priceOf(meta?.address);
+      const { priceUsd, change24, source, feed, updatedAt } = priceOf(c.symbol, meta?.address);
       return {
         symbol: c.symbol,
         name: meta?.name || dir?.symbol || c.symbol,
@@ -106,6 +122,9 @@ export async function GET(request) {
         weight: c.weight,
         priceUsd,
         change24,
+        source,
+        feed: feed || null,
+        updatedAt: updatedAt || null,
         logo: logoFor(c.symbol),
       };
     });
@@ -128,6 +147,12 @@ export async function GET(request) {
       navUsd,
       change24,
       coverage: { priced: priced.length, total: rows.length },
+      // How much of the priced NAV comes from the Chainlink oracle.
+      oracle: {
+        chainlink: priced.filter((r) => r.source === "chainlink").length,
+        priced: priced.length,
+        verified: priced.length > 0 && priced.every((r) => r.source === "chainlink"),
+      },
       constituents: rows.map((r) => ({
         ...r,
         // Normalized weight (%) over the priced set, and its USD contribution.

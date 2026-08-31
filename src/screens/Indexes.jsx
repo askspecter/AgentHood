@@ -35,7 +35,12 @@ export default function Indexes() {
         <h1 className="font-serif text-3xl">{tr('index.title', 'Index baskets')}</h1>
       </div>
 
-      <p className="text-[var(--color-ink-soft)] mb-5 max-w-xl">{tr('index.subtitle', 'Themes of tokenized stocks on Robinhood Chain. Launch a coin that tracks one, priced live from real on-chain quotes.')}</p>
+      <p className="text-[var(--color-ink-soft)] mb-3 max-w-xl">{tr('index.subtitle', 'Themes of tokenized stocks on Robinhood Chain. Launch a coin that tracks one, priced live from real on-chain quotes.')}</p>
+
+      <div className="inline-flex items-center gap-2 mb-5 px-3 py-1.5 rounded-full" style={{ background: 'rgba(55,91,210,0.12)', border: '1px solid rgba(55,91,210,0.4)' }}>
+        <ChainlinkMark size={15} />
+        <span className="text-xs text-[#8ea6ff]">{tr('index.chainlink', 'Prices verified by Chainlink on Robinhood Chain')}</span>
+      </div>
 
       {baskets === null ? (
         <div className="space-y-3">
@@ -83,7 +88,10 @@ function BasketCard({ b, onLaunch, tr }) {
           <p className="text-sm text-[var(--color-ink-soft)] mt-0.5">{b.blurb}</p>
         </div>
         <div className="text-right shrink-0">
-          <div className="eyebrow mb-0.5">{tr('index.nav', 'Live NAV')}</div>
+          <div className="eyebrow mb-0.5 flex items-center justify-end gap-1">
+            {b.oracle?.chainlink > 0 && <ChainlinkMark size={12} />}
+            {tr('index.nav', 'Live NAV')}
+          </div>
           <div className="font-mono num text-xl font-semibold holo-text leading-none">{kusd(b.navUsd)}</div>
           <div className="text-[10px] text-[var(--color-ink-faint)] mt-1">{tr('index.perUnit', 'per basket unit')}</div>
         </div>
@@ -105,6 +113,16 @@ function BasketCard({ b, onLaunch, tr }) {
 
       <button onClick={onLaunch} className="btn btn-holo w-full !py-3 mt-4">{tr('index.launchTracking', 'Launch a coin tracking this')}</button>
     </div>
+  )
+}
+
+/* The Chainlink hexagon mark, in Chainlink blue. */
+function ChainlinkMark({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden shapeRendering="geometricPrecision">
+      <path d="M16 2.8l11.4 6.6v13.2L16 29.2 4.6 22.6V9.4L16 2.8z" fill="#375BD2" />
+      <path d="M16 9.1l6 3.45v6.9L16 22.9l-6-3.45v-6.9L16 9.1z" fill="#fff" />
+    </svg>
   )
 }
 

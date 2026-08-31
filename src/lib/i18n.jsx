@@ -367,6 +367,8 @@ const DICT = {
   'index.launchTracking': { en: 'Launch a coin tracking this', zh: '发射追踪此篮子的代币', ko: '이 바스켓을 추적하는 코인 런치' },
   'index.exploreCta': { en: 'Track a basket of stocks', zh: '追踪一篮子股票', ko: '주식 바스켓을 추적하세요' },
   'index.loading': { en: 'Pricing baskets from the chain…', zh: '正在从链上为篮子定价…', ko: '체인에서 바스켓 가격 산정 중…' },
+  'index.chainlink': { en: 'Prices verified by Chainlink on Robinhood Chain', zh: '价格由 Robinhood Chain 上的 Chainlink 验证', ko: 'Robinhood Chain의 Chainlink가 검증한 가격' },
+  'index.oracleBadge': { en: 'Chainlink', zh: 'Chainlink', ko: 'Chainlink' },
 
   // Language switcher
   'lang.choose': { en: 'Language', zh: '语言', ko: '언어' },
