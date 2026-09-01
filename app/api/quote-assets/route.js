@@ -31,9 +31,25 @@ export async function GET(request) {
       symbol: q.symbol,
       name: q.name || hit?.name,
       address: q.address,
-      logo: hit?.logoURI || null,
+      logo: logoFor(q.symbol, hit?.logoURI),
     };
   });
 
   return NextResponse.json({ assets });
+}
+
+// Real logos for the paired-asset picker. Robinhood's own CDN only serves a
+// generic placeholder for these tokens, so we self-host the crypto/stable marks
+// and use each company's real brand logo for the stock tokens.
+const LOCAL_LOGO = {
+  LINK: "/assets/tokens/link.jpg",
+  CBBTC: "/assets/tokens/cbbtc.png",
+  USDG: "/assets/tokens/usdg.png",
+};
+function logoFor(symbol, fallback) {
+  const s = String(symbol || "").toUpperCase();
+  if (LOCAL_LOGO[s]) return LOCAL_LOGO[s];
+  // Stock tickers: real brand logo by symbol.
+  if (/^[A-Z]{1,6}$/.test(s)) return `https://financialmodelingprep.com/image-stock/${s}.png`;
+  return fallback || null;
 }

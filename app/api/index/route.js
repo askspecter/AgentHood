@@ -79,10 +79,12 @@ export async function GET(request) {
   // placeholder for these, so we point at the real brand mark by symbol (proxied
   // and cached client-side through /api/img). Crypto/stable names fall back to a
   // lettered tile in the UI when there's no clean stock logo.
-  const CRYPTO = new Set(["CBBTC", "USDG", "USDC", "WETH", "ETH"]);
+  const LOCAL_LOGO = { LINK: "/assets/tokens/link.jpg", CBBTC: "/assets/tokens/cbbtc.png", USDG: "/assets/tokens/usdg.png" };
+  const CRYPTO = new Set(["USDC", "WETH", "ETH"]);
   const logoFor = (symbol) => {
     const s = String(symbol || "").toUpperCase();
     if (!s || CRYPTO.has(s)) return null;
+    if (LOCAL_LOGO[s]) return LOCAL_LOGO[s];
     return `https://financialmodelingprep.com/image-stock/${s}.png`;
   };
 
