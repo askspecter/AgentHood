@@ -14,6 +14,14 @@ import { Back } from '../components/icons'
  * funds. The key carries no spend authority.
  */
 const ENDPOINT = 'https://aurn.fun/api/mcp'
+const DESKTOP_CONFIG = `{
+  "mcpServers": {
+    "aurn": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "${ENDPOINT}"]
+    }
+  }
+}`
 
 export default function AiAccess() {
   const nav = useNavigate()
@@ -73,6 +81,15 @@ export default function AiAccess() {
             <button onClick={() => copy(ENDPOINT, 'ep')} className="btn btn-secondary !py-2 shrink-0">{copied === 'ep' ? '✓' : t('common.copy', 'Copy')}</button>
           </div>
         </div>
+      </div>
+
+      <div className="card p-6 mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="eyebrow">{t('ai.quickTitle', 'Quick connect · Claude Desktop')}</div>
+          <button onClick={() => copy(DESKTOP_CONFIG, 'cfg')} className="btn btn-secondary !py-1.5 text-xs shrink-0">{copied === 'cfg' ? `${t('ai.copied', 'Copied')} ✓` : t('common.copy', 'Copy')}</button>
+        </div>
+        <p className="text-sm text-[var(--color-ink-soft)] mb-3">{t('ai.quickHint', 'Paste this into your claude_desktop_config.json, then restart Claude. No key needed for public tools.')}</p>
+        <pre className="px-3.5 py-3 rounded-xl panel-soft font-mono text-[11px] leading-relaxed overflow-x-auto no-scrollbar whitespace-pre text-[var(--color-ink-soft)]">{DESKTOP_CONFIG}</pre>
       </div>
 
       <div className="card p-6 mb-4">

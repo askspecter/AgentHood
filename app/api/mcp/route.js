@@ -116,6 +116,21 @@ const TOOLS = [
       required: ["name"],
     },
   },
+  {
+    name: "list_baskets",
+    description: "List AURN's index baskets (curated themes of tokenized stocks like the Magnificent 7 or AI & Silicon), each with a live reference NAV priced from Chainlink on Robinhood Chain, and its constituents. Public, no key needed.",
+    inputSchema: { type: "object", properties: {} },
+  },
+  {
+    name: "get_price",
+    description: "Live USD price for a tokenized asset from the Chainlink Data Feed on Robinhood Chain (verifiable on-chain). Pass a ticker like NVDA, TSLA, SPY, LINK, cbBTC. Returns the price, the feed address and when it last updated. Public.",
+    inputSchema: { type: "object", properties: { symbol: { type: "string", description: "Asset ticker, e.g. NVDA, TSLA, SPY, LINK, cbBTC." } }, required: ["symbol"] },
+  },
+  {
+    name: "prepare_index_launch",
+    description: "Prepare a coin that TRACKS one of AURN's index baskets and return a one-tap link to review + sign in the user's OWN wallet (non-custodial). The coin launches on a v2 bonding curve paired to the basket's lead asset. Use list_baskets to see the keys. Hand the returned `link` to the user.",
+    inputSchema: { type: "object", properties: { basket: { type: "string", description: "Basket key: mag7, ai, degen, or market." } }, required: ["basket"] },
+  },
 ];
 
 /* ── Tool dispatch ─────────────────────────────────────────────────────────── */
@@ -229,6 +244,50 @@ async function callTool(params, ctx) {
           note: "Open this link to review and sign the launch in your own wallet. Supply is fixed at 1,000,000,000. AURN is non-custodial - it cannot deploy for you.",
         });
       }
+      case "list_baskets": {
+        const j = await getJson(`${origin}/api/index?network=${net}`);
+        if (j.error) return asErr(j.error);
+        const baskets = (j.baskets || []).map((b) => ({
+          key: b.key, name: b.name, navUsd: b.navUsd,
+          change24h: b.change24 ?? null,
+          chainlinkVerified: !!b.oracle?.verified,
+          constituents: (b.constituents || []).map((c) => ({ symbol: c.symbol, weightPct: c.weightPct != null ? Math.round(c.weightPct) : null, priceUsd: c.priceUsd })),
+        }));
+        return asText({ count: baskets.length, baskets, note: "Reference NAVs priced from Chainlink Data Feeds on Robinhood Chain. Index coins are thematic tracking coins, not collateralized or redeemable." });
+      }
+      case "get_price": {
+        const sym = String(args.symbol || "").trim();
+        if (!sym) return asErr("Provide an asset ticker (e.g. NVDA, LINK, cbBTC).");
+        const { readChainlinkPrices } = await import("@/lib/engine");
+        const m = await readChainlinkPrices([sym], net);
+        const hit = m.get(sym.toUpperCase());
+        if (!hit) return asErr(`No Chainlink feed found for ${sym} on Robinhood Chain.`);
+        return asText({
+          symbol: sym.toUpperCase(), priceUsd: hit.priceUsd, feed: hit.feed,
+          updatedAt: hit.updatedAt ? new Date(hit.updatedAt * 1000).toISOString() : null,
+          source: "chainlink", network: net,
+          note: "Read on-chain from the Chainlink Data Feed. Verifiable against the feed contract.",
+        });
+      }
+      case "prepare_index_launch": {
+        const key = String(args.basket || "").trim().toLowerCase();
+        const j = await getJson(`${origin}/api/index?network=${net}&basket=${encodeURIComponent(key)}`);
+        if (j.error || !j.basket) return asErr(`Unknown basket "${key}". Use list_baskets to see valid keys (mag7, ai, degen, market).`);
+        const b = j.basket;
+        const lead = [...(b.constituents || [])].filter((c) => c.priceUsd != null && c.address).sort((a, c) => c.weight - a.weight)[0];
+        const symbols = (b.constituents || []).map((c) => c.symbol).join(", ");
+        const p = new URLSearchParams();
+        p.set("name", `${b.name} Index`);
+        p.set("description", `Tracks the ${b.name} basket: ${symbols}. A thematic AURN index coin, priced live from on-chain data. Not collateralized or redeemable.`);
+        p.set("version", "v2");
+        if (lead) { p.set("pairToken", lead.address); p.set("pairSymbol", lead.symbol); }
+        p.set("to", "review");
+        return asText({
+          basket: { key: b.key, name: b.name, navUsd: b.navUsd, tracks: symbols },
+          link: `${origin}/launch?${p.toString()}`,
+          note: "Open this link to review and sign the launch in your own wallet. Index coins are thematic tracking coins, not collateralized or redeemable. AURN is non-custodial.",
+        });
+      }
       default:
         return asErr(`Unknown tool: ${name}`);
     }
@@ -245,7 +304,7 @@ async function handleMessage(m, ctx) {
       protocolVersion: params?.protocolVersion || "2025-06-18",
       capabilities: { tools: {} },
       serverInfo: { name: NAME, version: VERSION },
-      instructions: "AURN MCP - discover coins, quote trades, read a portfolio, and prepare trades & launches on aurn.fun (Robinhood Chain). `prepare_trade` and `prepare_launch` return a one-tap link the user opens to sign in their OWN wallet - AURN is non-custodial, so the server prepares but never signs or moves funds. Give the user the returned `link` to finish. The `portfolio` tool needs an AURN API key (Settings → AI access).",
+      instructions: "AURN MCP - discover coins, quote trades, read a portfolio, list index baskets, read Chainlink prices, and prepare trades & launches on aurn.fun (Robinhood Chain). `prepare_trade`, `prepare_launch` and `prepare_index_launch` return a one-tap link the user opens to sign in their OWN wallet - AURN is non-custodial, so the server prepares but never signs or moves funds. Give the user the returned `link` to finish. `get_price` reads live prices from Chainlink Data Feeds on-chain. The `portfolio` tool needs an AURN API key (Settings → AI access).",
     });
   }
   if (typeof method === "string" && method.startsWith("notifications/")) return null; // no response

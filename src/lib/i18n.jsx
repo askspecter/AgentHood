@@ -272,6 +272,8 @@ const DICT = {
   'ai.connectTitle': { en: 'Connect AURN to your AI', zh: '将 AURN 接入你的 AI', ko: 'AURN을 AI에 연결하기' },
   'ai.intro': { en: 'AURN runs an MCP server, so an AI client (Claude, ChatGPT, Cursor, …) can browse coins, get quotes, read your portfolio, and even prepare a trade or launch a coin for you. It stays non-custodial: the AI hands you a one-tap link and your own wallet signs, so it can never move your funds.', zh: 'AURN 运行一个 MCP 服务器，AI 客户端（Claude、ChatGPT、Cursor 等）可以浏览代币、获取报价、读取你的资产，甚至为你准备交易或发射代币。全程非托管：AI 只给你一个一键链接，由你自己的钱包签名，因此它永远无法转移你的资金。', ko: 'AURN은 MCP 서버를 운영해요. AI 클라이언트(Claude, ChatGPT, Cursor 등)가 코인을 둘러보고, 시세를 받고, 포트폴리오를 읽고, 거래나 코인 런치까지 준비해 줄 수 있어요. 비수탁 방식이라 AI는 원탭 링크만 건네고 서명은 본인 지갑이 하므로 자금을 옮길 수 없어요.' },
   'ai.endpoint': { en: 'MCP endpoint', zh: 'MCP 端点', ko: 'MCP 엔드포인트' },
+  'ai.quickTitle': { en: 'Quick connect · Claude Desktop', zh: '快速连接 · Claude 桌面版', ko: '빠른 연결 · Claude 데스크톱' },
+  'ai.quickHint': { en: 'Paste this into your claude_desktop_config.json, then restart Claude. No key needed for public tools.', zh: '把这段粘贴到 claude_desktop_config.json，然后重启 Claude。公共工具无需密钥。', ko: 'claude_desktop_config.json에 붙여넣고 Claude를 재시작하세요. 공개 도구는 키가 필요 없어요.' },
   'ai.yourKey': { en: 'Your API key', zh: '你的 API 密钥', ko: '내 API 키' },
   'ai.copyKey': { en: 'Copy key', zh: '复制密钥', ko: '키 복사' },
   'ai.copied': { en: 'Copied', zh: '已复制', ko: '복사됨' },
