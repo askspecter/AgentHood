@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Contract, JsonRpcProvider, getAddress } from "ethers";
 import { getChain, getEthUsd, enrichLaunch, listLaunched, hiddenTokenSet, isHiddenToken, officialTokenAddress, officialLogo } from "@/lib/engine";
+import { dexscreenerBatch } from "@/lib/dexscreener";
 
 const POOL_SLOT0_ABI = [
   "function slot0() view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, uint8 feeProtocol, bool unlocked)",
@@ -470,24 +471,6 @@ export async function GET(request) {
         }
       }
 
-      // Official $AURN price fallback: when its on-chain pool read gave no price
-      // (it trades on a V4 pool the enricher can't resolve), fill the USD figures
-      // from Dexscreener. Scoped to the official coin, never overriding a real
-      // on-chain price.
-      await Promise.all(
-        launches
-          .filter((l) => l.official
-            && !(Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
-            && !(Number(l.explorerMcapUsd) > 0))
-          .map(async (l) => {
-            const dx = await dexscreenerUsd(l.token);
-            if (!dx) return;
-            if (dx.priceUsd != null) l.explorerPriceUsd = dx.priceUsd;
-            if (dx.mcapUsd != null) l.explorerMcapUsd = dx.mcapUsd;
-            if (l.change24 == null && dx.change24 != null) l.change24 = dx.change24;
-          })
-      );
-
       const shown = launches.slice(0, 24);
       await Promise.all([
         attachHolders(chain.explorer, shown),
@@ -500,6 +483,24 @@ export async function GET(request) {
       // still ranks by its real $40M even when the on-chain price read failed and
       // it would otherwise sink below fresh AURN launches.
       launches = stabilize(network, launches, alwaysShow);
+
+      // Real market caps from Dexscreener. The on-chain figure is fully-diluted
+      // (price × the full 1B supply), which reads high versus the traded market
+      // cap Dexscreener reports — e.g. a coin that trades at ~$4K showed ~$40K.
+      // Where Dexscreener has a token, use its USD price + market cap and drop
+      // the on-chain USD figures so the client shows the real numbers (and the
+      // ranking below uses them too). One batched request for the whole page.
+      try {
+        const dx = await dexscreenerBatch(launches.map((l) => l.token));
+        for (const l of launches) {
+          const d = dx.get((l.token || "").toLowerCase());
+          if (!d) continue;
+          if (d.priceUsd != null) { l.explorerPriceUsd = d.priceUsd; l.priceInWeth = null; }
+          if (d.mcapUsd != null) { l.explorerMcapUsd = d.mcapUsd; l.marketCapWeth = null; }
+          if (d.change24 != null) l.change24 = d.change24;
+        }
+      } catch { /* best-effort — keep on-chain figures on failure */ }
+
       const mcapUsd = (l) => {
         const onchain = Number.isFinite(l.marketCapWeth) && rate?.usd ? l.marketCapWeth * rate.usd : 0;
         return onchain > 0 ? onchain : Number(l.explorerMcapUsd) || 0;

@@ -10,6 +10,7 @@ import {
 } from "@/lib/engine";
 import { getSession } from "@/lib/session";
 import { resolveLaunch, curvePricing, v4Pricing } from "@/lib/engine/ponsV2";
+import { dexscreenerBatch } from "@/lib/dexscreener";
 
 /**
  * GET  /api/registry        → tokens launched through this site, newest first
@@ -162,24 +163,22 @@ export async function GET(request) {
         })
       );
 
-      // Official $AURN price fallback: its V4 pool doesn't always resolve
-      // on-chain, so fill the USD price + market cap from Dexscreener when it
-      // reads empty. Scoped to the official coin; never overrides an on-chain
-      // price. This is the coin page's authoritative source, so it also fixes the
-      // store (registry entries dedupe ahead of the feed).
-      await Promise.all(
-        launches
-          .filter((l) => l.official
-            && !(Number.isFinite(l.marketCapWeth) && l.marketCapWeth > 0)
-            && !(Number(l.explorerMcapUsd) > 0))
-          .map(async (l) => {
-            const dx = await dexscreenerUsd(l.token);
-            if (!dx) return;
-            if (dx.priceUsd != null) l.explorerPriceUsd = dx.priceUsd;
-            if (dx.mcapUsd != null) l.explorerMcapUsd = dx.mcapUsd;
-            if (l.change24 == null && dx.change24 != null) l.change24 = dx.change24;
-          })
-      );
+      // Real market caps from Dexscreener. The on-chain figure is fully-diluted
+      // (price × the full 1B supply), which reads high versus the traded market
+      // cap Dexscreener reports. Where Dexscreener has a token, use its USD price
+      // + market cap and drop the on-chain USD figures so the coin page (and the
+      // store, which dedupes registry entries ahead of the feed) shows the real
+      // numbers. One batched request.
+      try {
+        const dx = await dexscreenerBatch(launches.map((l) => l.token));
+        for (const l of launches) {
+          const d = dx.get((l.token || "").toLowerCase());
+          if (!d) continue;
+          if (d.priceUsd != null) { l.explorerPriceUsd = d.priceUsd; l.priceInWeth = null; }
+          if (d.mcapUsd != null) { l.explorerMcapUsd = d.mcapUsd; l.marketCapWeth = null; }
+          if (d.change24 != null) l.change24 = d.change24;
+        }
+      } catch { /* best-effort — keep on-chain figures on failure */ }
     }
 
     // Never emit a coin we couldn't label - it renders as the "$TOKEN"
