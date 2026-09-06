@@ -927,9 +927,13 @@ function AssetLogo({ src, symbol, size = 24 }) {
 /* v2 paired asset - the quote token the bonding curve is priced in. ETH (native)
    by default, or one of the factory-approved RWA/quote tokens, each shown with
    its real logo from Robinhood's asset directory. */
+const isAddr = (s) => /^0x[a-fA-F0-9]{40}$/.test(String(s || '').trim())
+const shortCA = (a) => (a ? `${a.slice(0, 6)}…${a.slice(-4)}` : '')
+
 function PairedAssetPicker({ d, set }) {
   const tr = useT()
   const [q, setQ] = useState('')
+  const [resolving, setResolving] = useState(false)
   // Curated list as the instant fallback; enriched with real logos/names async.
   const [assets, setAssets] = useState(() => V2_QUOTE_TOKENS.map((t) => ({ ...t, logo: null })))
   useEffect(() => {
@@ -944,6 +948,25 @@ function PairedAssetPicker({ d, set }) {
   const paired = !!d.pairToken
   const needle = q.trim().toLowerCase()
   const list = assets.filter((t) => !needle || t.symbol.toLowerCase().includes(needle) || (t.name || '').toLowerCase().includes(needle))
+
+  // Pair with ANY Robinhood Chain token by pasting its contract address: resolve
+  // its real symbol/name/logo on-chain and add it to the list, then select it.
+  const pasteAddr = q.trim()
+  const canPaste = isAddr(pasteAddr) && !assets.some((t) => t.address?.toLowerCase() === pasteAddr.toLowerCase())
+  const usePasted = async () => {
+    const token = pasteAddr
+    if (!isAddr(token)) return
+    set('pairToken', token); set('pairSymbol', shortCA(token))
+    setResolving(true)
+    try {
+      const r = await fetch(`/api/wallet?network=${NETWORK}&token=${token}`)
+      const j = await r.json()
+      const t = j?.token
+      const entry = { address: token, symbol: t?.symbol || shortCA(token), name: t?.name || 'Token', logo: t?.logo || null }
+      setAssets((prev) => (prev.some((x) => x.address?.toLowerCase() === token.toLowerCase()) ? prev : [entry, ...prev]))
+      set('pairSymbol', entry.symbol)
+    } catch { /* keep short-address symbol */ } finally { setResolving(false); setQ('') }
+  }
   return (
     <div className="mt-4 pt-4 border-t hairline">
       <div className="flex items-center justify-between gap-3 mb-2">
@@ -957,8 +980,18 @@ function PairedAssetPicker({ d, set }) {
         <p className="text-[11px] text-[var(--color-ink-faint)]">The curve is quoted in ETH (native). Creators are paid in ETH.</p>
       ) : (
         <div className="mt-1">
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('launch.searchAsset', 'Search asset…')} className="input mb-2" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('launch.searchAssetOrCa', 'Search or paste any token address…')} className="input mb-2" />
           <div className="max-h-44 overflow-y-auto no-scrollbar rounded-xl panel-soft divide-y divide-[var(--color-line)]">
+            {canPaste && (
+              <button onClick={usePasted} disabled={resolving}
+                className="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left transition hover:bg-[var(--color-paper-2)]">
+                <span className="flex items-center gap-2.5 min-w-0">
+                  <AssetLogo src={null} symbol="?" />
+                  <span className="min-w-0 font-mono text-sm truncate">{shortCA(pasteAddr)}</span>
+                </span>
+                <span className="text-[var(--color-accent)] text-xs shrink-0">{resolving ? tr('common.loadingShort', 'Loading…') : tr('locked.useAddress', 'Use address')}</span>
+              </button>
+            )}
             {list.map((t) => (
               <button key={t.address} onClick={() => { set('pairToken', t.address); set('pairSymbol', t.symbol) }}
                 className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-[var(--color-paper-2)] ${d.pairToken === t.address ? 'bg-[var(--color-paper-2)]' : ''}`}>
@@ -969,8 +1002,11 @@ function PairedAssetPicker({ d, set }) {
                 {d.pairToken === t.address && <span className="text-[var(--color-accent)] text-xs shrink-0">✓</span>}
               </button>
             ))}
+            {list.length === 0 && !canPaste && (
+              <div className="px-3 py-3 text-sm text-[var(--color-ink-faint)]">{tr('launch.pairNoMatch', 'No match. Paste a token address to pair any Robinhood Chain token.')}</div>
+            )}
           </div>
-          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">The curve is quoted in {d.pairSymbol || '-'}. It graduates to a Uniswap V4 pool paired with this asset.</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)] mt-2">{tr('launch.pairAnyHint', 'Pair with any Robinhood Chain token by pasting its contract address. The curve is quoted in')} {d.pairSymbol || '-'}.</p>
         </div>
       )}
     </div>

@@ -110,6 +110,7 @@ const TOOLS = [
         look: { type: "string", description: "Free-text description of how the coin should look (feeds logo generation)." },
         firstBuy: { type: "string", description: "Optional first buy in ETH, e.g. \"0.05\"." },
         creatorTax: { type: "string", description: "v2 only: creator's cut of the 1% trading fee, 0-10 (percent)." },
+        pairToken: { type: "string", description: "v2 only: pair the bonding curve with ANY Robinhood Chain token by its contract address (0x…), e.g. a tokenized stock, cbBTC or LINK. Defaults to ETH." },
         twitter: { type: "string", description: "Optional X/Twitter handle or link." },
         telegram: { type: "string", description: "Optional Telegram handle or link." },
       },
@@ -229,6 +230,8 @@ async function callTool(params, ctx) {
         if (args.look) p.set("look", String(args.look).slice(0, 240));
         if (args.firstBuy) p.set("firstBuy", String(args.firstBuy).replace(/[^0-9.]/g, ""));
         if (args.creatorTax) p.set("creatorTax", String(args.creatorTax).replace(/[^0-9.]/g, ""));
+        // Pair with any Robinhood Chain token by address (v2 only).
+        if (/^0x[a-fA-F0-9]{40}$/.test(String(args.pairToken || ""))) { p.set("pairToken", args.pairToken); p.set("version", "v2"); }
         if (args.twitter) p.set("twitter", String(args.twitter));
         if (args.telegram) p.set("telegram", String(args.telegram));
         p.set("to", "review");

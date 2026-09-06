@@ -139,6 +139,10 @@ const DICT = {
   'launch.backToDiscover': { en: 'Back to Discover', zh: '返回探索', ko: '둘러보기로 돌아가기' },
   'launch.final': { en: 'Final', zh: '完成', ko: '마무리' },
   'launch.searchAsset': { en: 'Search asset…', zh: '搜索资产…', ko: '자산 검색…' },
+  'launch.searchAssetOrCa': { en: 'Search or paste any token address…', zh: '搜索或粘贴任意代币地址…', ko: '검색 또는 토큰 주소 붙여넣기…' },
+  'launch.pairNoMatch': { en: 'No match. Paste a token address to pair any Robinhood Chain token.', zh: '无匹配。粘贴代币地址即可配对任意 Robinhood Chain 代币。', ko: '일치 항목 없음. 토큰 주소를 붙여넣으면 어떤 Robinhood Chain 토큰이든 페어할 수 있어요.' },
+  'launch.pairAnyHint': { en: 'Pair with any Robinhood Chain token by pasting its contract address. The curve is quoted in', zh: '粘贴合约地址即可配对任意 Robinhood Chain 代币。曲线以此计价：', ko: '컨트랙트 주소를 붙여넣으면 어떤 Robinhood Chain 토큰과도 페어할 수 있어요. 커브 기준 자산:' },
+  'common.loadingShort': { en: 'Loading…', zh: '加载中…', ko: '불러오는 중…' },
 
   // Settings
   'settings.title': { en: 'Settings', zh: '设置', ko: '설정' },
