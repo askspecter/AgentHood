@@ -48,7 +48,6 @@ function factSheet(a = {}) {
   if (a.graduated === true) facts.push("Graduated: yes (bonding complete, trading on the open pool)");
   else if (a.graduated === false) facts.push(`Graduated: not yet${Number.isFinite(a.graduationProgress) ? ` (~${Math.round(a.graduationProgress * 100)}% there)` : ""}`);
   if (a.creator) facts.push(`Launched by: ${a.creator}`);
-  if (a.official) facts.push("You are $AURN - the official, deflationary platform token (fees fund your buyback & burn).");
   if (Array.isArray(a.vibe) && a.vibe.length) facts.push(`Vibe: ${a.vibe.join(", ")}`);
   return facts.join("\n");
 }

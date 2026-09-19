@@ -28,8 +28,6 @@ export default function Settings() {
             {LANGS.map((l) => <button key={l.code} onClick={() => setLang(l.code)} className={`!px-2.5 !text-[13px] ${lang === l.code ? 'on' : ''}`}>{l.short}</button>)}
           </div>
         } />
-        <Row icon="reward" label={t('settings.rewards', 'Rewards')} onClick={() => nav('/settings/reward')} />
-        <Row icon="lock" label={t('settings.locked', 'Locked')} onClick={() => nav('/settings/locked')} />
         <Row icon="gift" label={t('settings.referral', 'Referral code')} onClick={() => nav('/settings/referral')} />
         <Row icon="terminal" label={t('settings.aiAccess', 'AI access (MCP)')} onClick={() => nav('/settings/ai')} last />
       </Section>

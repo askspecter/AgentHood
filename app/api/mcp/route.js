@@ -69,11 +69,6 @@ const TOOLS = [
     },
   },
   {
-    name: "aurn_burned",
-    description: "The live total of $AURN bought back and burned on-chain (deflationary). Public.",
-    inputSchema: { type: "object", properties: {} },
-  },
-  {
     name: "leaderboard",
     description: "AURN leaderboards. board=creator (market cap created), volume (WETH traded), or referral (friends invited). Public.",
     inputSchema: { type: "object", properties: { board: { type: "string", enum: ["creator", "volume", "referral"] } } },
@@ -180,11 +175,6 @@ async function callTool(params, ctx) {
         const q = await postJson(`${origin}/api/quote`, { token: args.token, side: args.side, amount: args.amount, network: net });
         if (q.error) return asErr(`Couldn't quote: ${q.error}`);
         return asText({ side: args.side, spend: q.amountInLabel, receive: q.amountOutLabel, amountInRaw: q.amountInRaw, amountOutRaw: q.amountOutRaw });
-      }
-      case "aurn_burned": {
-        const j = await getJson(`${origin}/api/aurn/burned?network=${net}`);
-        if (j.error) return asErr(j.error);
-        return asText({ symbol: j.symbol || "AURN", burned: j.burned });
       }
       case "leaderboard": {
         const board = ["creator", "volume", "referral"].includes(args.board) ? args.board : "creator";

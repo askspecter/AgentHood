@@ -150,7 +150,6 @@ const DICT = {
   'settings.appearance': { en: 'Appearance', zh: '外观', ko: '테마' },
   'settings.account': { en: 'Account', zh: '账户', ko: '계정' },
   'settings.editProfile': { en: 'Edit profile', zh: '编辑资料', ko: '프로필 편집' },
-  'settings.rewards': { en: 'Rewards', zh: '奖励', ko: '리워드' },
   'settings.locked': { en: 'Locked', zh: '锁仓', ko: '잠금' },
   'settings.referral': { en: 'Referral code', zh: '邀请码', ko: '추천 코드' },
   'settings.aiAccess': { en: 'AI access (MCP)', zh: 'AI 接入 (MCP)', ko: 'AI 액세스 (MCP)' },
@@ -226,21 +225,6 @@ const DICT = {
   'lb.coins': { en: 'coins', zh: '个代币', ko: '개 코인' },
   'lb.coin': { en: 'coin', zh: '个代币', ko: '개 코인' },
   'lb.top': { en: 'top', zh: '最高', ko: '최고' },
-
-  // Rewards
-  'reward.holdEarn': { en: 'Hold $AURN · earn the pool', zh: '持有 $AURN · 赚取奖池', ko: '$AURN 보유 · 풀 획득' },
-  'reward.connectCheck': { en: 'Connect to check your rewards.', zh: '连接钱包查看你的奖励。', ko: '지갑을 연결해 리워드를 확인하세요.' },
-  'reward.held': { en: '$AURN held', zh: '持有 $AURN', ko: '$AURN 보유' },
-  'reward.ofSupply': { en: 'of supply', zh: '占供应量', ko: '공급량 대비' },
-  'reward.pastePh': { en: 'Paste any 0x address to check…', zh: '粘贴任意 0x 地址查询…', ko: '확인할 0x 주소를 붙여넣으세요…' },
-  'reward.checkingAddress': { en: 'address', zh: '地址', ko: '주소' },
-  'reward.checkingWallet': { en: 'your wallet', zh: '你的钱包', ko: '내 지갑' },
-  'reward.checking': { en: 'Checking', zh: '正在查询', ko: '확인 중' },
-  'reward.checkAnother': { en: 'Check another', zh: '查询其他', ko: '다른 주소 확인' },
-  'reward.epochTitle': { en: "This epoch's rewards", zh: '本轮奖励', ko: '이번 에폭 리워드' },
-  'reward.left': { en: 'left', zh: '剩余', ko: '남음' },
-  'reward.pool': { en: 'pool', zh: '奖池', ko: '풀' },
-  'reward.footer': { en: 'Estimated from the current pool and your live $AURN balance, split across the supply. Rewards accrue to holders each epoch - keep holding $AURN to keep earning. Non-custodial: AURN never holds your keys.', zh: '根据当前奖池和你实时的 $AURN 余额估算，按总供应量分配。奖励每轮累积给持有者 - 持续持有 $AURN 即可持续赚取。非托管：AURN 永不持有你的私钥。', ko: '현재 풀과 실시간 $AURN 잔액을 공급량에 나눠 추정한 값이에요. 리워드는 매 에폭 홀더에게 쌓여요 - $AURN을 계속 보유하면 계속 받아요. 비수탁: AURN은 절대 키를 보관하지 않아요.' },
 
   // Referral
   'ref.connectBody': { en: 'Connect your wallet to get your personal referral code and link.', zh: '连接钱包以获取你的专属推荐码和链接。', ko: '지갑을 연결하면 개인 추천 코드와 링크를 받을 수 있어요.' },

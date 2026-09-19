@@ -15,18 +15,18 @@ export const metadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
-  // Default share card: the live burn total (deflationary story). Coin pages
-  // override this with their own card via generateMetadata.
+  // Default share card: the brand mark. Coin pages override this with their own
+  // card via generateMetadata.
   openGraph: {
-    title: "AURN - deflationary launchpad on Robinhood Chain",
-    description: "Launch coins from your own wallet. Buyback & burn is live. Every coin is an AI agent.",
-    images: [{ url: "/api/card/burn", width: 1200, height: 630 }],
+    title: "AURN - launchpad on Robinhood Chain",
+    description: "Launch coins from your own wallet. Every coin is an AI agent.",
+    images: [{ url: "/aurn-logo.png", width: 512, height: 512 }],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "AURN - deflationary launchpad on Robinhood Chain",
-    description: "Launch coins from your own wallet. Buyback & burn is live. Every coin is an AI agent.",
-    images: ["/api/card/burn"],
+    card: "summary",
+    title: "AURN - launchpad on Robinhood Chain",
+    description: "Launch coins from your own wallet. Every coin is an AI agent.",
+    images: ["/aurn-logo.png"],
   },
 };
 
